@@ -8,8 +8,10 @@ use App\Models\JalurWeb;
 use App\Models\ProvinceWeb;
 use App\Models\RegencyWeb;
 use App\Models\VillageWeb;
+use App\Models\UserWeb;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Hash;
 
 class JalurController extends Controller
 {
@@ -40,6 +42,7 @@ class JalurController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'id_gunung' => 'required|integer|exists:gunung,id',
             'nama' => 'required|string|max:255',
             'province_id' => 'required|integer|exists:reg_provinces,id',
             'regency_id' => 'required|integer|exists:reg_regencies,id',
@@ -50,6 +53,11 @@ class JalurController extends Controller
             'map_basecamp' => 'nullable|string|max:255',
             'gambar_jalur' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'biaya' => 'required|numeric|min:0',
+            // Validasi untuk data penjaga jalur
+            'penjaga_name' => 'required|string|max:255',
+            'penjaga_email' => 'required|email|unique:users,email',
+            'penjaga_phone' => 'required|numeric|unique:users,phone',
+            'penjaga_address' => 'nullable|string|max:255',
         ]);
 
         $gambarName = null;
@@ -59,9 +67,20 @@ class JalurController extends Controller
             $file->storeAs('images', $gambarName, 'public');
         }
 
+        // Buat akun user untuk penjaga jalur (level 2)
+        $penjaga = UserWeb::create([
+            'name' => $request->penjaga_name,
+            'email' => $request->penjaga_email,
+            'phone' => $request->penjaga_phone,
+            'address' => $request->penjaga_address,
+            'password' => Hash::make('password123'), // Password default
+            'level' => 2, // Level 2 untuk penjaga jalur
+        ]);
+
         JalurWeb::create([
             'nama' => $request->nama,
             'id_gunung' => $request->id_gunung,
+            'user_id' => $penjaga->id, // Simpan ID penjaga
             'province_id' => $request->province_id,
             'regency_id' => $request->regency_id,
             'district_id' => $request->district_id,
@@ -78,7 +97,10 @@ class JalurController extends Controller
 
     public function update(Request $request, $id)
     {
+        $jalur = JalurWeb::findOrFail($id);
+
         $request->validate([
+            'id_gunung' => 'required|integer|exists:gunung,id',
             'nama' => 'required|string|max:255',
             'province_id' => 'required|integer|exists:reg_provinces,id',
             'regency_id' => 'required|integer|exists:reg_regencies,id',
@@ -89,9 +111,12 @@ class JalurController extends Controller
             'map_basecamp' => 'nullable|string|max:255',
             'gambar_jalur' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'biaya' => 'required|numeric|min:0',
+            // Validasi untuk data penjaga jalur (opsional saat edit)
+            'penjaga_name' => 'nullable|string|max:255',
+            'penjaga_email' => 'nullable|email|unique:users,email,' . $jalur->user_id,
+            'penjaga_phone' => 'nullable|numeric|unique:users,phone,' . $jalur->user_id,
+            'penjaga_address' => 'nullable|string|max:255',
         ]);
-
-        $jalur = JalurWeb::findOrFail($id);
 
         $gambarName = $jalur->gambar_jalur;
         if ($request->hasFile('gambar_jalur')) {
@@ -118,6 +143,16 @@ class JalurController extends Controller
             'biaya' => $request->biaya,
         ]);
 
+        // Update data penjaga jika ada
+        if ($jalur->penjaga && $request->filled('penjaga_name')) {
+            $jalur->penjaga->update([
+                'name' => $request->penjaga_name,
+                'email' => $request->penjaga_email,
+                'phone' => $request->penjaga_phone,
+                'address' => $request->penjaga_address,
+            ]);
+        }
+
         return redirect()->route('jalur.index')->with('success', 'Jalur berhasil diperbarui!');
     }
 
@@ -141,9 +176,9 @@ class JalurController extends Controller
 
     public function edit($id)
     {
-        // Ambil data jalur berdasarkan ID
-        $jalur = JalurWeb::findOrFail($id);
-        
+        // Ambil data jalur berdasarkan ID dengan relasi penjaga
+        $jalur = JalurWeb::with('penjaga')->findOrFail($id);
+
         // Ambil data untuk dropdown
         $pegunungan = GunungWeb::all();
         $provinces = ProvinceWeb::all();

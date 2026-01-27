@@ -17,8 +17,8 @@ return new class extends Migration {
             $table->char('district_id', 7); // Sesuai dengan tipe data di reg_districts
             $table->char('village_id', 10); // Sesuai dengan tipe data di reg_villages
             $table->integer('jarak');
-            $table->text('deskripsi');
-            $table->string('map_basecamp', 60);
+            $table->text('deskripsi')->nullable();
+            $table->string('map_basecamp', 60)->nullable();
             $table->string('gambar_jalur')->nullable();
             $table->integer('biaya');
             $table->timestamps();

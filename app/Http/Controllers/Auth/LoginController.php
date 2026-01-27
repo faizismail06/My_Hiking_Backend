@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Illuminate\Support\Facades\Auth;
 
 class LoginController extends Controller
 {
@@ -41,6 +42,19 @@ class LoginController extends Controller
     protected function redirectTo()
     {
         session()->flash('success', 'You are logged in!');
+
+        // Redirect berdasarkan level user
+        $user = Auth::user();
+
+        if ($user->level == 2) {
+            // Penjaga jalur ke dashboard penjaga
+            return route('penjaga.dashboard');
+        } elseif ($user->level == 3) {
+            // Admin ke dashboard admin
+            return route('home');
+        }
+
+        // User biasa (level 1) atau lainnya
         return $this->redirectTo;
     }
 }

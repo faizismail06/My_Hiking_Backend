@@ -14,6 +14,7 @@ class JalurWeb extends Model
     protected $fillable = [
         'id_gunung',
         'nama',
+        'user_id',
         'province_id',
         'regency_id',
         'district_id',
@@ -30,7 +31,13 @@ class JalurWeb extends Model
     {
         return $this->belongsTo(GunungWeb::class, 'id_gunung', 'id');
     }
-    
+
+    // Relasi dengan model User (penjaga jalur)
+    public function penjaga()
+    {
+        return $this->belongsTo(UserWeb::class, 'user_id', 'id');
+    }
+
     public function province()
     {
         return $this->belongsTo(ProvinceWeb::class, 'province_id');

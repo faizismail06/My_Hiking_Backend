@@ -12,6 +12,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TataTertibController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PenjagaJalurController;
 // use App\Http\Controllers\CheckController;
 
 
@@ -102,4 +103,21 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/payments/{id}/edit', [PaymentController::class, 'edit'])->name('payments.edit');
     Route::put('/payments/{id}', [PaymentController::class, 'update'])->name('payments.update');
     Route::delete('/payments/{id}', [PaymentController::class, 'destroy'])->name('payments.destroy');
+});
+
+// Routes untuk Penjaga Jalur (Level 2)
+Route::middleware(['penjaga'])->prefix('penjaga')->name('penjaga.')->group(function () {
+    Route::get('/dashboard', [PenjagaJalurController::class, 'dashboard'])->name('dashboard');
+    Route::get('/jalur', [PenjagaJalurController::class, 'manajemenJalur'])->name('jalur');
+    Route::post('/jalur/update', [PenjagaJalurController::class, 'updateJalur'])->name('jalur.update');
+    Route::get('/riwayat', [PenjagaJalurController::class, 'riwayatPengunjung'])->name('riwayat');
+    Route::get('/pendapatan', [PenjagaJalurController::class, 'laporanPendapatan'])->name('pendapatan');
+    Route::post('/check-in/{id}', [PenjagaJalurController::class, 'checkIn'])->name('checkin');
+    Route::post('/check-out/{id}', [PenjagaJalurController::class, 'checkOut'])->name('checkout');
+
+    // Scanner QR Code
+    Route::get('/scanner', [PenjagaJalurController::class, 'scanner'])->name('scanner');
+    Route::get('/scanner/detail/{id}', [PenjagaJalurController::class, 'detailPesanan'])->name('scanner.detail');
+    Route::post('/scanner/manual', [PenjagaJalurController::class, 'manualSearch'])->name('scanner.manual');
+    Route::put('/pesanan/{id}/status', [PenjagaJalurController::class, 'updateStatus'])->name('updateStatus');
 });
