@@ -75,7 +75,12 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::get('/users', [UserController::class, 'index'])->name('users.index');
+Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+Route::post('/users', [UserController::class, 'store'])->name('users.store');
 Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
+Route::get('/users/{id}/edit', [UserController::class, 'edit'])->name('users.edit');
+Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
+Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
 
 // History routes
 Route::middleware('auth')->group(function () {
@@ -117,6 +122,12 @@ Route::middleware(['penjaga'])->prefix('guards')->name('guards.')->group(functio
     Route::get('/order/{id}', [TrailGuardController::class, 'orderDetail'])->name('order.detail');
     Route::post('/scanner/manual', [TrailGuardController::class, 'manualSearch'])->name('scanner.manual');
     Route::put('/orders/{id}/status', [TrailGuardController::class, 'updateStatus'])->name('updateStatus');
+
+    // SAR Dashboard (Emergency Panic Requests)
+    Route::get('/sar-dashboard', [\App\Http\Controllers\SarDashboardController::class, 'index'])->name('sar.index');
+    Route::get('/sar-dashboard/{id}', [\App\Http\Controllers\SarDashboardController::class, 'show'])->name('sar.show');
+    Route::post('/sar-dashboard/{id}/respond', [\App\Http\Controllers\SarDashboardController::class, 'respond'])->name('sar.respond');
+    Route::post('/sar-dashboard/{id}/resolve', [\App\Http\Controllers\SarDashboardController::class, 'resolve'])->name('sar.resolve');
 
     // Guard Profile
     Route::get('/profile', [TrailGuardController::class, 'profile'])->name('profile');

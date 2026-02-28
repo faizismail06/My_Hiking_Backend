@@ -7,12 +7,17 @@
 <div class="modern-card animate-fade-in">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5><i class="fas fa-users"></i> Data Pengguna</h5>
-        <form action="{{ route('users.index') }}" method="GET" class="d-flex gap-2">
-            <input type="text" name="search" class="form-control" placeholder="Cari pengguna..." value="{{ request()->get('search') }}" style="width: 200px;">
-            <button type="submit" class="btn btn-modern btn-outline-modern">
-                <i class="fas fa-search"></i>
-            </button>
-        </form>
+        <div class="d-flex gap-2">
+            <form action="{{ route('users.index') }}" method="GET" class="d-flex gap-2">
+                <input type="text" name="search" class="form-control" placeholder="Cari pengguna..." value="{{ request()->get('search') }}" style="width: 200px;">
+                <button type="submit" class="btn btn-modern btn-outline-modern">
+                    <i class="fas fa-search"></i>
+                </button>
+            </form>
+            <a href="{{ route('users.create') }}" class="btn btn-modern btn-success">
+                <i class="fas fa-plus"></i> Tambah
+            </a>
+        </div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -22,7 +27,8 @@
                         <th class="text-center" style="width: 50px;">No</th>
                         <th>Pengguna</th>
                         <th>Email</th>
-                        <th class="text-center" style="width: 120px;">Aksi</th>
+                        <th class="text-center">Level</th>
+                        <th class="text-center" style="width: 200px;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -41,14 +47,35 @@
                             <span class="text-muted">{{ $user->email }}</span>
                         </td>
                         <td class="text-center">
-                            <a href="{{ route('users.show', $user->id) }}" class="btn btn-sm btn-modern btn-outline-modern" title="Detail">
-                                <i class="fas fa-eye"></i> Detail
-                            </a>
+                            @if($user->level == 1)
+                                <span class="badge bg-info">User</span>
+                            @elseif($user->level == 2)
+                                <span class="badge bg-warning">Penjaga</span>
+                            @else
+                                <span class="badge bg-danger">Admin</span>
+                            @endif
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex gap-1 justify-content-center">
+                                <a href="{{ route('users.show', $user->id) }}" class="btn btn-sm btn-modern btn-outline-modern" title="Detail">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ route('users.edit', $user->id) }}" class="btn btn-sm btn-warning" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus pengguna ini?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Hapus">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="4" class="text-center py-4 text-muted">
+                        <td colspan="5" class="text-center py-4 text-muted">
                             <i class="fas fa-users fa-2x mb-2 d-block"></i>
                             Tidak ada data pengguna
                         </td>

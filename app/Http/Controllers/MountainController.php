@@ -50,6 +50,8 @@ class MountainController extends Controller
             'ketinggian' => 'required|numeric|min:0',
             'deskripsi' => 'nullable|string|max:1000',
             'gambar_gunung' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
         ]);
 
         $imageName = null;
@@ -68,6 +70,8 @@ class MountainController extends Controller
             'ketinggian' => $request->ketinggian,
             'deskripsi' => $request->deskripsi,
             'gambar_gunung' => $imageName,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
         ]);
 
         return redirect()->route('mountains.index')->with('success', 'Mountain added successfully!');
@@ -96,6 +100,8 @@ class MountainController extends Controller
             'ketinggian' => 'required|numeric|min:0',
             'deskripsi' => 'nullable|string|max:1000',
             'gambar_gunung' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
         ]);
 
         $mountain = MountainWeb::findOrFail($id);
@@ -120,6 +126,8 @@ class MountainController extends Controller
             'ketinggian' => $request->ketinggian,
             'deskripsi' => $request->deskripsi,
             'gambar_gunung' => $imageName,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
         ]);
 
         return redirect()->route('mountains.index')->with('success', 'Mountain updated successfully!');

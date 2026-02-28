@@ -19,7 +19,7 @@
                     <label for="id_gunung" class="form-label">Gunung <span class="text-danger">*</span></label>
                     <select id="id_gunung" name="id_gunung" class="form-select @error('id_gunung') is-invalid @enderror">
                         <option value="" disabled>Pilih Gunung</option>
-                        @foreach ($pegunungan as $gunung)
+                        @foreach ($mountains as $gunung)
                             <option value="{{ $gunung->id }}" {{ $gunung->id == $trail->id_gunung ? 'selected' : '' }}>{{ $gunung->nama }}</option>
                         @endforeach
                     </select>
@@ -108,6 +108,18 @@
                     <label class="form-label">Link Map Basecamp</label>
                     <input type="text" name="map_basecamp" class="form-control @error('map_basecamp') is-invalid @enderror" value="{{ old('map_basecamp', $trail->map_basecamp) }}" placeholder="https://maps.google.com/...">
                     @error('map_basecamp')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Latitude</label>
+                    <input type="text" name="latitude" class="form-control @error('latitude') is-invalid @enderror" value="{{ old('latitude', $trail->latitude) }}" placeholder="-7.2575">
+                    @error('latitude')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Longitude</label>
+                    <input type="text" name="longitude" class="form-control @error('longitude') is-invalid @enderror" value="{{ old('longitude', $trail->longitude) }}" placeholder="112.7521">
+                    @error('longitude')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
             </div>
 

@@ -102,6 +102,22 @@
                         </div>
                     @endif
                 </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Latitude</label>
+                    <input type="text" class="form-control @error('latitude') is-invalid @enderror" name="latitude" value="{{ old('latitude', $mountain->latitude) }}" placeholder="-7.2575">
+                    @error('latitude')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Longitude</label>
+                    <input type="text" class="form-control @error('longitude') is-invalid @enderror" name="longitude" value="{{ old('longitude', $mountain->longitude) }}" placeholder="112.7521">
+                    @error('longitude')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
             </div>
 
             <hr class="my-4">

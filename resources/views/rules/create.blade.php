@@ -17,7 +17,7 @@
                     <label for="jalur_id" class="form-label">Jalur <span class="text-danger">*</span></label>
                     <select name="jalur_id" id="jalur_id" class="form-select @error('jalur_id') is-invalid @enderror" required>
                         <option value="" disabled selected>Pilih Jalur</option>
-                        @foreach ($jalurs as $jalur)
+                        @foreach ($trails as $jalur)
                             <option value="{{ $jalur->id }}">{{ $jalur->nama }}</option>
                         @endforeach
                     </select>

@@ -53,6 +53,8 @@ class TrailController extends Controller
             'map_basecamp' => 'nullable|string|max:255',
             'gambar_jalur' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'biaya' => 'required|numeric|min:0',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             // Validation for trail guard data
             'penjaga_name' => 'required|string|max:255',
             'penjaga_email' => 'required|email|unique:users,email',
@@ -90,6 +92,8 @@ class TrailController extends Controller
             'map_basecamp' => $request->map_basecamp,
             'gambar_jalur' => $imageName,
             'biaya' => $request->biaya,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
         ]);
 
         return redirect()->route('trails.index')->with('success', 'Trail added successfully!');
@@ -111,6 +115,8 @@ class TrailController extends Controller
             'map_basecamp' => 'nullable|string|max:255',
             'gambar_jalur' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'biaya' => 'required|numeric|min:0',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             // Validation for trail guard data (optional when editing)
             'penjaga_name' => 'nullable|string|max:255',
             'penjaga_email' => 'nullable|email|unique:users,email,' . $trail->user_id,
@@ -141,6 +147,8 @@ class TrailController extends Controller
             'map_basecamp' => $request->map_basecamp,
             'gambar_jalur' => $imageName,
             'biaya' => $request->biaya,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
         ]);
 
         // Update guard data if exists
