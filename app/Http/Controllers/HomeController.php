@@ -4,9 +4,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\GunungWeb;
-use App\Models\JalurWeb;
-use App\Models\TransaksiWeb;
+use App\Models\MountainWeb;
+use App\Models\TrailWeb;
+use App\Models\TransactionWeb;
 use App\Models\UserWeb;
 
 class HomeController extends Controller
@@ -29,11 +29,11 @@ class HomeController extends Controller
     public function index()
     {
         // Menghitung data yang diperlukan
-        $totalTransaksi = TransaksiWeb::count(); // Hitung semua transaksi
-        $totalGunung = GunungWeb::count(); // Hitung jumlah gunung
-        $totalJalur = JalurWeb::count(); // Hitung jumlah jalur
+        $totalTransaksi = TransactionWeb::count(); // Hitung semua transaksi
+        $totalGunung = MountainWeb::count(); // Hitung jumlah gunung
+        $totalJalur = TrailWeb::count(); // Hitung jumlah jalur
         $totalUser = UserWeb::count(); // Hitung jumlah user
-        $totalPendapatan = TransaksiWeb::sum('total_bayar'); // Total pendapatan dari semua transaksi
+        $totalPendapatan = TransactionWeb::sum('total_bayar'); // Total pendapatan dari semua transaksi
 
         // Mengirim data ke view
         return view('home', compact('totalTransaksi', 'totalGunung', 'totalJalur', 'totalUser','totalPendapatan'));

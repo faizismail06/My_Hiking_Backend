@@ -21,6 +21,16 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
+                $user = Auth::guard($guard)->user();
+                
+                // Redirect berdasarkan level user ke dashboard masing-masing
+                if ($user->level == 2) {
+                    return redirect()->route('guards.dashboard');
+                } elseif ($user->level == 3) {
+                    return redirect(RouteServiceProvider::HOME);
+                }
+                
+                // Level 1 (user biasa) tidak punya akses web, redirect ke default
                 return redirect(RouteServiceProvider::HOME);
             }
         }

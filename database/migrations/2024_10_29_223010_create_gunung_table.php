@@ -9,7 +9,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('gunung', function (Blueprint $table) {
+        Schema::create('mountains', function (Blueprint $table) {
             $table->id(); // Primary key
             $table->char('province_id', 2); // Sesuai dengan tipe data di reg_provinces
             $table->char('regency_id', 4); // Sesuai dengan tipe data di reg_regencies
@@ -18,8 +18,9 @@ return new class extends Migration {
             $table->string('nama');
             $table->text('deskripsi');
             $table->integer('ketinggian')->default(0);
-            // $table->string('gambar');
             $table->string('gambar_gunung')->nullable();
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
             $table->timestamps();
 
             // Definisi foreign key
@@ -35,6 +36,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('gunung');
+        Schema::dropIfExists('mountains');
     }
 };

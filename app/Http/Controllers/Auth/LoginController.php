@@ -48,7 +48,7 @@ class LoginController extends Controller
 
         if ($user->level == 2) {
             // Penjaga jalur ke dashboard penjaga
-            return route('penjaga.dashboard');
+            return route('guards.dashboard');
         } elseif ($user->level == 3) {
             // Admin ke dashboard admin
             return route('home');

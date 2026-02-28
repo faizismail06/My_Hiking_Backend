@@ -12,7 +12,7 @@ class PaymentController extends Controller
     public function index()
     {
         try {
-            $payments = Payment::with('transaksi')->get();
+            $payments = Payment::with('transactions')->get();
 
             return response()->json([
                 'success' => true,

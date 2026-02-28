@@ -10,10 +10,10 @@ return new class extends Migration {
      */
     public function up()
     {
-        Schema::create('tata_tertibs', function (Blueprint $table) {
+        Schema::create('rules', function (Blueprint $table) {
             $table->id(); // Primary key
             $table->unsignedBigInteger('jalur_id'); // Sesuaikan tipe datanya
-            $table->foreign('jalur_id')->references('id')->on('jalur')->onDelete('cascade');
+            $table->foreign('jalur_id')->references('id')->on('routes')->onDelete('cascade');
             $table->longText('description'); // Kolom teks panjang untuk deskripsi
             $table->timestamps(); // Kolom created_at dan updated_at
         });
@@ -24,6 +24,6 @@ return new class extends Migration {
      */
     public function down()
     {
-        Schema::dropIfExists('tata_tertibs');
+        Schema::dropIfExists('rules');
     }
 };

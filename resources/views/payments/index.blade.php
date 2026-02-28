@@ -1,74 +1,84 @@
-@extends('layouts.admin')
+@extends('layouts.admin-modern')
+
+@section('page-title', 'Metode Pembayaran')
+@section('page-subtitle', 'Kelola metode pembayaran yang tersedia')
 
 @section('main-content')
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-</head>
-<body style="background: #117958;">
-    <div class="container bg-white p-4 rounded">
-        <h1 class="text-center my-4" style="font-weight: bold; color: black;">Daftar Pembayaran</h1>
-        
-        <!-- Tombol tambah dan pencarian -->
-        <div class="d-flex justify-content-between mb-3">
-        <a href="{{ route('payments.create') }}" class="btn" style="background-color: #FFA500; color: white; border: none;">
-            <i class="fas fa-plus"></i> Tambah Pembayaran
-        </a>
-
-            <!-- Form Pencarian -->
-            <form action="{{ route('payments.index') }}" method="GET" class="d-flex">
-                <input type="text" name="search" class="form-control" placeholder="Cari pembayaran..." value="{{ request()->get('search') }}">
-                <button type="submit" class="btn btn-primary ms-2" style="background-color:  #117958; border: none;">Cari</button>
+<div class="modern-card animate-fade-in">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5><i class="fas fa-credit-card"></i> Data Pembayaran</h5>
+        <div class="d-flex gap-2">
+            <form action="{{ route('payments.index') }}" method="GET" class="d-flex gap-2">
+                <input type="text" name="search" class="form-control" placeholder="Cari pembayaran..." value="{{ request()->get('search') }}" style="width: 200px;">
+                <button type="submit" class="btn btn-modern btn-outline-modern">
+                    <i class="fas fa-search"></i>
+                </button>
             </form>
+            <a href="{{ route('payments.create') }}" class="btn btn-modern btn-primary-modern">
+                <i class="fas fa-plus"></i> Tambah Pembayaran
+            </a>
         </div>
-
-        @if (session('success'))
-            <div class="alert alert-success">{{ session('success') }}</div>
-        @endif
-
-        <!-- Tabel Pembayaran -->
-        <table class="table table-bordered">
-            <thead style="background-color: #d4edda;">
-                <tr>
-                    <th class="text-center">ID Pembayaran</th>
-                    <th class="text-center">Nama Pembayaran</th>
-                    <th class="text-center">Nomor Pembayaran</th>
-                    <th class="text-center">Logo</th>
-                    <th class="text-center" style="width: 15%">Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($payments as $payment)
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="modern-table">
+                <thead>
                     <tr>
-                        <td class="text-center">{{ $payment->id }}</td>
-                        <td class="text-center">{{ $payment->nama_pembayaran }}</td>
-                        <td class="text-center">{{ $payment->nomor_pembayaran }}</td>
+                        <th class="text-center" style="width: 50px;">No</th>
+                        <th>Nama Pembayaran</th>
+                        <th>Nomor Pembayaran</th>
+                        <th class="text-center">Logo</th>
+                        <th class="text-center" style="width: 150px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($payments as $payment)
+                    <tr>
+                        <td class="text-center">{{ $loop->iteration }}</td>
+                        <td>
+                            <div class="fw-semibold">{{ $payment->nama_pembayaran }}</div>
+                        </td>
+                        <td>
+                            <code class="bg-light px-2 py-1 rounded">{{ $payment->nomor_pembayaran }}</code>
+                        </td>
                         <td class="text-center">
                             @if ($payment->gambar_pembayaran)
-                                <img src="{{ asset('storage/' . $payment->gambar_pembayaran) }}" alt="Gambar Pembayaran" style="max-width: 100px;">
+                                <img src="{{ asset('storage/' . $payment->gambar_pembayaran) }}" alt="Logo" style="max-width: 60px; height: 30px; object-fit: contain;">
                             @else
-                                Tidak ada gambar
+                                <span class="text-muted small">-</span>
                             @endif
                         </td>
                         <td class="text-center">
-                            <a href="{{ route('payments.edit', $payment->id) }}"  class="btn btn-sm" style="background-color: #28a745; color: white; margin-right: 5px;">EDIT</a>
-                            <form action="{{ route('payments.destroy', $payment->id) }}" method="POST" style="display: inline;">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger" style="margin-left: 5px;">HAPUS</button>
-                            </form>
+                            <div class="d-flex gap-1 justify-content-center">
+                                <a href="{{ route('payments.edit', $payment->id) }}" class="btn btn-sm btn-modern btn-warning-modern" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form onsubmit="return confirm('Yakin ingin menghapus pembayaran ini?');" action="{{ route('payments.destroy', $payment->id) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-modern btn-danger-modern" title="Hapus">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
-
-        <!-- Pagination -->
-        <div class="d-flex justify-content-center">
-            {{ $payments->links() }}
+                    @empty
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">
+                            <i class="fas fa-credit-card fa-2x mb-2 d-block"></i>
+                            Tidak ada data pembayaran
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
-</body>
+    @if($payments->hasPages())
+    <div class="card-footer d-flex justify-content-center">
+        {{ $payments->links() }}
+    </div>
+    @endif
+</div>
 @endsection

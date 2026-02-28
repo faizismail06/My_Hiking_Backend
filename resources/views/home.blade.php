@@ -1,106 +1,113 @@
-@extends('layouts.admin')
+@extends('layouts.admin-modern')
+
+@section('page-title', 'Dashboard')
+@section('page-subtitle', 'Ringkasan dan statistik platform MyHiking')
 
 @section('main-content')
-
-    <!-- Page Heading -->
-    <h1 class="h3 mb-4 text-gray-800">Dashboard</h1>
-
-    @if (session('success'))
-        <div class="alert alert-success border-left-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    @endif
-
-    <!-- Content Row -->
-    <div class="row">
-
-        <!-- Total Transaksi -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Transaksi Masuk</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalTransaksi }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-receipt fa-2x text-gray-300"></i>
-                        </div>
+    <!-- Statistics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6 animate-fade-in">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="label mb-1">Transaksi Masuk</p>
+                        <h3 class="value mb-0">{{ $totalTransaksi }}</h3>
+                    </div>
+                    <div class="icon primary">
+                        <i class="fas fa-receipt"></i>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Total Pendapatan -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Pendapatan</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">Rp{{ number_format($totalPendapatan, 0, ',', '.') }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-money-bill-wave fa-2x text-gray-300"></i>
-                        </div>
+        <div class="col-xl-3 col-md-6 animate-fade-in" style="animation-delay: 0.1s">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="label mb-1">Total Pendapatan</p>
+                        <h3 class="value mb-0">Rp {{ number_format($totalPendapatan, 0, ',', '.') }}</h3>
+                    </div>
+                    <div class="icon success">
+                        <i class="fas fa-coins"></i>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Total Gunung -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Gunung</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalGunung }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-mountain fa-2x text-gray-300"></i>
-                        </div>
+        <div class="col-xl-3 col-md-6 animate-fade-in" style="animation-delay: 0.2s">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="label mb-1">Total Gunung</p>
+                        <h3 class="value mb-0">{{ $totalGunung }}</h3>
+                    </div>
+                    <div class="icon info">
+                        <i class="fas fa-mountain"></i>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Total Jalur -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Total Jalur</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalJalur }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-route fa-2x text-gray-300"></i>
-                        </div>
+        <div class="col-xl-3 col-md-6 animate-fade-in" style="animation-delay: 0.3s">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="label mb-1">Total Jalur</p>
+                        <h3 class="value mb-0">{{ $totalJalur }}</h3>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Total User -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total User</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalUser }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-users fa-2x text-gray-300"></i>
-                        </div>
+                    <div class="icon warning">
+                        <i class="fas fa-route"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <div class="row g-4">
+        <div class="col-xl-3 col-md-6 animate-fade-in" style="animation-delay: 0.4s">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="label mb-1">Total Pengguna</p>
+                        <h3 class="value mb-0">{{ $totalUser }}</h3>
+                    </div>
+                    <div class="icon danger">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row g-4 mt-2">
+        <div class="col-12">
+            <div class="modern-card animate-fade-in" style="animation-delay: 0.5s">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt"></i> Aksi Cepat</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <a href="{{ route('mountains.create') }}" class="btn btn-modern btn-primary-modern w-100">
+                                <i class="fas fa-plus"></i> Tambah Gunung
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ route('trails.create') }}" class="btn btn-modern btn-success-modern w-100">
+                                <i class="fas fa-plus"></i> Tambah Jalur
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ route('transactions.index') }}" class="btn btn-modern btn-warning-modern w-100">
+                                <i class="fas fa-credit-card"></i> Lihat Transaksi
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ route('users.index') }}" class="btn btn-modern btn-outline-modern w-100">
+                                <i class="fas fa-users"></i> Kelola Pengguna
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection

@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->bigInteger('id')->primary();           // Primary Key: ID user
+            $table->id();                             // Primary Key: ID user (unsignedBigInteger auto increment)
             $table->string('name');                   // Nama user atau pendaki
             $table->string('email')->unique();        // Email user
             $table->timestamp('email_verified_at')->nullable();

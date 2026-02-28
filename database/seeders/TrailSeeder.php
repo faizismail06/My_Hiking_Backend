@@ -1,0 +1,264 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use App\Models\Mountain;
+use App\Models\Trail;
+use App\Models\User;
+
+class TrailSeeder extends Seeder
+{
+    public function run()
+    {
+        // Get mountain data
+        $mountain1 = Mountain::find(1); // Mount Merbabu
+        $mountain2 = Mountain::find(2); // Mount Slamet
+        $mountain3 = Mountain::find(3); // Mount Sumbing
+        
+        // Get penjaga jalur (level 2)
+        $penjaga = User::where('level', 2)->first();
+        
+        // Add trail data
+        Trail::create([
+            'nama' => 'Jalur Selo',
+            'province_id' => '33',
+            'regency_id' => '3328',
+            'district_id' => '332815',
+            'village_id' => '3328152007',
+            'jarak' => '5',
+            'deskripsi' => 'Jalur pendakian melalui Selo',
+            'map_basecamp' => 'https://maps.app.goo.gl/Mn3kiXcKEmtoqdqc6',
+            'gambar_jalur' => 'img_image_merbabu_jalur.jpg',
+            'biaya' => 15000,
+            'id_gunung' => $mountain1->id,
+            'user_id' => $penjaga ? $penjaga->id : null,
+            'latitude' => -7.4553,
+            'longitude' => 110.4394,
+        ]);
+
+        Trail::create([
+            'nama' => 'Jalur Cuntel',
+            'province_id' => '33',
+            'regency_id' => '3328',
+            'district_id' => '332815',
+            'village_id' => '3328152008',
+            'jarak' => '6',
+            'deskripsi' => 'Jalur pendakian melalui Cuntel',
+            'map_basecamp' => 'https://maps.app.goo.gl/MTZNm1wKzJLRdrwb9',
+            'gambar_jalur' => 'img_image_merbabu_jalur.jpg',
+            'biaya' => 20000,
+            'id_gunung' => $mountain1->id,
+            'latitude' => -7.4563,
+            'longitude' => 110.4404,
+        ]);
+        
+        Trail::create([
+            'nama' => 'Jalur Suwanting',
+            'province_id' => '33',
+            'regency_id' => '3328',
+            'district_id' => '332815',
+            'village_id' => '3328152007',
+            'jarak' => '5',
+            'deskripsi' => 'Jalur pendakian melalui Suwanting',
+            'map_basecamp' => 'https://maps.app.goo.gl/WBQGj1Z8eWiLvQpC8',
+            'gambar_jalur' => 'img_image_merbabu_jalur.jpg',
+            'biaya' => 15000,
+            'id_gunung' => $mountain1->id,
+            'latitude' => -7.4543,
+            'longitude' => 110.4384,
+        ]);
+        
+        Trail::create([
+            'nama' => 'Jalur Thekelan',
+            'province_id' => '33',
+            'regency_id' => '3328',
+            'district_id' => '332815',
+            'village_id' => '3328152007',
+            'jarak' => '5',
+            'deskripsi' => 'Jalur pendakian melalui Thekelan',
+            'map_basecamp' => 'https://maps.app.goo.gl/MZqsJix5HKBzqohFA',
+            'gambar_jalur' => 'img_image_merbabu_jalur.jpg',
+            'biaya' => 15000,
+            'id_gunung' => $mountain1->id,
+            'latitude' => -7.4533,
+            'longitude' => 110.4414,
+        ]);
+        
+        Trail::create([
+            'nama' => 'Jalur Wekas',
+            'province_id' => '33',
+            'regency_id' => '3328',
+            'district_id' => '332815',
+            'village_id' => '3328152007',
+            'jarak' => '4',
+            'deskripsi' => 'Jalur pendakian melalui Wekas',
+            'map_basecamp' => 'https://maps.app.goo.gl/T8exLZEpHB5MJmYo9',
+            'gambar_jalur' => 'img_image_merbabu_jalur.jpg',
+            'biaya' => 15000,
+            'id_gunung' => $mountain1->id,
+            'latitude' => -7.4573,
+            'longitude' => 110.4374,
+        ]);
+        
+        Trail::create([
+            'nama' => 'Jalur Bambangan',
+            'province_id' => '33',
+            'regency_id' => '3328',
+            'district_id' => '332815',
+            'village_id' => '3328152007',
+            'jarak' => '5',
+            'deskripsi' => 'Jalur pendakian melalui Bambangan',
+            'map_basecamp' => 'https://maps.app.goo.gl/dXWsBUbJ7nscW1Ug7',
+            'gambar_jalur' => 'img_image_slamet_jalur.png',
+            'biaya' => 15000,
+            'id_gunung' => $mountain2->id,
+            'latitude' => -7.2426,
+            'longitude' => 109.2083,
+        ]);
+
+        Trail::create([
+            'nama' => 'Jalur Kaliwadas',
+            'province_id' => '33',
+            'regency_id' => '3328',
+            'district_id' => '332815',
+            'village_id' => '3328152008',
+            'jarak' => '6',
+            'deskripsi' => 'Jalur pendakian melalui Kaliwadas',
+            'map_basecamp' => 'https://maps.app.goo.gl/pC7NcEiTYTRPEPH19',
+            'gambar_jalur' => 'img_image_slamet_jalur.png',
+            'biaya' => 20000,
+            'id_gunung' => $mountain2->id,
+            'latitude' => -7.2436,
+            'longitude' => 109.2093,
+        ]);
+        
+        Trail::create([
+            'nama' => 'Jalur Guci',
+            'province_id' => '33',
+            'regency_id' => '3328',
+            'district_id' => '332815',
+            'village_id' => '3328152007',
+            'jarak' => '5',
+            'deskripsi' => 'Jalur pendakian melalui Guci',
+            'map_basecamp' => 'https://maps.app.goo.gl/qHCr9D4q1yq4fWNg8',
+            'gambar_jalur' => 'img_image_slamet_jalur.png',
+            'biaya' => 15000,
+            'id_gunung' => $mountain2->id,
+            'latitude' => -7.2416,
+            'longitude' => 109.2073,
+        ]);
+        
+        Trail::create([
+            'nama' => 'Jalur Dipajaya',
+            'province_id' => '33',
+            'regency_id' => '3328',
+            'district_id' => '332815',
+            'village_id' => '3328152007',
+            'jarak' => '5',
+            'deskripsi' => 'Jalur pendakian melalui Dipajaya',
+            'map_basecamp' => 'https://maps.app.goo.gl/MmqKGYuSdzQ1Xyut8',
+            'gambar_jalur' => 'img_image_slamet_jalur.png',
+            'biaya' => 15000,
+            'id_gunung' => $mountain2->id,
+            'latitude' => -7.2406,
+            'longitude' => 109.2103,
+        ]);
+        
+        Trail::create([
+            'nama' => 'Jalur Baturraden',
+            'province_id' => '33',
+            'regency_id' => '3328',
+            'district_id' => '332815',
+            'village_id' => '3328152007',
+            'jarak' => '4',
+            'deskripsi' => 'Jalur pendakian melalui Baturraden',
+            'map_basecamp' => 'https://maps.app.goo.gl/95W2evfaFubNTX9N6',
+            'gambar_jalur' => 'img_image_slamet_jalur.png',
+            'biaya' => 15000,
+            'id_gunung' => $mountain2->id,
+            'latitude' => -7.2446,
+            'longitude' => 109.2063,
+        ]);
+        
+        Trail::create([
+            'nama' => 'Jalur Mangli',
+            'province_id' => '33',
+            'regency_id' => '3328',
+            'district_id' => '332815',
+            'village_id' => '3328152007',
+            'jarak' => '5',
+            'deskripsi' => 'Jalur pendakian melalui Mangli',
+            'map_basecamp' => 'https://maps.app.goo.gl/PTxfDKtt8ArNvXBLA',
+            'gambar_jalur' => 'img_image_sumbing_jalur.jpg',
+            'biaya' => 15000,
+            'id_gunung' => $mountain3->id,
+            'latitude' => -7.3833,
+            'longitude' => 110.0708,
+        ]);
+
+        Trail::create([
+            'nama' => 'Jalur Gajah Mungkur',
+            'province_id' => '33',
+            'regency_id' => '3328',
+            'district_id' => '332815',
+            'village_id' => '3328152008',
+            'jarak' => '6',
+            'deskripsi' => 'Jalur pendakian melalui Gajah Mungkur',
+            'map_basecamp' => 'https://maps.app.goo.gl/G4VJ5u6R2GkfQBAD8',
+            'gambar_jalur' => 'img_image_sumbing_jalur.jpg',
+            'biaya' => 20000,
+            'id_gunung' => $mountain3->id,
+            'latitude' => -7.3843,
+            'longitude' => 110.0718,
+        ]);
+        
+        Trail::create([
+            'nama' => 'Jalur Cepit Parakan',
+            'province_id' => '33',
+            'regency_id' => '3328',
+            'district_id' => '332815',
+            'village_id' => '3328152007',
+            'jarak' => '5',
+            'deskripsi' => 'Jalur pendakian melalui Cepit Parakan',
+            'map_basecamp' => 'https://maps.app.goo.gl/jg3MHesSX6tGzpsJ6',
+            'gambar_jalur' => 'img_image_sumbing_jalur.jpg',
+            'biaya' => 15000,
+            'id_gunung' => $mountain3->id,
+            'latitude' => -7.3823,
+            'longitude' => 110.0698,
+        ]);
+        
+        Trail::create([
+            'nama' => 'Jalur Bowongso',
+            'province_id' => '33',
+            'regency_id' => '3328',
+            'district_id' => '332815',
+            'village_id' => '3328152007',
+            'jarak' => '5',
+            'deskripsi' => 'Jalur pendakian melalui Bowongso',
+            'map_basecamp' => 'https://maps.app.goo.gl/WmQuVz7adzsxnmVv5',
+            'gambar_jalur' => 'img_image_sumbing_jalur.jpg',
+            'biaya' => 15000,
+            'id_gunung' => $mountain3->id,
+            'latitude' => -7.3813,
+            'longitude' => 110.0728,
+        ]);
+        
+        Trail::create([
+            'nama' => 'Jalur Garung',
+            'province_id' => '33',
+            'regency_id' => '3328',
+            'district_id' => '332815',
+            'village_id' => '3328152007',
+            'jarak' => '4',
+            'deskripsi' => 'Jalur pendakian melalui Garung',
+            'map_basecamp' => 'https://maps.app.goo.gl/MZ6dt5YVxnbsQM5c7',
+            'gambar_jalur' => 'img_image_sumbing_jalur.jpg',
+            'biaya' => 15000,
+            'id_gunung' => $mountain3->id,
+            'latitude' => -7.3853,
+            'longitude' => 110.0688,
+        ]);
+    }
+}

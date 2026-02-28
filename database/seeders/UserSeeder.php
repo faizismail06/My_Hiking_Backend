@@ -16,7 +16,6 @@ class UserSeeder extends Seeder
     {
         // Admin User (Level 3)
         User::create([
-            'id' => 1,
             'name' => 'Admin',
             'email' => 'admin@myhiking.com',
             'password' => Hash::make('admin123'),
@@ -29,9 +28,8 @@ class UserSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
-        // User Level 2
+        // User Level 2 (Penjaga Jalur)
         User::create([
-            'id' => 2,
             'name' => 'Manager',
             'email' => 'manager@myhiking.com',
             'password' => Hash::make('password123'),
@@ -46,7 +44,6 @@ class UserSeeder extends Seeder
 
         // Regular User (Level 1)
         User::create([
-            'id' => 3,
             'name' => 'Pendaki Satu',
             'email' => 'pendaki1@myhiking.com',
             'password' => Hash::make('password123'),
@@ -61,7 +58,6 @@ class UserSeeder extends Seeder
 
         // Regular User (Level 1)
         User::create([
-            'id' => 4,
             'name' => 'Pendaki Dua',
             'email' => 'pendaki2@myhiking.com',
             'password' => Hash::make('password123'),
@@ -76,7 +72,6 @@ class UserSeeder extends Seeder
 
         // Regular User (Level 1)
         User::create([
-            'id' => 5,
             'name' => 'Pendaki Tiga',
             'email' => 'pendaki3@myhiking.com',
             'password' => Hash::make('password123'),

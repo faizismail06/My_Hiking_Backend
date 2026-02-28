@@ -39,9 +39,9 @@
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <!-- Left Side Of Navbar -->
                     <ul class="navbar-nav mr-auto">
-                        <!-- <li class="nav-item">
-                            <a class="nav-link" href="{{ route('tata_tertib.index') }}">Tata Tertib</a>
-                        </li> -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('rules.index') }}">Tata Tertib</a>
+                        </li>
                     </ul>
 
                     <!-- Right Side Of Navbar -->

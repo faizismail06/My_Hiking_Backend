@@ -7293,8 +7293,7 @@ class DistrictsTableSeeder extends Seeder
             array('id' => '950832','regency_id' => '9508','name' => 'Pasir Putih')
         ];
 
-        foreach ($districts as $district) {
-            DB::table('reg_districts')->insert($district);
-        }
+        // Bulk insert untuk performa lebih cepat
+        DB::table('reg_districts')->insert($districts);
     }
 }

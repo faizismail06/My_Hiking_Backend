@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -83777,8 +83776,12 @@ class VillagesTableSeeder extends Seeder
             array('id' => '9508322004','district_id' => '950832','name' => 'Pasir Putih')
         ];
 
-        foreach ($villages as $village) {
-            DB::table('reg_villages')->insert($village);
+        // Chunk data untuk menghindari memory issues
+        // Insert data dalam batch 1000 records
+        $chunks = array_chunk($villages, 1000);
+        
+        foreach ($chunks as $chunk) {
+            DB::table('reg_villages')->insert($chunk);
         }
     }
 }

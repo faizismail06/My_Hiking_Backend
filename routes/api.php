@@ -3,15 +3,15 @@
 use App\Http\Controllers\Api\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\DetailJalurGunungController;
-use App\Http\Controllers\Api\GunungController;
-use App\Http\Controllers\Api\JalurController;
-use App\Http\Controllers\Api\PesananController;
-use App\Http\Controllers\Api\AnggotaPesananController;
-use App\Http\Controllers\Api\TransaksiController;
-use App\Http\Controllers\Api\TataTertibController;
+use App\Http\Controllers\Api\MountainTrailDetailController;
+use App\Http\Controllers\Api\MountainController;
+use App\Http\Controllers\Api\TrailController;
+use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\OrderMemberController;
+use App\Http\Controllers\Api\TransactionController;
+use App\Http\Controllers\Api\RuleController;
 use App\Http\Controllers\Api\PaymentController;
-use App\Models\Pesanan;
+use App\Http\Controllers\Api\FriendController;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,49 +37,79 @@ Route::get('/', function () {
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
-Route::get('gunung', [GunungController::class, 'index']);
-Route::get('/gunung/{id_gunung}', [JalurController::class, 'index']);
-Route::get('/gunung/{id_gunung}/jalur/{id_jalur}', [DetailJalurGunungController::class, 'index']);
-Route::get('/gunung/{id_gunung}/jalur/{id_jalur}/jalurbooking', [DetailJalurGunungController::class, 'JalurBooking']);
-Route::get('/pesanan', [PesananController::class, 'index']);
 
-Route::prefix('pesanan')->group(function () {
-    Route::post('/', [PesananController::class, 'buatPesanan']);
-    Route::post('{pesananId}/tambah-anggota', [PesananController::class, 'tambahAnggota']); // Menambahkan anggota ke pesanan
-    Route::get('{pesananId}', [PesananController::class, 'lihatPesanan']); // Melihat detail pesanan
-    Route::delete('{id}', [PesananController::class, 'destroy']);
+// Mountain routes
+Route::get('mountains', [MountainController::class, 'index']);
+Route::get('/mountains/{id_gunung}', [TrailController::class, 'index']);
+Route::get('/mountains/{id_gunung}/trails/{id_jalur}', [MountainTrailDetailController::class, 'index']);
+Route::get('/mountains/{id_gunung}/trails/{id_jalur}/booking', [MountainTrailDetailController::class, 'trailBooking']);
 
+// Order routes
+Route::get('/orders', [OrderController::class, 'index']);
+
+Route::prefix('orders')->group(function () {
+    Route::post('/', [OrderController::class, 'createOrder']);
+    Route::post('{orderId}/add-members', [OrderController::class, 'addMembers']);
+    Route::get('{orderId}', [OrderController::class, 'viewOrder']);
+    Route::delete('{id}', [OrderController::class, 'destroy']);
 });
 
-Route::get('/pesanan/{pesananId}/detailPesanan', [PesananController::class, 'getDetailPesanan']);
+Route::get('/orders/{orderId}/detail', [OrderController::class, 'getOrderDetail']);
 
-Route::prefix('anggota-pesanan')->group(function () {
-    Route::post('{pesananId}/tambah', [AnggotaPesananController::class, 'tambahAnggota']); // Menambahkan anggota
-    Route::delete('{pesananId}/hapus/{userId}', [AnggotaPesananController::class, 'hapusAnggota']); // Menghapus anggota
-    Route::get('{pesananId}', [AnggotaPesananController::class, 'daftarAnggota']); // Melihat daftar anggota
+Route::prefix('order-members')->group(function () {
+    Route::post('{orderId}/add', [OrderMemberController::class, 'addMember']);
+    Route::delete('{orderId}/remove/{userId}', [OrderMemberController::class, 'removeMember']);
+    Route::get('{orderId}', [OrderMemberController::class, 'listMembers']);
 });
 
-Route::get('transaksi', [TransaksiController::class, 'index']);
-// Route::post('transaksi', [TransaksiController::class, 'create']);
-Route::post('/transaksi/store', [TransaksiController::class, 'store']);
-Route::post('/transaksi/update-pembayaran/{id}', [TransaksiController::class, 'updatePembayaran']);
-Route::get('/transaksi/{id}/with-payment', [TransaksiController::class, 'getTransactionWithPayment']);
+// Transaction routes
+Route::get('transactions', [TransactionController::class, 'index']);
+Route::post('/transactions/store', [TransactionController::class, 'store']);
+Route::post('/transactions/update-payment/{id}', [TransactionController::class, 'updatePayment']);
+Route::get('/transactions/{id}/with-payment', [TransactionController::class, 'getTransactionWithPayment']);
 
-
+// Payment routes
 Route::get('/payments', [PaymentController::class, 'index']);
 Route::post('/payments', [PaymentController::class, 'store']);
 
-Route::prefix('tata-tertib')->group(function () {
-    Route::get('/', [TataTertibController::class, 'index']); // Get all
-    Route::post('/', [TataTertibController::class, 'store']); // Create
-    Route::get('/{id}', [TataTertibController::class, 'show']); // Get by ID
-    Route::put('/{id}', [TataTertibController::class, 'update']); // Update
-    Route::delete('/{id}', [TataTertibController::class, 'destroy']); // Delete
-    Route::get('/jalur/{jalurId}', [TataTertibController::class, 'getByJalur']); // Get by Jalur ID
+// Rule routes
+Route::prefix('rules')->group(function () {
+    Route::get('/', [RuleController::class, 'index']);
+    Route::post('/', [RuleController::class, 'store']);
+    Route::get('/{id}', [RuleController::class, 'show']);
+    Route::put('/{id}', [RuleController::class, 'update']);
+    Route::delete('/{id}', [RuleController::class, 'destroy']);
+    Route::get('/trail/{trailId}', [RuleController::class, 'getByTrail']);
 });
+
 Route::middleware('auth:sanctum')->group(function () {
-    // ... route lainnya
     Route::post('/update-password/{id}', [AuthController::class, 'updatePassword']);
 });
 Route::get('/user-data/{id?}', [AuthController::class, 'getUserData']);
 Route::post('users/{id}', [AuthController::class, 'update']);
+
+// Friend routes
+Route::prefix('friends')->group(function () {
+    Route::get('/', [FriendController::class, 'index']); // Get all friends
+    Route::get('/pending', [FriendController::class, 'pendingRequests']); // Get pending requests
+    Route::get('/search', [FriendController::class, 'searchUsers']); // Search users
+    Route::post('/add', [FriendController::class, 'addFriend']); // Send friend request
+    Route::put('/{friendshipId}/accept', [FriendController::class, 'acceptFriend']); // Accept request
+    Route::put('/{friendshipId}/reject', [FriendController::class, 'rejectFriend']); // Reject request
+    Route::delete('/{friendshipId}', [FriendController::class, 'removeFriend']); // Remove friend
+});
+
+// Image proxy route for CORS support (Flutter Web)
+Route::get('/images/{path}', function ($path) {
+    $storagePath = storage_path('app/public/images/' . $path);
+    
+    if (!file_exists($storagePath)) {
+        return response()->json(['error' => 'Image not found'], 404);
+    }
+    
+    $mimeType = mime_content_type($storagePath);
+    return response()->file($storagePath, [
+        'Content-Type' => $mimeType,
+        'Access-Control-Allow-Origin' => '*',
+    ]);
+})->where('path', '.*');

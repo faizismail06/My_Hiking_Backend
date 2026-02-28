@@ -65,42 +65,42 @@
             <hr class="sidebar-divider">
 
 
-            <!-- Nav Item - Gunung -->
-            <li class="nav-item {{ request()->routeIs('gunung.index') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('gunung.index') }}">
+            <!-- Nav Item - Mountain -->
+            <li class="nav-item {{ request()->routeIs('mountains.index') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('mountains.index') }}">
                     <i class="fas fa-mountain"></i>
                     <span>{{ __('Gunung') }}</span>
                 </a>
             </li>
 
-            <!-- Nav Item - Jalur -->
-            <li class="nav-item {{ request()->routeIs('jalur.index') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('jalur.index') }}">
+            <!-- Nav Item - Trail -->
+            <li class="nav-item {{ request()->routeIs('trails.index') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('trails.index') }}">
                     <i class="fas fa-route"></i> <!-- Pastikan ikon sesuai -->
                     <span>{{ __('Jalur') }}</span>
                 </a>
             </li>
 
-             <!-- Nav Item - Tata Tertib -->
-             <li class="nav-item {{ request()->routeIs('tata_tertib.index') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('tata_tertib.index') }}">
+             <!-- Nav Item - Rules -->
+             <li class="nav-item {{ request()->routeIs('rules.index') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('rules.index') }}">
                     <i class="fas fa-book"></i> <!-- Pastikan ikon sesuai -->
                     <span>{{ __('Tata Tertib') }}</span>
                 </a>
             </li>
 
-            <!-- Nav Item - Transaksi -->
-            <li class="nav-item {{ request()->routeIs('transaksi.index') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('transaksi.index') }}">
+            <!-- Nav Item - Transaction -->
+            <li class="nav-item {{ request()->routeIs('transactions.index') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('transactions.index') }}">
                     <i class="fas fa-money-bill-wave"></i>
                     <!-- Pastikan ikon sesuai -->
                     <span>{{ __('Transaksi') }}</span>
                 </a>
             </li>
 
-            <!-- Nav Item - Riwayat -->
-            <li class="nav-item {{ request()->routeIs('riwayat.index') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('riwayat.index') }}">
+            <!-- Nav Item - History -->
+            <li class="nav-item {{ request()->routeIs('history.index') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('history.index') }}">
                     <i class="fas fa-folder-open"></i>
                     <span>{{ __('Riwayat') }}</span>
                 </a>

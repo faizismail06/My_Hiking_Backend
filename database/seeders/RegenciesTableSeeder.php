@@ -530,8 +530,7 @@ class RegenciesTableSeeder extends Seeder
             array('id' => '9508','province_id' => '95','name' => 'KAB. NDUGA')
         ];
 
-        foreach ($regencies as $regencie) {
-            DB::table('reg_regencies')->insert($regencie);
-        }
+        // Bulk insert untuk performa lebih cepat
+        DB::table('reg_regencies')->insert($regencies);
     }
 }
