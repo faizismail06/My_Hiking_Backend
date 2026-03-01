@@ -13,12 +13,9 @@ class TransactionController extends Controller
     {
         $search = $request->get('search');
         $transactions = TransactionWeb::query()
-            ->with('payment')
             ->when($search, function ($query, $search) {
                 return $query->where('id_pesanan', 'LIKE', "%{$search}%")
-                    ->orWhereHas('payment', function ($q) use ($search) {
-                        $q->where('nama_pembayaran', 'LIKE', "%{$search}%");
-                    })
+                    ->orWhere('payment_type', 'LIKE', "%{$search}%")
                     ->orWhere('status_pesanan', 'LIKE', "%{$search}%");
             })
             ->get();
@@ -29,7 +26,7 @@ class TransactionController extends Controller
     // Display transaction details
     public function show($id)
     {
-        $transaction = TransactionWeb::with('payment')->findOrFail($id);
+        $transaction = TransactionWeb::findOrFail($id);
         return view('transactions.show', compact('transaction'));
     }
 
@@ -67,7 +64,6 @@ class TransactionController extends Controller
     {
         $validatedData = $request->validate([
             'id_pesanan' => 'required|exists:orders,id',
-            'payment_id' => 'required|exists:payments,id',
             'total_bayar' => 'required|integer',
             'waktu_pembayaran' => 'nullable|date',
             'bukti' => 'nullable|string',
@@ -75,12 +71,11 @@ class TransactionController extends Controller
 
         $status = 'Incomplete';
         if (!empty($validatedData['bukti']) && !empty($validatedData['waktu_pembayaran'])) {
-            $status = 'Unverified';
+            $status = 'Complete';
         }
 
         $transaction = TransactionWeb::create([
             'id_pesanan' => $validatedData['id_pesanan'],
-            'payment_id' => $validatedData['payment_id'],
             'total_bayar' => $validatedData['total_bayar'],
             'waktu_pembayaran' => $validatedData['waktu_pembayaran'],
             'bukti' => $validatedData['bukti'],
@@ -100,7 +95,6 @@ class TransactionController extends Controller
 
         $validatedData = $request->validate([
             'id_pesanan' => 'nullable|exists:orders,id',
-            'payment_id' => 'nullable|exists:payments,id',
             'total_bayar' => 'nullable|integer',
             'waktu_pembayaran' => 'nullable|date',
             'bukti' => 'nullable|string',
@@ -110,8 +104,8 @@ class TransactionController extends Controller
 
         if (empty($transaction->bukti) || empty($transaction->waktu_pembayaran)) {
             $transaction->status_pesanan = 'Incomplete';
-        } else if ($transaction->status_pesanan != 'Verified') {
-            $transaction->status_pesanan = 'Unverified';
+        } else if ($transaction->status_pesanan !== 'Complete') {
+            $transaction->status_pesanan = 'Complete';
         }
 
         $transaction->save();

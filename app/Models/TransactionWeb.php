@@ -15,11 +15,16 @@ class TransactionWeb extends Model
     // Kolom yang dapat diisi secara mass assignment
     protected $fillable = [
         'id_pesanan',
-        'payment_id',
         'total_bayar',
         'status_pesanan',
         'waktu_pembayaran',
         'bukti',
+        'snap_token',
+        'midtrans_order_id',
+        'payment_type',
+        'transaction_id',
+        'transaction_time',
+        'fraud_status',
     ];
 
     // Nilai default untuk status pesanan
@@ -42,11 +47,11 @@ class TransactionWeb extends Model
     }
 
     /**
-     * Relasi ke model Payment
+     * Check if transaction is paid (Complete status)
      */
-    public function payment()
+    public function isPaid()
     {
-        return $this->belongsTo(Payment::class, 'payment_id');
+        return $this->status_pesanan === 'Complete';
     }
 
     /**
@@ -57,13 +62,9 @@ class TransactionWeb extends Model
         parent::boot();
 
         static::saving(function ($model) {
-            // Jika bukti dan waktu pembayaran NULL, set status menjadi 'Incomplete'
-            if (is_null($model->waktu_pembayaran) || is_null($model->bukti)) {
+            // Jika status tidak Complete dan belum bayar, set status menjadi 'Incomplete'
+            if ($model->status_pesanan !== 'Complete' && is_null($model->waktu_pembayaran)) {
                 $model->status_pesanan = 'Incomplete';
-            }
-            // Jika semua data valid tapi belum diverifikasi, set status menjadi 'Unverified'
-            else if ($model->status_pesanan !== 'Verified') {
-                $model->status_pesanan = 'Unverified';
             }
         });
     }
@@ -93,5 +94,44 @@ class TransactionWeb extends Model
             return asset('storage/bukti/' . $this->bukti);
         }
         return asset('images/no-image.png');
+    }
+
+    /**
+     * Get formatted payment method name from payment_type
+     */
+    public function getPaymentMethodNameAttribute()
+    {
+        $methods = [
+            'credit_card' => 'Kartu Kredit',
+            'bank_transfer' => 'Transfer Bank',
+            'bca_va' => 'BCA Virtual Account',
+            'bni_va' => 'BNI Virtual Account',
+            'bri_va' => 'BRI Virtual Account',
+            'permata_va' => 'Permata Virtual Account',
+            'cimb_va' => 'CIMB Niaga Virtual Account',
+            'other_va' => 'Virtual Account Lainnya',
+            'echannel' => 'Mandiri Bill Payment',
+            'mandiri_bill' => 'Mandiri Bill Payment',
+            'gopay' => 'GoPay',
+            'shopeepay' => 'ShopeePay',
+            'qris' => 'QRIS',
+            'indomaret' => 'Indomaret',
+            'alfamart' => 'Alfamart',
+        ];
+
+        return $methods[$this->payment_type] ?? $this->payment_type ?? 'Belum dipilih';
+    }
+
+    /**
+     * Get status label
+     */
+    public function getStatusLabelAttribute()
+    {
+        $labels = [
+            'Complete' => 'Lunas',
+            'Incomplete' => 'Belum Dibayar',
+        ];
+
+        return $labels[$this->status_pesanan] ?? $this->status_pesanan;
     }
 }

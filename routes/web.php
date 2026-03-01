@@ -11,7 +11,6 @@ use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RuleController;
-use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\TrailGuardController;
 
 
@@ -96,15 +95,6 @@ Route::get('/history', [HistoryController::class, 'index'])->name('history.index
 Route::get('/history/{id}', [HistoryController::class, 'show'])->name('history.show');
 Route::post('/history/scan', [HistoryController::class, 'scan'])->name('history.scan');
 Route::post('/history/{id}/update-status', [HistoryController::class, 'updateStatus'])->name('history.updateStatus');
-
-Route::middleware(['auth'])->group(function () {
-    Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
-    Route::get('/payments/create', [PaymentController::class, 'create'])->name('payments.create');
-    Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
-    Route::get('/payments/{id}/edit', [PaymentController::class, 'edit'])->name('payments.edit');
-    Route::put('/payments/{id}', [PaymentController::class, 'update'])->name('payments.update');
-    Route::delete('/payments/{id}', [PaymentController::class, 'destroy'])->name('payments.destroy');
-});
 
 // Trail Guard Routes (Level 2)
 Route::middleware(['penjaga'])->prefix('guards')->name('guards.')->group(function () {

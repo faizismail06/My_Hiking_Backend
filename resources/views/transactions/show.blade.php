@@ -9,10 +9,8 @@
         <div class="modern-card animate-fade-in">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5><i class="fas fa-receipt"></i> Rincian Transaksi</h5>
-                @if ($transaction->status_pesanan === 'Verified')
-                    <span class="modern-badge badge-success">Verified</span>
-                @elseif ($transaction->status_pesanan === 'Unverified')
-                    <span class="modern-badge badge-danger">Unverified</span>
+                @if ($transaction->status_pesanan === 'Complete')
+                    <span class="modern-badge badge-success">Complete</span>
                 @else
                     <span class="modern-badge badge-warning">Incomplete</span>
                 @endif
@@ -30,7 +28,7 @@
                         </div>
                         <div class="mb-3">
                             <small class="text-muted d-block">Metode Pembayaran</small>
-                            <span class="fw-semibold">{{ $transaction->payment->nama_pembayaran ?? 'Tidak ditemukan' }}</span>
+                            <span class="fw-semibold">{{ $transaction->payment_method_name }}</span>
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -71,13 +69,6 @@
     <a href="{{ route('transactions.index') }}" class="btn btn-modern btn-outline-modern">
         <i class="fas fa-arrow-left"></i> Kembali ke Daftar
     </a>
-    @if ($transaction->status_pesanan === 'Unverified')
-        <form action="{{ route('transactions.verify', $transaction->id) }}" method="POST" class="d-inline">
-            @csrf
-            <button type="submit" class="btn btn-modern btn-success-modern">
-                <i class="fas fa-check"></i> Verifikasi Transaksi
-            </button>
-        </form>
-    @endif
+    {{-- Verify button removed - payment verified automatically via Midtrans --}}
 </div>
 @endsection

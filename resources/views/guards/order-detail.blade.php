@@ -132,12 +132,12 @@
                             <span class="text-muted">Metode Pembayaran</span>
                             <span class="fw-semibold">
                                 <i class="fas fa-wallet me-1 text-muted"></i>
-                                {{ $order->transaksi->payment->nama ?? '-' }}
+                                {{ $order->transaksi->payment_method_name ?? '-' }}
                             </span>
                         </div>
                         <div class="info-row d-flex justify-content-between py-3 border-bottom">
                             <span class="text-muted">Status Pembayaran</span>
-                            @if ($order->transaksi->status_pesanan == 'Verified')
+                            @if ($order->transaksi->status_pesanan == 'Complete')
                                 <span class="badge-modern badge-done">Lunas</span>
                             @else
                                 <span class="badge-modern badge-pending">{{ $order->transaksi->status_pesanan }}</span>

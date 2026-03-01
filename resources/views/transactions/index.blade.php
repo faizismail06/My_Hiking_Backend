@@ -35,18 +35,16 @@
                             <code class="bg-light px-2 py-1 rounded">{{ $transaction->id_pesanan }}</code>
                         </td>
                         <td>
-                            <div class="fw-semibold">{{ $transaction->payment->nama_pembayaran ?? 'Tidak ditemukan' }}</div>
+                            <div class="fw-semibold">{{ $transaction->payment_method_name }}</div>
                         </td>
                         <td class="text-center">
                             <span class="fw-semibold">Rp {{ number_format($transaction->total_bayar, 0, ',', '.') }}</span>
                         </td>
                         <td class="text-center">
-                            @if ($transaction->status_pesanan === 'Unverified')
-                                <span class="modern-badge badge-danger">Unverified</span>
-                            @elseif ($transaction->status_pesanan === 'Verified')
-                                <span class="modern-badge badge-success">Verified</span>
-                            @elseif ($transaction->status_pesanan === 'Incomplete')
+                            @if ($transaction->status_pesanan === 'Incomplete')
                                 <span class="modern-badge badge-warning">Incomplete</span>
+                            @elseif ($transaction->status_pesanan === 'Complete')
+                                <span class="modern-badge badge-success">Complete</span>
                             @else
                                 <span class="modern-badge badge-secondary">{{ $transaction->status_pesanan }}</span>
                             @endif
@@ -56,14 +54,7 @@
                                 <a href="{{ route('transactions.show', $transaction->id) }}" class="btn btn-sm btn-modern btn-outline-modern" title="Detail">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                @if ($transaction->status_pesanan === 'Unverified')
-                                    <form action="{{ route('transactions.verify', $transaction->id) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        <button type="submit" class="btn btn-sm btn-modern btn-success-modern" title="Verifikasi">
-                                            <i class="fas fa-check"></i> Verifikasi
-                                        </button>
-                                    </form>
-                                @endif
+                                {{-- Verify button removed - payment verified automatically via Midtrans --}}
                             </div>
                         </td>
                     </tr>

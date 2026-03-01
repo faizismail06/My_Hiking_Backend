@@ -105,15 +105,6 @@
                     <span>{{ __('Riwayat') }}</span>
                 </a>
             </li>
-
-            <!-- Nav Item - Riwayat -->
-            <li class="nav-item {{ request()->routeIs('payments.index') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('payments.index') }}">
-                    <i class="fas fa-building"></i>
-                    <span>{{ __('Payments') }}</span>
-                </a>
-            </li>
-
             <!-- Nav Item - User -->
             <li class="nav-item {{ request()->routeIs('users.index') ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('users.index') }}">

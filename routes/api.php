@@ -10,7 +10,6 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\OrderMemberController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\RuleController;
-use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\FriendController;
 
 /*
@@ -66,11 +65,8 @@ Route::prefix('order-members')->group(function () {
 Route::get('transactions', [TransactionController::class, 'index']);
 Route::post('/transactions/store', [TransactionController::class, 'store']);
 Route::post('/transactions/update-payment/{id}', [TransactionController::class, 'updatePayment']);
-Route::get('/transactions/{id}/with-payment', [TransactionController::class, 'getTransactionWithPayment']);
-
-// Payment routes
-Route::get('/payments', [PaymentController::class, 'index']);
-Route::post('/payments', [PaymentController::class, 'store']);
+Route::get('/transactions/{id}/detail', [TransactionController::class, 'getTransactionDetail']);
+Route::get('/payment-methods', [TransactionController::class, 'getPaymentMethods']);
 
 // Rule routes
 Route::prefix('rules')->group(function () {
@@ -98,6 +94,22 @@ Route::prefix('friends')->group(function () {
     Route::put('/{friendshipId}/reject', [FriendController::class, 'rejectFriend']); // Reject request
     Route::delete('/{friendshipId}', [FriendController::class, 'removeFriend']); // Remove friend
 });
+
+// Midtrans Payment Gateway routes
+Route::prefix('midtrans')->group(function () {
+    Route::post('/create-payment', [\App\Http\Controllers\Api\MidtransController::class, 'createPayment']);
+    Route::post('/notification', [\App\Http\Controllers\Api\MidtransController::class, 'handleNotification']);
+    Route::get('/status/{orderId}', [\App\Http\Controllers\Api\MidtransController::class, 'checkStatus']);
+    Route::get('/config', [\App\Http\Controllers\Api\MidtransController::class, 'getConfig']);
+    Route::get('/finish', [\App\Http\Controllers\Api\MidtransController::class, 'finish']);
+});
+
+// Panic/Emergency routes
+Route::post('/panic', [\App\Http\Controllers\Api\PanicController::class, 'store']);
+Route::get('/panic/order/{orderId}', [\App\Http\Controllers\Api\PanicController::class, 'getByOrder']);
+Route::post('/panic/{id}/cancel', [\App\Http\Controllers\Api\PanicController::class, 'cancel']);
+
+
 
 // Image proxy route for CORS support (Flutter Web)
 Route::get('/images/{path}', function ($path) {

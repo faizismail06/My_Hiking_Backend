@@ -15,19 +15,20 @@ class TransactionController extends Controller
     {
         try {
             // Get all transaction data with related relationships
-            $transactions = Transaction::with("order.mountain", "order.trail", "order.members:id", "order.booker", "payment")->get()->map(function ($item) {
+            $transactions = Transaction::with("order.mountain", "order.trail", "order.members:id", "order.booker")->get()->map(function ($item) {
                 return [
                     "id" => (string) $item->id,
                     "id_pesanan" => $item->id_pesanan,
-                    "payment" => $item->payment->nama_pembayaran,
+                    "payment_type" => $item->payment_type,
+                    "payment_method" => $item->payment_method_name, // From accessor
                     "total_bayar" => $item->total_bayar,
                     "status" => $item->status_pesanan,
                     "waktu_pembayaran" => $item->waktu_pembayaran,
                     "bukti" => $item->bukti,
-                    "gunung" => $item->order->mountain->nama,
-                    "jalur" => $item->order->trail->nama,
-                    "pemesan" => $item->order->booker->id,
-                    "anggota" => $item->order->members
+                    "gunung" => $item->order->mountain->nama ?? null,
+                    "jalur" => $item->order->trail->nama ?? null,
+                    "pemesan" => $item->order->booker->id ?? null,
+                    "anggota" => $item->order->members ?? []
                 ];
             });
 
@@ -48,10 +49,9 @@ class TransactionController extends Controller
 
     public function store(Request $request)
     {
-        // Validate input data
+        // Validate input data - only id_pesanan required, payment handled by Midtrans
         $validator = Validator::make($request->all(), [
             'id_pesanan' => 'required|exists:orders,id',
-            'payment_id' => 'required|exists:payments,id',
         ]);
 
         if ($validator->fails()) {
@@ -74,7 +74,6 @@ class TransactionController extends Controller
             // Create initial transaction
             $transaction = Transaction::create([
                 'id_pesanan' => $request->id_pesanan,
-                'payment_id' => $request->payment_id,
                 'total_bayar' => $totalPayment,
                 'status_pesanan' => 'Incomplete',
                 'waktu_pembayaran' => null,
@@ -135,10 +134,10 @@ class TransactionController extends Controller
         }
     }
     
-    public function getTransactionWithPayment($transactionId)
+    public function getTransactionDetail($transactionId)
     {
-        // Get transaction by ID with payment relation
-        $transaction = Transaction::with('payment')->find($transactionId);
+        // Get transaction by ID with order relation
+        $transaction = Transaction::with('order.mountain', 'order.trail')->find($transactionId);
 
         if (!$transaction) {
             return response()->json([
@@ -147,7 +146,7 @@ class TransactionController extends Controller
             ], 404);
         }
 
-        // Combine transaction and payment data
+        // Combine transaction data with Midtrans payment info
         $data = [
             'id' => $transaction->id,
             'id_pesanan' => $transaction->id_pesanan,
@@ -155,17 +154,117 @@ class TransactionController extends Controller
             'status_pesanan' => $transaction->status_pesanan,
             'waktu_pembayaran' => $transaction->waktu_pembayaran,
             'bukti' => $transaction->bukti,
-            'payment' => [
-                'id' => $transaction->payment->id,
-                'nama_pembayaran' => $transaction->payment->nama_pembayaran,
-                'gambar_pembayaran' => $transaction->payment->gambar_pembayaran,
-                'nomor_pembayaran' => $transaction->payment->nomor_pembayaran,
+            'payment_type' => $transaction->payment_type,
+            'payment_method' => $transaction->payment_method_name,
+            'midtrans_order_id' => $transaction->midtrans_order_id,
+            'transaction_id' => $transaction->transaction_id,
+            'order' => [
+                'gunung' => $transaction->order->mountain->nama ?? null,
+                'jalur' => $transaction->order->trail->nama ?? null,
             ],
         ];
 
         return response()->json([
             'success' => true,
             'data' => $data,
+        ], 200);
+    }
+
+    /**
+     * Get available Midtrans payment methods
+     */
+    public function getPaymentMethods()
+    {
+        $paymentMethods = [
+            [
+                'id' => 'gopay',
+                'name' => 'GoPay',
+                'type' => 'e_wallet',
+                'icon' => 'gopay.png',
+                'description' => 'Bayar dengan GoPay',
+            ],
+            [
+                'id' => 'shopeepay',
+                'name' => 'ShopeePay',
+                'type' => 'e_wallet',
+                'icon' => 'shopeepay.png',
+                'description' => 'Bayar dengan ShopeePay',
+            ],
+            [
+                'id' => 'qris',
+                'name' => 'QRIS',
+                'type' => 'e_wallet',
+                'icon' => 'qris.png',
+                'description' => 'Scan QR untuk bayar',
+            ],
+            [
+                'id' => 'bca_va',
+                'name' => 'BCA Virtual Account',
+                'type' => 'bank_transfer',
+                'icon' => 'bca.png',
+                'description' => 'Transfer via BCA Virtual Account',
+            ],
+            [
+                'id' => 'bni_va',
+                'name' => 'BNI Virtual Account',
+                'type' => 'bank_transfer',
+                'icon' => 'bni.png',
+                'description' => 'Transfer via BNI Virtual Account',
+            ],
+            [
+                'id' => 'bri_va',
+                'name' => 'BRI Virtual Account',
+                'type' => 'bank_transfer',
+                'icon' => 'bri.png',
+                'description' => 'Transfer via BRI Virtual Account',
+            ],
+            [
+                'id' => 'mandiri_va',
+                'name' => 'Mandiri Virtual Account',
+                'type' => 'bank_transfer',
+                'icon' => 'mandiri.png',
+                'description' => 'Transfer via Mandiri Virtual Account',
+            ],
+            [
+                'id' => 'permata_va',
+                'name' => 'Permata Virtual Account',
+                'type' => 'bank_transfer',
+                'icon' => 'permata.png',
+                'description' => 'Transfer via Permata Virtual Account',
+            ],
+            [
+                'id' => 'cimb_va',
+                'name' => 'CIMB Virtual Account',
+                'type' => 'bank_transfer',
+                'icon' => 'cimb.png',
+                'description' => 'Transfer via CIMB Virtual Account',
+            ],
+            [
+                'id' => 'indomaret',
+                'name' => 'Indomaret',
+                'type' => 'cstore',
+                'icon' => 'indomaret.png',
+                'description' => 'Bayar di Indomaret terdekat',
+            ],
+            [
+                'id' => 'alfamart',
+                'name' => 'Alfamart',
+                'type' => 'cstore',
+                'icon' => 'alfamart.png',
+                'description' => 'Bayar di Alfamart terdekat',
+            ],
+            [
+                'id' => 'credit_card',
+                'name' => 'Kartu Kredit/Debit',
+                'type' => 'credit_card',
+                'icon' => 'credit_card.png',
+                'description' => 'Visa, Mastercard, JCB',
+            ],
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => $paymentMethods,
         ], 200);
     }
 }

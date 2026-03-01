@@ -568,10 +568,6 @@
                 <span>Riwayat</span>
             </a>
 
-            <a href="{{ route('payments.index') }}" class="menu-item {{ request()->routeIs('payments.*') ? 'active' : '' }}">
-                <i class="fas fa-wallet"></i>
-                <span>Metode Pembayaran</span>
-            </a>
 
             <div class="menu-label">Pengguna</div>
 

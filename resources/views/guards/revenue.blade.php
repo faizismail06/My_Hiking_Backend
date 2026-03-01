@@ -117,7 +117,7 @@
                                 <td>
                                     <span class="d-flex align-items-center gap-1">
                                         <i class="fas fa-credit-card text-muted"></i>
-                                        {{ $item->payment->nama ?? 'N/A' }}
+                                        {{ $item->payment_method_name ?? 'N/A' }}
                                     </span>
                                 </td>
                                 <td class="text-end">

@@ -577,6 +577,11 @@
                 <span>Scanner QR</span>
             </a>
 
+            <a href="{{ route('guards.sar.index') }}" class="menu-item {{ request()->routeIs('guards.sar*') ? 'active' : '' }}">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>SAR Dashboard</span>
+            </a>
+
             <a href="{{ route('guards.history') }}" class="menu-item {{ request()->routeIs('guards.history') ? 'active' : '' }}">
                 <i class="fas fa-history"></i>
                 <span>Riwayat Pengunjung</span>
