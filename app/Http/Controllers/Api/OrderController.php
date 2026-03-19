@@ -4,19 +4,42 @@ namespace App\Http\Controllers\Api;
 use Illuminate\Support\Facades\Log;
 use App\Models\Order;
 use App\Models\Transaction;
+use App\Services\MidtransService;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\DB;
 use Exception;
 
 class OrderController extends Controller
 {
+    protected MidtransService $midtransService;
+
+    public function __construct(MidtransService $midtransService)
+    {
+        $this->midtransService = $midtransService;
+    }
+
     /**
      * Display a listing of orders.
      */
     public function index()
     {
         try {
-            $orders = Order::with("mountain", "trail", "booker")->get()->map(function ($item) {
+            $orders = Order::with("mountain", "trail", "booker", "transaction")
+                ->orderBy('id')
+                ->get()
+                ->map(function ($item) {
+                $transaction = $item->transaction;
+
+                if ($transaction) {
+                    $this->syncTransactionStatusFromMidtrans($transaction);
+                    $transaction->refresh();
+                }
+
+                $transactionStatus = $transaction?->status_pesanan ?? 'Incomplete';
+                $isPaid = $transactionStatus === 'Complete';
+                $displayStatus = $isPaid ? $item->status : 'Bayar';
+
                 return [
                     "id" => (string) $item->id,
                     "id_gunung" => $item->id_gunung,
@@ -25,7 +48,10 @@ class OrderController extends Controller
                     "tanggal_naik" => $item->tanggal_naik,
                     "tanggal_turun" => $item->tanggal_turun,
                     "total_harga_tiket" => $item->total_harga_tiket,
-                    "status" => $item->status,
+                    "status" => $displayStatus,
+                    "order_status" => $item->status,
+                    "transaction_status" => $transactionStatus,
+                    "is_paid" => $isPaid,
                     "gunung" => $item->mountain->nama,
                     "jalur" => $item->trail->nama,
                     "user" => $item->booker->name,
@@ -63,20 +89,33 @@ class OrderController extends Controller
         ]);
 
         try {
-            // Create order
-            $order = Order::create([
-                'id_gunung' => $request->id_gunung,
-                'id_jalur' => $request->id_jalur,
-                'id_user' => $request->id_user,
-                'tanggal_naik' => $request->tanggal_naik,
-                'tanggal_turun' => $request->tanggal_turun,
-                'total_harga_tiket' => $request->total_harga_tiket,
-            ]);
+            $order = DB::transaction(function () use ($request) {
+                // Create order
+                $order = Order::create([
+                    'id_gunung' => $request->id_gunung,
+                    'id_jalur' => $request->id_jalur,
+                    'id_user' => $request->id_user,
+                    'tanggal_naik' => $request->tanggal_naik,
+                    'tanggal_turun' => $request->tanggal_turun,
+                    'total_harga_tiket' => $request->total_harga_tiket,
+                ]);
 
-            // Add members if any
-            if (!empty($request->anggota_ids)) {
-                $order->members()->attach($request->anggota_ids);
-            }
+                // Normalize member IDs: unique, valid, and exclude the booker itself.
+                $memberIds = collect($request->input('anggota_ids', []))
+                    ->filter(fn ($id) => is_numeric($id))
+                    ->map(fn ($id) => (int) $id)
+                    ->filter(fn ($id) => $id > 0 && $id !== (int) $request->id_user)
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                if (!empty($memberIds)) {
+                    // Avoid duplicate pivot rows if endpoint is retried.
+                    $order->members()->syncWithoutDetaching($memberIds);
+                }
+
+                return $order;
+            });
 
             return response()->json([
                 'message' => 'Order created successfully!',
@@ -120,16 +159,70 @@ class OrderController extends Controller
     public function viewOrder($orderId)
     {
         try {
-            $order = Order::with('mountain:id,nama', 'trail:id,nama', 'booker:id,name', 'members')->findOrFail($orderId);
+            $order = Order::with(
+                'mountain:id,nama',
+                'trail:id,nama',
+                'booker:id,name',
+                'members:id,name',
+                'transaction:id,id_pesanan,status_pesanan,waktu_pembayaran,midtrans_order_id'
+            )->findOrFail($orderId);
+
+            if ($order->transaction) {
+                $this->syncTransactionStatusFromMidtrans($order->transaction);
+                $order->transaction->refresh();
+            }
+
+            $canPrintTicket = $order->transaction?->status_pesanan === 'Complete';
 
             return response()->json([
                 'order' => $order,
+                'can_print_ticket' => $canPrintTicket,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Order not found.',
                 'error' => $e->getMessage(),
             ], 404);
+        }
+    }
+
+    private function syncTransactionStatusFromMidtrans(Transaction $transaction): void
+    {
+        if (empty($transaction->midtrans_order_id)) {
+            return;
+        }
+
+        if ($transaction->status_pesanan === 'Complete') {
+            return;
+        }
+
+        $result = $this->midtransService->getTransactionStatus($transaction->midtrans_order_id);
+        if (!($result['success'] ?? false)) {
+            return;
+        }
+
+        $data = $result['data'] ?? [];
+        $status = $data['transaction_status'] ?? 'pending';
+        $fraudStatus = $data['fraud_status'] ?? null;
+
+        $newStatus = match ($status) {
+            'capture' => $fraudStatus === 'challenge' ? 'Incomplete' : 'Complete',
+            'settlement' => 'Complete',
+            default => 'Incomplete',
+        };
+
+        $transaction->update([
+            'status_pesanan' => $newStatus,
+            'payment_type' => $data['payment_type'] ?? $transaction->payment_type,
+            'transaction_id' => $data['transaction_id'] ?? $transaction->transaction_id,
+            'fraud_status' => $fraudStatus ?? $transaction->fraud_status,
+            'waktu_pembayaran' => $newStatus === 'Complete'
+                ? ($transaction->waktu_pembayaran ?? now())
+                : null,
+        ]);
+
+        if ($newStatus === 'Complete' && $transaction->order && $transaction->order->status !== 'Booking') {
+            $transaction->order->update(['status' => 'Booking']);
         }
     }
     

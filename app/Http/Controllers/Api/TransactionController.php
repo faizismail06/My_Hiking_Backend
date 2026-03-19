@@ -5,22 +5,37 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Models\Order;
+use App\Services\MidtransService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 
 class TransactionController extends Controller
 {
+    protected MidtransService $midtransService;
+
+    public function __construct(MidtransService $midtransService)
+    {
+        $this->midtransService = $midtransService;
+    }
+
     public function index()
     {
         try {
             // Get all transaction data with related relationships
-            $transactions = Transaction::with("order.mountain", "order.trail", "order.members:id", "order.booker")->get()->map(function ($item) {
+            $transactions = Transaction::with("order.mountain", "order.trail", "order.members:id", "order.booker")
+                ->orderBy('id')
+                ->get()
+                ->map(function ($item) {
+                $this->syncTransactionStatusFromMidtrans($item);
+                $item->refresh();
+
                 return [
                     "id" => (string) $item->id,
                     "id_pesanan" => $item->id_pesanan,
                     "payment_type" => $item->payment_type,
                     "payment_method" => $item->payment_method_name, // From accessor
+                    "payment_method_name" => $item->payment_method_name,
                     "total_bayar" => $item->total_bayar,
                     "status" => $item->status_pesanan,
                     "waktu_pembayaran" => $item->waktu_pembayaran,
@@ -33,6 +48,8 @@ class TransactionController extends Controller
             });
 
             return response()->json([
+
+    
                 'success' => true,
                 'message' => 'Successfully get data on transactions',
                 'data' => $transactions,
@@ -45,7 +62,45 @@ class TransactionController extends Controller
             ], 500);
         }
     }
+private function syncTransactionStatusFromMidtrans(Transaction $transaction): void
+    {
+        if (empty($transaction->midtrans_order_id)) {
+            return;
+        }
 
+        if ($transaction->status_pesanan === 'Complete') {
+            return;
+        }
+
+        $result = $this->midtransService->getTransactionStatus($transaction->midtrans_order_id);
+        if (!($result['success'] ?? false)) {
+            return;
+        }
+
+        $data = $result['data'] ?? [];
+        $status = $data['transaction_status'] ?? 'pending';
+        $fraudStatus = $data['fraud_status'] ?? null;
+
+        $newStatus = match ($status) {
+            'capture' => $fraudStatus === 'challenge' ? 'Incomplete' : 'Complete',
+            'settlement' => 'Complete',
+            default => 'Incomplete',
+        };
+
+        $transaction->update([
+            'status_pesanan' => $newStatus,
+            'payment_type' => $data['payment_type'] ?? $transaction->payment_type,
+            'transaction_id' => $data['transaction_id'] ?? $transaction->transaction_id,
+            'fraud_status' => $fraudStatus ?? $transaction->fraud_status,
+            'waktu_pembayaran' => $newStatus === 'Complete'
+                ? ($transaction->waktu_pembayaran ?? now())
+                : null,
+        ]);
+
+        if ($newStatus === 'Complete' && $transaction->order && $transaction->order->status !== 'Booking') {
+            $transaction->order->update(['status' => 'Booking']);
+        }
+    }
 
     public function store(Request $request)
     {

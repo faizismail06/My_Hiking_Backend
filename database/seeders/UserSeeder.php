@@ -30,11 +30,11 @@ class UserSeeder extends Seeder
 
         // User Level 2 (Penjaga Jalur)
         User::create([
-            'name' => 'Manager',
-            'email' => 'manager@myhiking.com',
+            'name' => 'Penjaga Jalur',
+            'email' => 'penjagajalur@myhiking.com',
             'password' => Hash::make('password123'),
             'level' => 2,
-            'address' => 'Jl. Manager No. 2',
+            'address' => 'Jl. Penjaga Jalur No. 2',
             'nik' => 2234567890123456,
             'phone' => 628223456789,
             'emergency_phone' => 628887654321,

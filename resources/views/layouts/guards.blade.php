@@ -548,6 +548,98 @@
         .animate-fade-in {
             animation: fadeIn 0.5s ease forwards;
         }
+
+        /* Global Chatbot */
+        .global-chat-fab {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            width: 58px;
+            height: 58px;
+            border: 0;
+            border-radius: 999px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: #fff;
+            font-size: 22px;
+            box-shadow: 0 12px 24px rgba(17, 121, 88, 0.35);
+            z-index: 1200;
+        }
+
+        .global-chat-window {
+            position: fixed;
+            right: 24px;
+            bottom: 92px;
+            width: min(420px, calc(100vw - 28px));
+            height: min(620px, calc(100vh - 120px));
+            display: none;
+            flex-direction: column;
+            background: #fff;
+            border: 1px solid #d5e7de;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 20px 45px rgba(17, 80, 60, 0.25);
+            z-index: 1200;
+        }
+
+        .global-chat-window.show {
+            display: flex;
+            animation: chatIn 0.2s ease;
+        }
+
+        .global-chat-header {
+            padding: 14px 16px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .global-chat-body {
+            flex: 1;
+            overflow-y: auto;
+            background: #f6fbf8;
+            padding: 14px;
+        }
+
+        .global-chat-footer {
+            padding: 12px;
+            border-top: 1px solid #e2efe9;
+            background: #fff;
+            display: flex;
+            gap: 8px;
+        }
+
+        .global-chat-bubble-user {
+            background: var(--accent-color);
+            color: #1f2933;
+        }
+
+        .global-chat-bubble-bot {
+            background: #fff;
+            border: 1px solid #d9e8df;
+            color: #24303a;
+        }
+
+        @keyframes chatIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 576px) {
+            .global-chat-fab {
+                right: 14px;
+                bottom: 14px;
+            }
+
+            .global-chat-window {
+                right: 10px;
+                left: 10px;
+                width: auto;
+                bottom: 80px;
+                height: min(560px, calc(100vh - 96px));
+            }
+        }
     </style>
 
     @stack('styles')
@@ -663,6 +755,27 @@
         </div>
     </div>
 
+    <button id="globalChatToggle" class="global-chat-fab" type="button" aria-label="Buka chatbot penjaga">
+        <i class="fas fa-robot"></i>
+    </button>
+
+    <div id="globalChatWindow" class="global-chat-window" aria-hidden="true">
+        <div class="global-chat-header">
+            <div>
+                <h6 class="mb-0">Trail Guard Assistant</h6>
+                <small>{{ Auth::user()->name }}</small>
+            </div>
+            <button id="globalChatClose" class="btn-close btn-close-white" type="button" aria-label="Tutup"></button>
+        </div>
+
+        <div id="globalChatBox" class="global-chat-body"></div>
+
+        <form id="globalChatForm" class="global-chat-footer">
+            <input id="globalChatInput" type="text" class="form-control" placeholder="Ketik pertanyaan penjaga..." autocomplete="off" required>
+            <button class="btn btn-success" type="submit">Kirim</button>
+        </form>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
@@ -683,6 +796,86 @@
                 sidebar.classList.remove('show');
             }
         });
+
+        (() => {
+            const chatToggle = document.getElementById('globalChatToggle');
+            const chatClose = document.getElementById('globalChatClose');
+            const chatWindow = document.getElementById('globalChatWindow');
+            const chatBox = document.getElementById('globalChatBox');
+            const chatForm = document.getElementById('globalChatForm');
+            const chatInput = document.getElementById('globalChatInput');
+
+            if (!chatToggle || !chatClose || !chatWindow || !chatBox || !chatForm || !chatInput) {
+                return;
+            }
+
+            const role = 'penjaga';
+            const userId = {{ Auth::id() }};
+            const history = [];
+
+            function appendMessage(text, sender = 'bot') {
+                const wrap = document.createElement('div');
+                wrap.className = `d-flex ${sender === 'user' ? 'justify-content-end' : 'justify-content-start'} mb-2`;
+
+                const bubble = document.createElement('div');
+                bubble.className = `px-3 py-2 rounded ${sender === 'user' ? 'global-chat-bubble-user' : 'global-chat-bubble-bot'}`;
+                bubble.style.maxWidth = '82%';
+                bubble.style.whiteSpace = 'pre-wrap';
+                bubble.textContent = text;
+
+                wrap.appendChild(bubble);
+                chatBox.appendChild(wrap);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
+            function openChat() {
+                chatWindow.classList.add('show');
+                chatWindow.setAttribute('aria-hidden', 'false');
+                chatInput.focus();
+            }
+
+            function closeChat() {
+                chatWindow.classList.remove('show');
+                chatWindow.setAttribute('aria-hidden', 'true');
+            }
+
+            async function sendMessage(message) {
+                appendMessage(message, 'user');
+                history.push({ message, isUser: true });
+
+                try {
+                    const resp = await fetch('http://127.0.0.1:5000/api/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message, history, role, user_id: userId })
+                    });
+
+                    const data = await resp.json();
+                    const botMsg = data?.message || 'Tidak ada respons dari chatbot.';
+                    appendMessage(botMsg, 'bot');
+                    history.push({ message: botMsg, isUser: false });
+
+                    if (data?.download_url) {
+                        appendMessage(`File laporan siap diunduh: http://127.0.0.1:5000${data.download_url}`, 'bot');
+                    }
+                } catch (err) {
+                    appendMessage('Gagal terhubung ke server chatbot Python. Pastikan server berjalan.', 'bot');
+                }
+            }
+
+            appendMessage('Halo Penjaga. Saya siap bantu pantau SAR, pendaki aktif, dan rekap laporan.');
+
+            chatToggle.addEventListener('click', openChat);
+            chatClose.addEventListener('click', closeChat);
+
+            chatForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const message = chatInput.value.trim();
+                if (!message) return;
+                chatInput.value = '';
+                await sendMessage(message);
+            });
+        })();
     </script>
 
     @stack('scripts')
