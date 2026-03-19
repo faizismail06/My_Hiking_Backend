@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -31,6 +30,8 @@ class User extends Authenticatable
         'phone',
         'emergency_phone',
         'level',
+        'tier',
+        'tier_source',
         'profile_picture',
         'date_of_birth',
     ];
@@ -80,12 +81,17 @@ class User extends Authenticatable
      // Relasi ke tabel `pesanan` (user sebagai pemesan utama)
     public function pesanan()
     {
-        return $this->hasMany(Pesanan::class, 'user_id');
+        return $this->hasMany(Order::class, 'id_user');
     }
 
     // Relasi ke tabel `anggota_pesanan` (user sebagai anggota pemesanan)
     public function anggotaPesanan()
     {
-        return $this->belongsToMany(Pesanan::class, 'anggota_pesanan', 'user_id', 'pesanan_id');
+        return $this->belongsToMany(Order::class, 'order_members', 'id_user', 'id_pesanan');
+    }
+
+    public function experience()
+    {
+        return $this->hasOne(UserExperience::class, 'user_id');
     }
 }

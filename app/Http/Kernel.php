@@ -70,5 +70,6 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'penjaga' => \App\Http\Middleware\CheckPenjagaJalur::class,
+        'hiker.ready' => \App\Http\Middleware\EnsureHikerActionReadiness::class,
     ];
 }

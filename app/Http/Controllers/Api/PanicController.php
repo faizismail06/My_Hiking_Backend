@@ -15,8 +15,10 @@ class PanicController extends Controller
      */
     public function store(Request $request)
     {
+        $authUser = $request->user();
+
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
+            'user_id' => 'nullable|exists:users,id',
             'order_id' => 'required|exists:orders,id',
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
@@ -32,9 +34,18 @@ class PanicController extends Controller
             ], 422);
         }
 
+        if ($authUser && $request->filled('user_id') && (string) $request->user_id !== (string) $authUser->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak dapat mengakses data user lain.'
+            ], 403);
+        }
+
+        $requestUserId = $authUser?->id ?? $request->user_id;
+
         // Check if order belongs to this user and is active (status = "Sedang Mendaki")
         $order = Order::where('id', $request->order_id)
-            ->where('id_user', $request->user_id)
+            ->where('id_user', $requestUserId)
             ->first();
 
         if (!$order) {
@@ -64,7 +75,7 @@ class PanicController extends Controller
         }
 
         $panicRequest = PanicRequest::create([
-            'user_id' => $request->user_id,
+            'user_id' => $requestUserId,
             'order_id' => $request->order_id,
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,

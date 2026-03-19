@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Api;
 use Illuminate\Support\Facades\Log;
 use App\Models\Order;
+use App\Models\Trail;
 use App\Models\Transaction;
+use App\Models\User;
+use App\Services\DSSService;
 use App\Services\MidtransService;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -13,10 +16,12 @@ use Exception;
 class OrderController extends Controller
 {
     protected MidtransService $midtransService;
+    protected DSSService $dssService;
 
-    public function __construct(MidtransService $midtransService)
+    public function __construct(MidtransService $midtransService, DSSService $dssService)
     {
         $this->midtransService = $midtransService;
+        $this->dssService = $dssService;
     }
 
     /**
@@ -77,24 +82,69 @@ class OrderController extends Controller
     public function createOrder(Request $request)
     {
         Log::info('Request received:', $request->all());
+        $authUser = $request->user();
+
         $request->validate([
             'id_gunung' => 'required|exists:mountains,id',
             'id_jalur' => 'required|exists:routes,id',
-            'id_user' => 'required|exists:users,id',
+            'id_user' => 'nullable|exists:users,id',
             'tanggal_naik' => 'required|date',
             'tanggal_turun' => 'required|date',
             'total_harga_tiket' => 'required|numeric',
             'anggota_ids' => 'array',
             'anggota_ids.*' => 'exists:users,id',
+            'force_continue' => 'nullable|boolean',
         ]);
 
+        if ($authUser && $request->filled('id_user') && (string) $request->id_user !== (string) $authUser->id) {
+            return response()->json([
+                'message' => 'Anda tidak dapat membuat pesanan untuk user lain.',
+            ], 403);
+        }
+
+        $bookerId = $authUser?->id ?? $request->id_user;
+        $booker = $authUser ?: User::find($bookerId);
+        $trail = Trail::where('id', $request->id_jalur)
+            ->where('id_gunung', $request->id_gunung)
+            ->first();
+
+        if (!$booker) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User pemesan tidak ditemukan.',
+            ], 404);
+        }
+
+        if (!$trail) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Jalur tidak ditemukan untuk gunung yang dipilih.',
+            ], 422);
+        }
+
+        $dssEvaluation = null;
+        $forceContinue = filter_var($request->input('force_continue', false), FILTER_VALIDATE_BOOLEAN);
+
+        if ((int) $booker->level === 1) {
+            $dssEvaluation = $this->dssService->evaluateRoute($booker, $trail);
+
+            if (($dssEvaluation['risk_level'] ?? null) === 'high_risk' && !$forceContinue) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'HIGH_RISK_CONFIRMATION_REQUIRED',
+                    'message' => 'Rute ini berisiko tinggi untuk tingkat pengalaman Anda. Konfirmasi force_continue untuk melanjutkan.',
+                    'dss' => $dssEvaluation,
+                ], 409);
+            }
+        }
+
         try {
-            $order = DB::transaction(function () use ($request) {
+            $order = DB::transaction(function () use ($request, $bookerId) {
                 // Create order
                 $order = Order::create([
                     'id_gunung' => $request->id_gunung,
                     'id_jalur' => $request->id_jalur,
-                    'id_user' => $request->id_user,
+                    'id_user' => $bookerId,
                     'tanggal_naik' => $request->tanggal_naik,
                     'tanggal_turun' => $request->tanggal_turun,
                     'total_harga_tiket' => $request->total_harga_tiket,
@@ -104,7 +154,7 @@ class OrderController extends Controller
                 $memberIds = collect($request->input('anggota_ids', []))
                     ->filter(fn ($id) => is_numeric($id))
                     ->map(fn ($id) => (int) $id)
-                    ->filter(fn ($id) => $id > 0 && $id !== (int) $request->id_user)
+                    ->filter(fn ($id) => $id > 0 && $id !== (int) $bookerId)
                     ->unique()
                     ->values()
                     ->all();
@@ -120,6 +170,8 @@ class OrderController extends Controller
             return response()->json([
                 'message' => 'Order created successfully!',
                 'order' => $order->load('members'),
+                'dss' => $dssEvaluation,
+                'warning' => $this->buildDssWarning($dssEvaluation),
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -127,6 +179,31 @@ class OrderController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function buildDssWarning(?array $dssEvaluation): ?array
+    {
+        if (!$dssEvaluation) {
+            return null;
+        }
+
+        $riskLevel = $dssEvaluation['risk_level'] ?? null;
+
+        if ($riskLevel === 'caution') {
+            return [
+                'type' => 'caution',
+                'message' => $dssEvaluation['message'] ?? 'Rute butuh pertimbangan ekstra.',
+            ];
+        }
+
+        if ($riskLevel === 'high_risk') {
+            return [
+                'type' => 'high_risk',
+                'message' => $dssEvaluation['message'] ?? 'Rute berisiko tinggi.',
+            ];
+        }
+
+        return null;
     }
 
     // Add members to existing order

@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\OrderMemberController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\RuleController;
 use App\Http\Controllers\Api\FriendController;
+use App\Http\Controllers\Api\ExperienceOnboardingController;
+use App\Http\Controllers\Api\WeatherController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,15 +41,18 @@ Route::post('login', [AuthController::class, 'login']);
 
 // Mountain routes
 Route::get('mountains', [MountainController::class, 'index']);
+Route::get('mountains/home-feed', [MountainController::class, 'homeFeed']);
 Route::get('/mountains/{id_gunung}', [TrailController::class, 'index']);
 Route::get('/mountains/{id_gunung}/trails/{id_jalur}', [MountainTrailDetailController::class, 'index']);
 Route::get('/mountains/{id_gunung}/trails/{id_jalur}/booking', [MountainTrailDetailController::class, 'trailBooking']);
+Route::get('/weather/current', [WeatherController::class, 'current']);
+Route::get('/weather/forecast', [WeatherController::class, 'forecast']);
 
 // Order routes
 Route::get('/orders', [OrderController::class, 'index']);
 
 Route::prefix('orders')->group(function () {
-    Route::post('/', [OrderController::class, 'createOrder']);
+    Route::post('/', [OrderController::class, 'createOrder'])->middleware(['auth:sanctum', 'hiker.ready']);
     Route::post('{orderId}/add-members', [OrderController::class, 'addMembers']);
     Route::get('{orderId}', [OrderController::class, 'viewOrder']);
     Route::delete('{id}', [OrderController::class, 'destroy']);
@@ -80,6 +85,8 @@ Route::prefix('rules')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/update-password/{id}', [AuthController::class, 'updatePassword']);
+    Route::get('/onboarding/experience/status', [ExperienceOnboardingController::class, 'status']);
+    Route::post('/onboarding/experience', [ExperienceOnboardingController::class, 'store']);
 });
 Route::get('/user-data/{id?}', [AuthController::class, 'getUserData']);
 Route::post('users/{id}', [AuthController::class, 'update']);
@@ -105,7 +112,7 @@ Route::prefix('midtrans')->group(function () {
 });
 
 // Panic/Emergency routes
-Route::post('/panic', [\App\Http\Controllers\Api\PanicController::class, 'store']);
+Route::post('/panic', [\App\Http\Controllers\Api\PanicController::class, 'store'])->middleware(['auth:sanctum', 'hiker.ready']);
 Route::get('/panic/order/{orderId}', [\App\Http\Controllers\Api\PanicController::class, 'getByOrder']);
 Route::post('/panic/{id}/cancel', [\App\Http\Controllers\Api\PanicController::class, 'cancel']);
 

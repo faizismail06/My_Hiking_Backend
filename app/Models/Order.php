@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\TierService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -31,6 +32,18 @@ class Order extends Model
 
         static::creating(function ($model) {
             $model->id = self::generateUniqueID();
+        });
+
+        static::created(function ($model) {
+            if ($model->booker) {
+                app(TierService::class)->syncVerifiedTierFromSystemActivity($model->booker);
+            }
+        });
+
+        static::updated(function ($model) {
+            if ($model->wasChanged('status') && $model->booker) {
+                app(TierService::class)->syncVerifiedTierFromSystemActivity($model->booker);
+            }
         });
     }
 

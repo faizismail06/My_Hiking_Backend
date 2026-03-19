@@ -35,7 +35,7 @@ class AuthController extends Controller
         $register_data->name = $request->name;
         $register_data->email = $request->email;
         $register_data->password = bcrypt($request->password);
-        // $register_data->level = $request->level;
+        $register_data->level = 1;
 
         $register_data->save();
 
@@ -186,7 +186,9 @@ class AuthController extends Controller
             'phone' => 'nullable|numeric|unique:users,phone,' . $id,
             'emergency_phone' => 'nullable|numeric',
             'date_of_birth' => 'nullable|date',
-            'level' => 'nullable',
+            'level' => 'nullable|in:1,2,3',
+            'tier' => 'prohibited',
+            'tier_source' => 'prohibited',
             'profile_picture' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
         ];
 
@@ -220,7 +222,9 @@ class AuthController extends Controller
 
         // Update other fields
         $user->name = $request->name;
-        $user->level = $request->level;
+        if ($request->filled('level')) {
+            $user->level = (int) $request->level;
+        }
         $user->email = $request->email;
         $user->address = $request->address;
         $user->nik = $request->nik;
