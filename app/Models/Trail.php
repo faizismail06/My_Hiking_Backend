@@ -29,9 +29,12 @@ class Trail extends Model
         'gambar_jalur',
         'latitude',
         'longitude',
+        'route_points',
+        'route_source',
     ];
     protected $casts = [
         'gambar' => 'array',
+        'route_points' => 'array',
     ];
     
     // Relasi dengan model Mountain
@@ -79,6 +82,11 @@ class Trail extends Model
     public function orders()
     {
         return $this->hasOne(Order::class, 'user_id');
+    }
+
+    public function posts()
+    {
+        return $this->hasMany(TrailPost::class, 'trail_id')->orderBy('sequence');
     }
 
     // Alias for backward compatibility

@@ -67,6 +67,9 @@
                         </td>
                         <td class="text-center">
                             <div class="d-flex gap-1 justify-content-center">
+                                <a href="{{ route('trails.edit', $j->id) }}#map-editor" class="btn btn-sm btn-modern btn-outline-modern" title="Lihat Peta Jalur">
+                                    <i class="fas fa-map-marked-alt"></i>
+                                </a>
                                 <a href="{{ route('trails.edit', $j->id) }}" class="btn btn-sm btn-modern btn-warning-modern" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>

@@ -8,7 +8,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 
 class AuthController extends Controller
@@ -75,6 +77,83 @@ class AuthController extends Controller
             'message' => 'Login successful',
             'token' => $login_data->createToken('auth_token')->plainTextToken,
             'user' => $login_data
+        ], 200);
+    }
+
+    public function loginWithGoogle(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'id_token' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation errors',
+                'data' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $googleResponse = Http::timeout(15)->get('https://oauth2.googleapis.com/tokeninfo', [
+                'id_token' => $request->id_token,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to validate Google token',
+            ], 503);
+        }
+
+        if (!$googleResponse->successful()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid Google token',
+            ], 401);
+        }
+
+        $googleData = $googleResponse->json();
+        $email = strtolower($googleData['email'] ?? '');
+        $isEmailVerified = ($googleData['email_verified'] ?? 'false') === 'true';
+
+        if (empty($email) || !$isEmailVerified) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Google account email is not verified',
+            ], 401);
+        }
+
+        $expectedAudience = env('GOOGLE_CLIENT_ID');
+        if (!empty($expectedAudience) && ($googleData['aud'] ?? null) !== $expectedAudience) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Google token audience mismatch',
+            ], 401);
+        }
+
+        $user = User::where('email', $email)->first();
+        $isNewUser = false;
+
+        if (!$user) {
+            $isNewUser = true;
+            $user = new User();
+            $user->name = $googleData['name'] ?? explode('@', $email)[0];
+            $user->email = $email;
+            $user->password = Hash::make(Str::random(32));
+            $user->level = 1;
+            $user->email_verified_at = now();
+            $user->save();
+        } elseif (is_null($user->email_verified_at)) {
+            $user->email_verified_at = now();
+            $user->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $isNewUser ? 'Google register successful' : 'Google login successful',
+            'token' => $user->createToken('auth_token')->plainTextToken,
+            'user' => $user,
+            'is_new_user' => $isNewUser,
         ], 200);
     }
 

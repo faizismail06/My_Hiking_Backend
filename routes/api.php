@@ -38,12 +38,14 @@ Route::get('/', function () {
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
+Route::post('auth/google', [AuthController::class, 'loginWithGoogle']);
 
 // Mountain routes
 Route::get('mountains', [MountainController::class, 'index']);
 Route::get('mountains/home-feed', [MountainController::class, 'homeFeed']);
 Route::get('/mountains/{id_gunung}', [TrailController::class, 'index']);
 Route::get('/mountains/{id_gunung}/trails/{id_jalur}', [MountainTrailDetailController::class, 'index']);
+Route::get('/mountains/{id_gunung}/trails/{id_jalur}/preview', [MountainTrailDetailController::class, 'preview']);
 Route::get('/mountains/{id_gunung}/trails/{id_jalur}/booking', [MountainTrailDetailController::class, 'trailBooking']);
 Route::get('/weather/current', [WeatherController::class, 'current']);
 Route::get('/weather/forecast', [WeatherController::class, 'forecast']);

@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\TrailWeb;
 use App\Models\OrderWeb;
 use App\Models\TransactionWeb;
+use App\Models\User;
+use App\Services\GpxRouteService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use Illuminate\Validation\ValidationException;
 
 class TrailGuardController extends Controller
 {
@@ -71,7 +74,7 @@ class TrailGuardController extends Controller
     public function trailManagement()
     {
         $user = Auth::user();
-        $trail = TrailWeb::with(['mountain', 'province', 'regency', 'district', 'village'])
+        $trail = TrailWeb::with(['mountain', 'province', 'regency', 'district', 'village', 'posts'])
             ->where('user_id', $user->id)
             ->first();
 
@@ -83,7 +86,7 @@ class TrailGuardController extends Controller
     }
 
     // Update trail info
-    public function updateTrail(Request $request)
+    public function updateTrail(Request $request, GpxRouteService $gpxRouteService)
     {
         $user = Auth::user();
         $trail = TrailWeb::where('user_id', $user->id)->first();
@@ -96,6 +99,10 @@ class TrailGuardController extends Controller
             'deskripsi' => 'nullable|string|max:1000',
             'map_basecamp' => 'nullable|string|max:255',
             'gambar_jalur' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'gpx_file' => 'nullable|file|mimes:gpx,xml|max:10240',
+            'route_source' => 'nullable|string|max:50',
+            'route_points_json' => 'nullable|string',
+            'trail_posts_json' => 'nullable|string',
         ]);
 
         $data = [
@@ -115,7 +122,34 @@ class TrailGuardController extends Controller
             $data['gambar_jalur'] = $imageName;
         }
 
+        if ($request->hasFile('gpx_file')) {
+            try {
+                $parsedRoute = $gpxRouteService->parseFromUploadedFile($request->file('gpx_file'), 1500);
+                $data['route_points'] = $parsedRoute['points'];
+                $data['route_source'] = $request->input('route_source', 'manual');
+            } catch (\Throwable $e) {
+                return redirect()->back()->withErrors(['gpx_file' => $e->getMessage()])->withInput();
+            }
+        }
+
+        if ($request->filled('route_points_json') && !$request->hasFile('gpx_file')) {
+            try {
+                $data['route_points'] = $this->parseRoutePointsJson($request->input('route_points_json'));
+                $data['route_source'] = 'manual';
+            } catch (ValidationException $e) {
+                return redirect()->back()->withErrors($e->errors())->withInput();
+            }
+        }
+
         $trail->update($data);
+
+        if ($request->has('trail_posts_json')) {
+            try {
+                $this->syncTrailPosts($trail, $request->input('trail_posts_json'));
+            } catch (ValidationException $e) {
+                return redirect()->back()->withErrors($e->errors())->withInput();
+            }
+        }
 
         return redirect()->route('guards.trail')->with('success', 'Trail information updated successfully!');
     }
@@ -343,7 +377,11 @@ class TrailGuardController extends Controller
             'password_confirmation' => 'nullable|max:12|required_with:new_password|same:new_password'
         ]);
 
+        /** @var User|null $user */
         $user = Auth::user();
+        if (!$user) {
+            return redirect()->back()->with('error', 'User tidak ditemukan.');
+        }
         $user->name = $request->input('name');
         $user->email = $request->input('email');
 
@@ -358,5 +396,118 @@ class TrailGuardController extends Controller
         $user->save();
 
         return redirect()->route('guards.profile')->with('success', 'Profil berhasil diperbarui.');
+    }
+
+    /**
+     * @return array<int, array{lat: float, lng: float}>
+     */
+    private function parseRoutePointsJson(?string $payload): array
+    {
+        if ($payload === null || trim($payload) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($payload, true);
+        if (!is_array($decoded)) {
+            throw ValidationException::withMessages([
+                'route_points_json' => 'Format titik jalur tidak valid.',
+            ]);
+        }
+
+        $normalized = [];
+        foreach ($decoded as $index => $point) {
+            if (!is_array($point)) {
+                continue;
+            }
+
+            $lat = $point['lat'] ?? $point['latitude'] ?? null;
+            $lng = $point['lng'] ?? $point['lon'] ?? $point['longitude'] ?? null;
+
+            if (!is_numeric($lat) || !is_numeric($lng)) {
+                throw ValidationException::withMessages([
+                    'route_points_json' => 'Titik jalur ke-' . ($index + 1) . ' tidak valid.',
+                ]);
+            }
+
+            $latValue = (float) $lat;
+            $lngValue = (float) $lng;
+            if ($latValue < -90 || $latValue > 90 || $lngValue < -180 || $lngValue > 180) {
+                throw ValidationException::withMessages([
+                    'route_points_json' => 'Koordinat titik jalur di luar batas yang diizinkan.',
+                ]);
+            }
+
+            $normalized[] = [
+                'lat' => $latValue,
+                'lng' => $lngValue,
+            ];
+        }
+
+        if (!empty($normalized) && count($normalized) < 2) {
+            throw ValidationException::withMessages([
+                'route_points_json' => 'Minimal 2 titik dibutuhkan untuk membentuk jalur.',
+            ]);
+        }
+
+        return $normalized;
+    }
+
+    private function syncTrailPosts(TrailWeb $trail, ?string $payload): void
+    {
+        if ($payload === null || trim($payload) === '') {
+            return;
+        }
+
+        $decoded = json_decode($payload, true);
+        if (!is_array($decoded)) {
+            throw ValidationException::withMessages([
+                'trail_posts_json' => 'Format data pos tidak valid.',
+            ]);
+        }
+
+        $rows = [];
+        foreach ($decoded as $index => $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $lat = $item['lat'] ?? $item['latitude'] ?? null;
+            $lng = $item['lng'] ?? $item['lon'] ?? $item['longitude'] ?? null;
+            $name = trim((string) ($item['name'] ?? ''));
+
+            if (!is_numeric($lat) || !is_numeric($lng)) {
+                throw ValidationException::withMessages([
+                    'trail_posts_json' => 'Koordinat pos ke-' . ($index + 1) . ' tidak valid.',
+                ]);
+            }
+
+            $latValue = (float) $lat;
+            $lngValue = (float) $lng;
+
+            if ($latValue < -90 || $latValue > 90 || $lngValue < -180 || $lngValue > 180) {
+                throw ValidationException::withMessages([
+                    'trail_posts_json' => 'Koordinat pos di luar batas yang diizinkan.',
+                ]);
+            }
+
+            $rows[] = [
+                'name' => $name !== '' ? $name : 'Pos ' . ($index + 1),
+                'sequence' => $index + 1,
+                'latitude' => $latValue,
+                'longitude' => $lngValue,
+                'elevation' => isset($item['elevation']) && is_numeric($item['elevation'])
+                    ? (float) $item['elevation']
+                    : null,
+                'description' => isset($item['description']) ? trim((string) $item['description']) : null,
+                'icon_type' => isset($item['icon_type']) && trim((string) $item['icon_type']) !== ''
+                    ? trim((string) $item['icon_type'])
+                    : 'signpost',
+            ];
+        }
+
+        $trail->posts()->delete();
+        if (!empty($rows)) {
+            $trail->posts()->createMany($rows);
+        }
     }
 }
