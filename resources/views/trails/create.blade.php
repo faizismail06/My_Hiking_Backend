@@ -153,16 +153,21 @@
                     @error('route_points_json')<div class="text-danger small mb-2">{{ $message }}</div>@enderror
                     @error('trail_posts_json')<div class="text-danger small mb-2">{{ $message }}</div>@enderror
 
-                    <div class="d-flex flex-wrap gap-2 mb-2">
-                        <button type="button" id="mode-route-btn" class="btn btn-sm btn-primary-modern">Mode Tambah Titik Jalur</button>
-                        <button type="button" id="mode-post-btn" class="btn btn-sm btn-outline-modern">Mode Tambah Pos</button>
-                        <button type="button" id="mode-edit-route-btn" class="btn btn-sm btn-outline-modern">Mode Edit Titik Jalur</button>
-                        <button type="button" id="mode-multi-select-route-btn" class="btn btn-sm btn-outline-modern">Mode Pilih Banyak Node</button>
+                    <div class="d-flex flex-wrap gap-2 mb-2 align-items-center">
+                        <select id="mode-selector" class="form-select form-select-sm" style="max-width: 260px;">
+                            <option value="route">Mode Tambah Titik Jalur</option>
+                            <option value="post">Mode Tambah Pos</option>
+                            <option value="edit_route">Mode Edit Titik Jalur</option>
+                            <option value="multi_delete">Mode Pilih Banyak Node</option>
+                        </select>
+                        <button type="button" id="set-start-btn" class="btn btn-sm btn-outline-modern">Jadikan Start</button>
+                        <button type="button" id="set-finish-btn" class="btn btn-sm btn-outline-modern">Jadikan Finish</button>
+                        <button type="button" id="swap-start-finish-btn" class="btn btn-sm btn-outline-modern">Tukar Start/Finish</button>
                         <button type="button" id="delete-action-btn" class="btn btn-sm btn-warning-modern">Hapus</button>
                     </div>
                     <div id="trail-map-editor" style="height: 380px; border-radius: 12px; border: 1px solid #dbe3ec;"></div>
                     <small id="map-editor-stats" class="text-muted d-block mt-2"></small>
-                    <small class="text-muted d-block mt-1">Gunakan tombol Hapus sesuai mode aktif: route (hapus titik terakhir), post (hapus pos terakhir), edit (hapus titik terpilih), pilih banyak node (hapus semua node terpilih).</small>
+                    <small class="text-muted d-block mt-1">Gunakan tombol Hapus sesuai mode aktif: route (hapus titik terakhir), post (hapus pos terakhir), edit (hapus titik terpilih), pilih banyak node (hapus semua node terpilih). Pilih node di mode Edit lalu gunakan Jadikan Start/Jadikan Finish jika urutan tertukar.</small>
                 </div>
 
                 <div class="col-md-6">
@@ -225,18 +230,45 @@
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
-    .post-index-marker {
-        width: 28px;
-        height: 28px;
+    .route-special-marker {
+        width: 30px;
+        height: 30px;
         border-radius: 999px;
         display: grid;
         place-items: center;
         color: #fff;
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 700;
-        background: #ea580c;
         border: 2px solid #fff;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+        position: relative;
+    }
+
+    .route-start-marker {
+        background: #16a34a;
+    }
+
+    .route-finish-marker {
+        background: #dc2626;
+    }
+
+    .route-camp-marker {
+        background: #ea580c;
+    }
+
+    .route-camp-marker .camp-seq {
+        position: absolute;
+        right: -6px;
+        bottom: -6px;
+        min-width: 14px;
+        height: 14px;
+        border-radius: 999px;
+        background: #111827;
+        color: #fff;
+        font-size: 9px;
+        line-height: 14px;
+        text-align: center;
+        border: 1px solid #fff;
     }
 </style>
 
@@ -291,11 +323,13 @@ $(document).ready(function() {
     const postsInput = document.getElementById('trail_posts_json_input');
     const gpxFileInput = document.getElementById('gpx_file_input');
     const statsLabel = document.getElementById('map-editor-stats');
-    const modeRouteBtn = document.getElementById('mode-route-btn');
-    const modePostBtn = document.getElementById('mode-post-btn');
-    const modeEditRouteBtn = document.getElementById('mode-edit-route-btn');
-    const modeMultiSelectRouteBtn = document.getElementById('mode-multi-select-route-btn');
+    const modeSelector = document.getElementById('mode-selector');
+    const setStartBtn = document.getElementById('set-start-btn');
+    const setFinishBtn = document.getElementById('set-finish-btn');
+    const swapStartFinishBtn = document.getElementById('swap-start-finish-btn');
     const deleteActionBtn = document.getElementById('delete-action-btn');
+    const latitudeInput = document.querySelector('input[name="latitude"]');
+    const longitudeInput = document.querySelector('input[name="longitude"]');
 
     const parseJsonString = (value, fallback = []) => {
         if (typeof value !== 'string') {
@@ -370,6 +404,7 @@ $(document).ready(function() {
     let posts = normalizePosts(initialPosts);
     let mode = 'route';
     let selectedRoutePointIndex = null;
+    let selectedPostIndex = null;
     const selectedRoutePointIndexes = new Set();
     let suppressMapClickUntil = 0;
     let polylineLayer = null;
@@ -390,34 +425,53 @@ $(document).ready(function() {
 
     const modeLabel = () => {
         if (mode === 'post') {
-            return 'Tambah Pos';
+            return selectedPostIndex === null
+                ? 'Tambah Pos'
+                : `Tambah Pos (pos #${selectedPostIndex + 1} terpilih)`;
         }
         if (mode === 'multi_delete') {
             return `Pilih Banyak Node (${selectedRoutePointIndexes.size} dipilih)`;
         }
         if (mode === 'edit_route') {
+            const selectedRole =
+                selectedRoutePointIndex === 0
+                    ? ' (Start)'
+                    : (selectedRoutePointIndex === routePoints.length - 1 ? ' (Finish)' : '');
             return selectedRoutePointIndex === null
                 ? 'Edit Titik Jalur (pilih titik dulu)'
-                : `Edit Titik Jalur (titik #${selectedRoutePointIndex + 1} terpilih)`;
+                : `Edit Titik Jalur (titik #${selectedRoutePointIndex + 1}${selectedRole} terpilih)`;
         }
         return 'Tambah Titik Jalur';
     };
 
     const selectRoutePoint = (index) => {
         selectedRoutePointIndex = index;
+        selectedPostIndex = null;
         selectedRoutePointIndexes.clear();
         if (mode !== 'edit_route') {
             mode = 'edit_route';
-            updateModeButtons();
+            syncModeSelector();
+        }
+        drawLayers(false);
+    };
+
+    const selectPost = (index) => {
+        selectedPostIndex = index;
+        selectedRoutePointIndex = null;
+        selectedRoutePointIndexes.clear();
+        if (mode !== 'post') {
+            mode = 'post';
+            syncModeSelector();
         }
         drawLayers(false);
     };
 
     const toggleRoutePointSelection = (index) => {
         selectedRoutePointIndex = null;
+        selectedPostIndex = null;
         if (mode !== 'multi_delete') {
             mode = 'multi_delete';
-            updateModeButtons();
+            syncModeSelector();
         }
 
         if (selectedRoutePointIndexes.has(index)) {
@@ -428,20 +482,33 @@ $(document).ready(function() {
         drawLayers(false);
     };
 
-    const updateModeButtons = () => {
-        [modeRouteBtn, modePostBtn, modeEditRouteBtn, modeMultiSelectRouteBtn].forEach((button) => {
-            button.classList.remove('btn-primary-modern');
-            button.classList.add('btn-outline-modern');
-        });
+    const syncModeSelector = () => {
+        if (modeSelector) {
+            modeSelector.value = mode;
+        }
+    };
 
-        const activeButton =
-            mode === 'post'
-                ? modePostBtn
-                : (mode === 'edit_route'
-                    ? modeEditRouteBtn
-                    : (mode === 'multi_delete' ? modeMultiSelectRouteBtn : modeRouteBtn));
-        activeButton.classList.remove('btn-outline-modern');
-        activeButton.classList.add('btn-primary-modern');
+    const updateBasecampInputs = (lat, lng) => {
+        if (latitudeInput) {
+            latitudeInput.value = Number(lat).toFixed(6);
+        }
+        if (longitudeInput) {
+            longitudeInput.value = Number(lng).toFixed(6);
+        }
+    };
+
+    const getBasecampLatLng = () => {
+        if (!latitudeInput || !longitudeInput) {
+            return null;
+        }
+
+        const lat = Number(latitudeInput.value);
+        const lng = Number(longitudeInput.value);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+            return null;
+        }
+
+        return { lat, lng };
     };
 
     const findNearestRoutePointIndex = (lat, lng, maxDistanceMeters = 150) => {
@@ -495,6 +562,62 @@ $(document).ready(function() {
         drawLayers(false);
     };
 
+    const moveSelectedPointToStart = () => {
+        if (selectedRoutePointIndex === null) {
+            window.alert('Pilih titik dulu di Mode Edit, lalu klik Jadikan Start.');
+            return;
+        }
+
+        if (selectedRoutePointIndex === 0) {
+            window.alert('Titik terpilih sudah menjadi Start.');
+            return;
+        }
+
+        const selectedPoint = routePoints.splice(selectedRoutePointIndex, 1)[0];
+        routePoints.unshift(selectedPoint);
+        selectedRoutePointIndex = 0;
+        selectedPostIndex = null;
+        selectedRoutePointIndexes.clear();
+        mode = 'edit_route';
+        syncModeSelector();
+        drawLayers(false);
+    };
+
+    const moveSelectedPointToFinish = () => {
+        if (selectedRoutePointIndex === null) {
+            window.alert('Pilih titik dulu di Mode Edit, lalu klik Jadikan Finish.');
+            return;
+        }
+
+        const finishIndex = routePoints.length - 1;
+        if (selectedRoutePointIndex === finishIndex) {
+            window.alert('Titik terpilih sudah menjadi Finish.');
+            return;
+        }
+
+        const selectedPoint = routePoints.splice(selectedRoutePointIndex, 1)[0];
+        routePoints.push(selectedPoint);
+        selectedRoutePointIndex = routePoints.length - 1;
+        selectedPostIndex = null;
+        selectedRoutePointIndexes.clear();
+        mode = 'edit_route';
+        syncModeSelector();
+        drawLayers(false);
+    };
+
+    const swapStartFinish = () => {
+        if (routePoints.length < 2) {
+            window.alert('Minimal perlu 2 titik jalur untuk menukar Start/Finish.');
+            return;
+        }
+
+        routePoints.reverse();
+        selectedRoutePointIndex = null;
+        selectedPostIndex = null;
+        selectedRoutePointIndexes.clear();
+        drawLayers(false);
+    };
+
     const performDeleteAction = () => {
         if (mode === 'multi_delete') {
             removeSelectedRoutePoints();
@@ -511,7 +634,14 @@ $(document).ready(function() {
                 window.alert('Tidak ada pos untuk dihapus.');
                 return;
             }
-            posts.pop();
+
+            if (selectedPostIndex !== null) {
+                posts.splice(selectedPostIndex, 1);
+                selectedPostIndex = null;
+            } else {
+                posts.pop();
+            }
+
             drawLayers(false);
             return;
         }
@@ -523,6 +653,7 @@ $(document).ready(function() {
             }
             routePoints.pop();
             selectedRoutePointIndex = null;
+            selectedPostIndex = null;
             selectedRoutePointIndexes.clear();
             drawLayers();
         }
@@ -560,21 +691,31 @@ $(document).ready(function() {
                 { color: '#dc2626', weight: 5, opacity: 0.98 }
             ).addTo(map);
 
-            L.circleMarker([routePoints[0].lat, routePoints[0].lng], {
-                radius: 6,
-                color: '#065f46',
-                fillColor: '#10b981',
-                fillOpacity: 1,
-                weight: 2,
-            }).bindTooltip('Start').addTo(markerLayer);
+            const startIcon = L.divIcon({
+                className: '',
+                html: '<div class="route-special-marker route-start-marker"><i class="fas fa-play"></i></div>',
+                iconSize: [30, 30],
+                iconAnchor: [15, 15],
+            });
 
-            L.circleMarker([routePoints[routePoints.length - 1].lat, routePoints[routePoints.length - 1].lng], {
-                radius: 6,
-                color: '#7f1d1d',
-                fillColor: '#ef4444',
-                fillOpacity: 1,
-                weight: 2,
-            }).bindTooltip('Finish').addTo(markerLayer);
+            L.marker([routePoints[0].lat, routePoints[0].lng], { icon: startIcon })
+                .bindTooltip('Start')
+                .on('click', () => selectRoutePoint(0))
+                .addTo(markerLayer);
+
+            if (routePoints.length > 1) {
+                const finishIcon = L.divIcon({
+                    className: '',
+                    html: '<div class="route-special-marker route-finish-marker"><i class="fas fa-flag-checkered"></i></div>',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15],
+                });
+
+                L.marker([routePoints[routePoints.length - 1].lat, routePoints[routePoints.length - 1].lng], { icon: finishIcon })
+                    .bindTooltip('Finish')
+                    .on('click', () => selectRoutePoint(routePoints.length - 1))
+                    .addTo(markerLayer);
+            }
         }
 
         routePoints.forEach((point, index) => {
@@ -634,17 +775,72 @@ $(document).ready(function() {
         });
 
         posts.forEach((post, index) => {
+            const isPostSelected = mode === 'post' && selectedPostIndex === index;
+
+            if (isPostSelected) {
+                L.circleMarker([post.lat, post.lng], {
+                    radius: 13,
+                    color: '#1d4ed8',
+                    fillColor: '#60a5fa',
+                    fillOpacity: 0.28,
+                    weight: 2,
+                }).addTo(markerLayer);
+            }
+
+            const handlePostClick = (event) => {
+                const domEvent = event?.originalEvent || event;
+                if (domEvent && typeof domEvent.preventDefault === 'function') {
+                    domEvent.preventDefault();
+                }
+                if (domEvent && typeof domEvent.stopPropagation === 'function') {
+                    domEvent.stopPropagation();
+                    L.DomEvent.stop(domEvent);
+                }
+
+                suppressMapClickUntil = Date.now() + 300;
+                selectPost(index);
+            };
+
             const icon = L.divIcon({
                 className: '',
-                html: `<div class="post-index-marker">${index + 1}</div>`,
-                iconSize: [28, 28],
-                iconAnchor: [14, 14],
+                html: `<div class="route-special-marker route-camp-marker"><i class="fas fa-campground"></i><span class="camp-seq">${index + 1}</span></div>`,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15],
             });
 
             L.marker([post.lat, post.lng], { icon })
                 .bindPopup(`<strong>${post.name}</strong>`)
+                .on('click', handlePostClick)
                 .addTo(markerLayer);
         });
+
+        const basecamp = getBasecampLatLng();
+        if (basecamp) {
+            const basecampIcon = L.divIcon({
+                className: '',
+                html: '<div class="route-special-marker" style="background:#2563eb;"><i class="fas fa-campground"></i></div>',
+                iconSize: [30, 30],
+                iconAnchor: [15, 15],
+            });
+
+            const basecampMarker = L.marker([basecamp.lat, basecamp.lng], {
+                icon: basecampIcon,
+                draggable: true,
+            })
+                .bindTooltip('Basecamp (drag untuk geser posisi)')
+                .addTo(markerLayer);
+
+            basecampMarker.on('dragstart', () => {
+                suppressMapClickUntil = Date.now() + 300;
+            });
+
+            basecampMarker.on('dragend', (event) => {
+                const nextPos = event.target.getLatLng();
+                updateBasecampInputs(nextPos.lat, nextPos.lng);
+                suppressMapClickUntil = Date.now() + 300;
+                drawLayers(false);
+            });
+        }
 
         if (fitView && routePoints.length > 1) {
             map.fitBounds(routePoints.map((point) => [point.lat, point.lng]), {
@@ -667,6 +863,7 @@ $(document).ready(function() {
 
         if (mode === 'route') {
             selectedRoutePointIndex = null;
+            selectedPostIndex = null;
             selectedRoutePointIndexes.clear();
             routePoints.push({ lat: event.latlng.lat, lng: event.latlng.lng });
             drawLayers(false);
@@ -686,6 +883,7 @@ $(document).ready(function() {
 
             routePoints[selectedRoutePointIndex] = { lat: event.latlng.lat, lng: event.latlng.lng };
             selectedRoutePointIndex = null;
+            selectedPostIndex = null;
             drawLayers(false);
             return;
         }
@@ -708,6 +906,7 @@ $(document).ready(function() {
             elevation: null,
             description: null,
         });
+        selectedPostIndex = posts.length - 1;
         drawLayers(false);
     });
 
@@ -754,9 +953,10 @@ $(document).ready(function() {
                 const parsed = parseGpxPreviewPoints(text);
                 routePoints = parsed;
                 selectedRoutePointIndex = null;
+                selectedPostIndex = null;
                 selectedRoutePointIndexes.clear();
                 mode = 'route';
-                updateModeButtons();
+                syncModeSelector();
                 drawLayers(true);
             } catch (error) {
                 window.alert(error && error.message ? error.message : 'Gagal membaca file GPX.');
@@ -764,44 +964,53 @@ $(document).ready(function() {
         });
     }
 
-    modeRouteBtn.addEventListener('click', () => {
-        mode = 'route';
-        selectedRoutePointIndex = null;
-        selectedRoutePointIndexes.clear();
-        updateModeButtons();
-        syncHiddenFields();
-    });
-
-    modePostBtn.addEventListener('click', () => {
-        mode = 'post';
-        selectedRoutePointIndex = null;
-        selectedRoutePointIndexes.clear();
-        updateModeButtons();
-        syncHiddenFields();
-    });
-
-    modeEditRouteBtn.addEventListener('click', () => {
-        mode = 'edit_route';
-        selectedRoutePointIndex = null;
-        selectedRoutePointIndexes.clear();
-        updateModeButtons();
-        syncHiddenFields();
-    });
-
-    modeMultiSelectRouteBtn.addEventListener('click', () => {
-        mode = 'multi_delete';
-        selectedRoutePointIndex = null;
-        selectedRoutePointIndexes.clear();
-        updateModeButtons();
-        syncHiddenFields();
-    });
+    if (modeSelector) {
+        modeSelector.addEventListener('change', () => {
+            mode = modeSelector.value || 'route';
+            selectedRoutePointIndex = null;
+            selectedPostIndex = null;
+            selectedRoutePointIndexes.clear();
+            syncModeSelector();
+            syncHiddenFields();
+        });
+    }
 
     deleteActionBtn.addEventListener('click', () => {
         performDeleteAction();
     });
 
+    if (setStartBtn) {
+        setStartBtn.addEventListener('click', () => {
+            moveSelectedPointToStart();
+        });
+    }
+
+    if (setFinishBtn) {
+        setFinishBtn.addEventListener('click', () => {
+            moveSelectedPointToFinish();
+        });
+    }
+
+    if (swapStartFinishBtn) {
+        swapStartFinishBtn.addEventListener('click', () => {
+            swapStartFinish();
+        });
+    }
+
+    if (latitudeInput) {
+        latitudeInput.addEventListener('change', () => {
+            drawLayers(false);
+        });
+    }
+
+    if (longitudeInput) {
+        longitudeInput.addEventListener('change', () => {
+            drawLayers(false);
+        });
+    }
+
     document.addEventListener('keydown', (event) => {
-        if (mode !== 'edit_route' && mode !== 'multi_delete') {
+        if (mode !== 'edit_route' && mode !== 'multi_delete' && mode !== 'post') {
             return;
         }
 
@@ -816,7 +1025,7 @@ $(document).ready(function() {
         }
     });
 
-    updateModeButtons();
+    syncModeSelector();
     drawLayers();
     setTimeout(() => {
         map.invalidateSize();

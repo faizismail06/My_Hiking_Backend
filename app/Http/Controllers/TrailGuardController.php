@@ -98,6 +98,8 @@ class TrailGuardController extends Controller
         $request->validate([
             'deskripsi' => 'nullable|string|max:1000',
             'map_basecamp' => 'nullable|string|max:255',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'gambar_jalur' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'gpx_file' => 'nullable|file|mimes:gpx,xml|max:10240',
             'route_source' => 'nullable|string|max:50',
@@ -108,6 +110,8 @@ class TrailGuardController extends Controller
         $data = [
             'deskripsi' => $request->deskripsi,
             'map_basecamp' => $request->map_basecamp,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
         ];
 
         if ($request->hasFile('gambar_jalur')) {
