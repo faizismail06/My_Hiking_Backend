@@ -11,6 +11,7 @@ use App\Services\MidtransService;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 use Exception;
 
 class OrderController extends Controller
@@ -40,6 +41,9 @@ class OrderController extends Controller
                     $this->syncTransactionStatusFromMidtrans($transaction);
                     $transaction->refresh();
                 }
+
+                $this->syncOrderLifecycleStatus($item, $transaction);
+                $item->refresh();
 
                 $transactionStatus = $transaction?->status_pesanan ?? 'Incomplete';
                 $isPaid = $transactionStatus === 'Complete';
@@ -249,6 +253,9 @@ class OrderController extends Controller
                 $order->transaction->refresh();
             }
 
+            $this->syncOrderLifecycleStatus($order, $order->transaction);
+            $order->refresh();
+
             $canPrintTicket = $order->transaction?->status_pesanan === 'Complete';
 
             return response()->json([
@@ -300,6 +307,27 @@ class OrderController extends Controller
 
         if ($newStatus === 'Complete' && $transaction->order && $transaction->order->status !== 'Booking') {
             $transaction->order->update(['status' => 'Booking']);
+        }
+    }
+
+    private function syncOrderLifecycleStatus(Order $order, ?Transaction $transaction = null): void
+    {
+        $activeTransaction = $transaction ?? $order->transaction;
+
+        if (!$activeTransaction || $activeTransaction->status_pesanan !== 'Complete') {
+            return;
+        }
+
+        if ($order->status !== 'Booking') {
+            return;
+        }
+
+        $startDate = Carbon::parse($order->tanggal_naik)->startOfDay();
+        $today = now()->startOfDay();
+
+        // If booking is already past hiking date and never checked in, mark as expired.
+        if ($today->gt($startDate)) {
+            $order->update(['status' => 'Expired']);
         }
     }
     

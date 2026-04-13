@@ -828,6 +828,33 @@
                 chatBox.scrollTop = chatBox.scrollHeight;
             }
 
+            function appendDownloadButton(downloadPath) {
+                const wrap = document.createElement('div');
+                wrap.className = 'd-flex justify-content-start mb-2';
+
+                const bubble = document.createElement('div');
+                bubble.className = 'px-3 py-2 rounded global-chat-bubble-bot';
+                bubble.style.maxWidth = '82%';
+
+                const caption = document.createElement('div');
+                caption.textContent = 'File laporan siap diunduh.';
+                caption.style.marginBottom = '8px';
+
+                const downloadBtn = document.createElement('a');
+                downloadBtn.className = 'btn btn-primary btn-sm';
+                downloadBtn.textContent = 'Download';
+                downloadBtn.href = `http://127.0.0.1:5000${downloadPath}`;
+                downloadBtn.setAttribute('download', '');
+                downloadBtn.setAttribute('target', '_blank');
+                downloadBtn.setAttribute('rel', 'noopener noreferrer');
+
+                bubble.appendChild(caption);
+                bubble.appendChild(downloadBtn);
+                wrap.appendChild(bubble);
+                chatBox.appendChild(wrap);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
             function openChat() {
                 chatWindow.classList.add('show');
                 chatWindow.setAttribute('aria-hidden', 'false');
@@ -856,7 +883,7 @@
                     history.push({ message: botMsg, isUser: false });
 
                     if (data?.download_url) {
-                        appendMessage(`File laporan siap diunduh: http://127.0.0.1:5000${data.download_url}`, 'bot');
+                        appendDownloadButton(data.download_url);
                     }
                 } catch (err) {
                     appendMessage('Gagal terhubung ke server chatbot Python. Pastikan server berjalan.', 'bot');

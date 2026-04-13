@@ -95,6 +95,10 @@ class OrderWeb extends Model
                 return 'Sedang Mendaki';
             case 'Selesai':
                 return 'Selesai';
+            case 'Expired':
+                return 'Expired';
+            default:
+                return $this->status;
         }
     }
 
