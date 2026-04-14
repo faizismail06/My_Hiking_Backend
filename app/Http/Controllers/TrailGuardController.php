@@ -298,7 +298,7 @@ class TrailGuardController extends Controller
             return redirect()->back()->with('error', 'You have not been assigned to manage a trail.');
         }
 
-        $order = OrderWeb::with(['trail.mountain', 'user', 'orderMembers', 'transaction.payment'])
+        $order = OrderWeb::with(['trail.mountain', 'user', 'orderMembers', 'transaction'])
             ->where('id', $orderId)
             ->where('id_jalur', $trail->id)
             ->first();
