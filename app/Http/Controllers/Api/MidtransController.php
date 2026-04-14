@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Transaction;
-use App\Models\User;
 use App\Services\MidtransService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -36,6 +36,7 @@ class MidtransController extends Controller
         $validator = Validator::make($request->all(), [
             'order_id' => 'required|exists:orders,id',
             'payment_method' => 'nullable|string', // Optional: specific payment method
+            'reuse_if_pending' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -50,13 +51,12 @@ class MidtransController extends Controller
             // Get order with relations
             $order = Order::with(['mountain', 'trail', 'booker', 'members'])->findOrFail($request->order_id);
             $user = $order->booker;
+            $paymentMethod = $request->payment_method;
+            $reuseIfPending = filter_var($request->input('reuse_if_pending', false), FILTER_VALIDATE_BOOLEAN);
 
             // Calculate total amount
             $memberCount = $order->members->count() + 1; // booker + members
             $totalAmount = $memberCount * $order->total_harga_tiket;
-
-            // Generate unique midtrans order ID
-            $midtransOrderId = 'MH-' . $order->id . '-' . time();
 
             // Check if transaction exists
             $transaction = Transaction::where('id_pesanan', $order->id)->first();
@@ -68,9 +68,50 @@ class MidtransController extends Controller
                 ], 400);
             }
 
+            if ($order->status === 'Expired') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pembayaran sudah melewati batas waktu. Silakan buat pesanan baru.'
+                ], 410);
+            }
+
+            if ($transaction && $transaction->midtrans_order_id) {
+                $remoteStatus = $this->refreshMidtransStatus($transaction);
+                $transaction->refresh();
+
+                if ($transaction->status_pesanan === 'Complete') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Pembayaran sudah lunas'
+                    ], 400);
+                }
+
+                $samePaymentMethod = !$paymentMethod || $paymentMethod === $transaction->payment_type;
+                $stillPending = $remoteStatus === 'pending' && !$this->isPaymentExpiredByWindow($transaction);
+
+                if ($reuseIfPending && $samePaymentMethod && $stillPending && !empty($transaction->snap_token)) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Melanjutkan pembayaran yang masih pending',
+                        'data' => [
+                            'snap_token' => $transaction->snap_token,
+                            'redirect_url' => $this->midtransService->buildRedirectUrlFromSnapToken($transaction->snap_token),
+                            'transaction_id' => $transaction->id,
+                            'midtrans_order_id' => $transaction->midtrans_order_id,
+                            'total_amount' => $transaction->total_bayar,
+                            'client_key' => $this->midtransService->getClientKey(),
+                            'snap_url' => $this->midtransService->getSnapUrl(),
+                            'payment_expires_at' => $this->getPaymentExpiresAt($transaction),
+                        ]
+                    ], 200);
+                }
+            }
+
+            // Generate unique midtrans order ID for a fresh payment session
+            $midtransOrderId = 'MH-' . $order->id . '-' . time();
+
             // Determine enabled payments based on selected payment method
             $enabledPayments = null;
-            $paymentMethod = $request->payment_method;
             
             if ($paymentMethod) {
                 // Map payment method to Midtrans enabled_payments
@@ -78,6 +119,7 @@ class MidtransController extends Controller
                     'gopay' => ['gopay'],
                     'shopeepay' => ['shopeepay'],
                     'qris' => ['gopay', 'shopeepay'], // QRIS uses gopay/shopeepay
+                    'bank_transfer' => ['bank_transfer'],
                     'bca_va' => ['bca_va'],
                     'bni_va' => ['bni_va'],
                     'bri_va' => ['bri_va'],
@@ -119,6 +161,10 @@ class MidtransController extends Controller
                     'midtrans_order_id' => $midtransOrderId,
                     'total_bayar' => $totalAmount,
                     'status_pesanan' => 'Incomplete',
+                    'payment_type' => $paymentMethod ?: $transaction->payment_type,
+                    'transaction_time' => now(),
+                    'waktu_pembayaran' => null,
+                    'fraud_status' => null,
                 ]);
             } else {
                 $transaction = Transaction::create([
@@ -127,6 +173,8 @@ class MidtransController extends Controller
                     'status_pesanan' => 'Incomplete',
                     'snap_token' => $result['snap_token'],
                     'midtrans_order_id' => $midtransOrderId,
+                    'payment_type' => $paymentMethod,
+                    'transaction_time' => now(),
                 ]);
             }
 
@@ -141,6 +189,7 @@ class MidtransController extends Controller
                     'total_amount' => $totalAmount,
                     'client_key' => $this->midtransService->getClientKey(),
                     'snap_url' => $this->midtransService->getSnapUrl(),
+                    'payment_expires_at' => $this->getPaymentExpiresAt($transaction),
                 ]
             ], 200);
 
@@ -193,9 +242,9 @@ class MidtransController extends Controller
 
             $transaction->update([
                 'status_pesanan' => $newStatus,
-                'payment_type' => $paymentType,
+                'payment_type' => $paymentType ?? $transaction->payment_type,
                 'transaction_id' => $transactionId,
-                'transaction_time' => $transactionTime,
+                'transaction_time' => $transactionTime ?? $transaction->transaction_time,
                 'fraud_status' => $fraudStatus,
                 'waktu_pembayaran' => $newStatus === 'Complete' ? now() : null,
             ]);
@@ -203,6 +252,8 @@ class MidtransController extends Controller
             // Update order status if payment is complete
             if ($newStatus === 'Complete') {
                 $transaction->order->update(['status' => 'Booking']);
+            } elseif (in_array($transactionStatus, ['expire', 'cancel'], true)) {
+                $transaction->order->update(['status' => 'Expired']);
             }
 
             Log::info('Transaction Updated', [
@@ -240,30 +291,14 @@ class MidtransController extends Controller
                 ], 404);
             }
 
-            // If we have midtrans_order_id, check status from Midtrans
-            if ($transaction->midtrans_order_id) {
-                $result = $this->midtransService->getTransactionStatus($transaction->midtrans_order_id);
+            // Sync status from Midtrans and local expiry window
+            $this->refreshMidtransStatus($transaction);
+            $transaction->refresh()->loadMissing('order');
 
-                if ($result['success']) {
-                    $data = $result['data'];
-                    $newStatus = $this->mapTransactionStatus(
-                        $data['transaction_status'] ?? 'pending',
-                        $data['fraud_status'] ?? null
-                    );
-
-                    // Update local transaction status
-                    $transaction->update([
-                        'status_pesanan' => $newStatus,
-                        'payment_type' => $data['payment_type'] ?? $transaction->payment_type,
-                        'transaction_id' => $data['transaction_id'] ?? $transaction->transaction_id,
-                        'fraud_status' => $data['fraud_status'] ?? $transaction->fraud_status,
-                    ]);
-
-                    if ($newStatus === 'Complete') {
-                        $transaction->update(['waktu_pembayaran' => now()]);
-                        $transaction->order->update(['status' => 'Booking']);
-                    }
-                }
+            $paymentExpired = $transaction->status_pesanan !== 'Complete' && $this->isPaymentExpiredByWindow($transaction);
+            if ($paymentExpired && $transaction->order && $transaction->order->status !== 'Expired') {
+                $transaction->order->update(['status' => 'Expired']);
+                $transaction->order->refresh();
             }
 
             return response()->json([
@@ -276,6 +311,9 @@ class MidtransController extends Controller
                     'payment_type' => $transaction->payment_type,
                     'total_bayar' => $transaction->total_bayar,
                     'waktu_pembayaran' => $transaction->waktu_pembayaran,
+                    'order_status' => $transaction->order->status ?? null,
+                    'is_payment_expired' => $paymentExpired,
+                    'payment_expires_at' => $this->getPaymentExpiresAt($transaction),
                 ]
             ], 200);
 
@@ -337,6 +375,88 @@ class MidtransController extends Controller
                 'is_production' => $this->midtransService->isProduction(),
             ]
         ], 200);
+    }
+
+    /**
+     * Refresh local transaction from Midtrans status API.
+     */
+    protected function refreshMidtransStatus(Transaction $transaction): ?string
+    {
+        if (empty($transaction->midtrans_order_id)) {
+            return null;
+        }
+
+        $result = $this->midtransService->getTransactionStatus($transaction->midtrans_order_id);
+        if (!($result['success'] ?? false)) {
+            return null;
+        }
+
+        $data = $result['data'] ?? [];
+        $transactionStatus = strtolower((string) ($data['transaction_status'] ?? 'pending'));
+        $newStatus = $this->mapTransactionStatus(
+            $transactionStatus,
+            $data['fraud_status'] ?? null
+        );
+
+        $transaction->update([
+            'status_pesanan' => $newStatus,
+            'payment_type' => $data['payment_type'] ?? $transaction->payment_type,
+            'transaction_id' => $data['transaction_id'] ?? $transaction->transaction_id,
+            'transaction_time' => $data['transaction_time'] ?? $transaction->transaction_time,
+            'fraud_status' => $data['fraud_status'] ?? $transaction->fraud_status,
+            'waktu_pembayaran' => $newStatus === 'Complete'
+                ? ($transaction->waktu_pembayaran ?? now())
+                : null,
+        ]);
+
+        $transaction->loadMissing('order');
+
+        if ($newStatus === 'Complete' && $transaction->order && $transaction->order->status !== 'Booking') {
+            $transaction->order->update(['status' => 'Booking']);
+        }
+
+        if (in_array($transactionStatus, ['expire', 'cancel'], true) && $transaction->order) {
+            $transaction->order->update(['status' => 'Expired']);
+        }
+
+        return $transactionStatus;
+    }
+
+    /**
+     * Compute payment expiry timestamp from configured Midtrans window.
+     */
+    protected function getPaymentExpiresAt(Transaction $transaction): ?string
+    {
+        $baseTime = $transaction->transaction_time ?? $transaction->created_at;
+        if (!$baseTime) {
+            return null;
+        }
+
+        $duration = $this->midtransService->getPaymentExpiryDuration();
+        $unit = $this->midtransService->getPaymentExpiryUnit();
+
+        $expiresAt = Carbon::parse($baseTime);
+        $expiresAt = match ($unit) {
+            'second' => $expiresAt->addSeconds($duration),
+            'hour' => $expiresAt->addHours($duration),
+            'day' => $expiresAt->addDays($duration),
+            default => $expiresAt->addMinutes($duration),
+        };
+
+        return $expiresAt->toDateTimeString();
+    }
+
+    /**
+     * Determine whether pending payment has passed configured expiry window.
+     */
+    protected function isPaymentExpiredByWindow(Transaction $transaction): bool
+    {
+        $expiresAt = $this->getPaymentExpiresAt($transaction);
+        if (!$expiresAt) {
+            return false;
+        }
+
+        return now()->greaterThanOrEqualTo(Carbon::parse($expiresAt));
     }
 
     /**

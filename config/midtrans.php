@@ -28,6 +28,11 @@ return [
     
     // Enable/disable 3D Secure
     'is_3ds' => env('MIDTRANS_IS_3DS', true),
+
+    // Payment expiry window configuration
+    // Supported units by Midtrans: second, minute, hour, day
+    'payment_expiry_duration' => (int) env('MIDTRANS_PAYMENT_EXPIRY_DURATION', 60),
+    'payment_expiry_unit' => env('MIDTRANS_PAYMENT_EXPIRY_UNIT', 'minute'),
     
     // Snap API URL
     'snap_url' => env('MIDTRANS_IS_PRODUCTION', false) 
