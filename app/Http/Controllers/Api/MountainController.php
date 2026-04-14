@@ -37,7 +37,6 @@ class MountainController extends Controller
         $user = Auth::guard('sanctum')->user();
 
         $recommendedPayload = null;
-        $recommendedMountainId = null;
 
         if ($user && (int) $user->level === 1 && !empty($user->tier)) {
             $rankedCandidates = [];
@@ -90,7 +89,6 @@ class MountainController extends Controller
                 });
 
                 $winner = $rankedCandidates[0];
-                $recommendedMountainId = $winner['mountain']->id;
                 $recommendedPayload = array_merge(
                     $this->formatMountain($winner['mountain']),
                     [
@@ -102,7 +100,6 @@ class MountainController extends Controller
         }
 
         $otherMountains = $mountains
-            ->filter(fn ($mountain) => $recommendedMountainId === null || $mountain->id !== $recommendedMountainId)
             ->values()
             ->map(fn ($mountain) => $this->formatMountain($mountain))
             ->all();
