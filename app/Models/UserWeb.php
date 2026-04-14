@@ -78,13 +78,13 @@ class UserWeb extends Authenticatable
     }
     public function anggotaPesanan()
     {
-        return $this->hasMany(AnggotaPesananWeb::class, 'id_users', 'id');
+        return $this->hasMany(OrderMemberWeb::class, 'id_users', 'id');
     }
 
     // Relasi User ke Pesanan
     public function pesanan()
     {
-        return $this->hasMany(PesananWeb::class, 'id_user');
+        return $this->hasMany(OrderWeb::class, 'id_user');
     }
 
     // Relasi ke tabel `routes` (user sebagai penjaga jalur)
