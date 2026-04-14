@@ -47,7 +47,9 @@ class OrderController extends Controller
 
                 $transactionStatus = $transaction?->status_pesanan ?? 'Incomplete';
                 $isPaid = $transactionStatus === 'Complete';
-                $displayStatus = $isPaid ? $item->status : 'Bayar';
+                $displayStatus = $isPaid
+                    ? $item->status
+                    : ($item->status === 'Expired' ? 'Expired' : 'Bayar');
 
                 return [
                     "id" => (string) $item->id,
@@ -299,6 +301,7 @@ class OrderController extends Controller
             'status_pesanan' => $newStatus,
             'payment_type' => $data['payment_type'] ?? $transaction->payment_type,
             'transaction_id' => $data['transaction_id'] ?? $transaction->transaction_id,
+            'transaction_time' => $data['transaction_time'] ?? $transaction->transaction_time,
             'fraud_status' => $fraudStatus ?? $transaction->fraud_status,
             'waktu_pembayaran' => $newStatus === 'Complete'
                 ? ($transaction->waktu_pembayaran ?? now())
@@ -307,12 +310,23 @@ class OrderController extends Controller
 
         if ($newStatus === 'Complete' && $transaction->order && $transaction->order->status !== 'Booking') {
             $transaction->order->update(['status' => 'Booking']);
+        } elseif (in_array($status, ['expire', 'cancel'], true) && $transaction->order) {
+            $transaction->order->update(['status' => 'Expired']);
         }
     }
 
     private function syncOrderLifecycleStatus(Order $order, ?Transaction $transaction = null): void
     {
         $activeTransaction = $transaction ?? $order->transaction;
+
+        // Expire unpaid orders when payment deadline has passed.
+        if ($activeTransaction && $activeTransaction->status_pesanan !== 'Complete') {
+            if ($this->isPaymentWindowExpired($activeTransaction) && $order->status !== 'Expired') {
+                $order->update(['status' => 'Expired']);
+            }
+
+            return;
+        }
 
         if (!$activeTransaction || $activeTransaction->status_pesanan !== 'Complete') {
             return;
@@ -329,6 +343,27 @@ class OrderController extends Controller
         if ($today->gt($startDate)) {
             $order->update(['status' => 'Expired']);
         }
+    }
+
+    private function isPaymentWindowExpired(Transaction $transaction): bool
+    {
+        $baseTime = $transaction->transaction_time ?? $transaction->created_at;
+        if (!$baseTime) {
+            return false;
+        }
+
+        $duration = $this->midtransService->getPaymentExpiryDuration();
+        $unit = $this->midtransService->getPaymentExpiryUnit();
+
+        $expiredAt = Carbon::parse($baseTime);
+        $expiredAt = match ($unit) {
+            'second' => $expiredAt->addSeconds($duration),
+            'hour' => $expiredAt->addHours($duration),
+            'day' => $expiredAt->addDays($duration),
+            default => $expiredAt->addMinutes($duration),
+        };
+
+        return now()->greaterThanOrEqualTo($expiredAt);
     }
     
     public function getOrderDetail($orderId)

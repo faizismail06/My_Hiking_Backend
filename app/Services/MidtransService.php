@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -152,6 +153,13 @@ class MidtransService
             'finish' => config('app.url') . '/api/midtrans/finish',
         ];
 
+        // Enforce payment expiry window so pending payments do not live forever.
+        $customExpiry = [
+            'order_time' => Carbon::now('Asia/Jakarta')->format('Y-m-d H:i:s O'),
+            'expiry_duration' => $this->getPaymentExpiryDuration(),
+            'unit' => $this->getPaymentExpiryUnit(),
+        ];
+
         return [
             'transaction_details' => $transactionDetails,
             'item_details' => $itemDetails,
@@ -159,6 +167,7 @@ class MidtransService
             'credit_card' => $creditCard,
             'enabled_payments' => $enabledPayments,
             'callbacks' => $callbacks,
+            'custom_expiry' => $customExpiry,
         ];
     }
 
@@ -247,5 +256,41 @@ class MidtransService
     public function isProduction()
     {
         return $this->isProduction;
+    }
+
+    /**
+     * Build hosted payment page URL from snap token.
+     */
+    public function buildRedirectUrlFromSnapToken(?string $snapToken): ?string
+    {
+        if (empty($snapToken)) {
+            return null;
+        }
+
+        $base = $this->isProduction
+            ? 'https://app.midtrans.com/snap/v2/vtweb/'
+            : 'https://app.sandbox.midtrans.com/snap/v2/vtweb/';
+
+        return $base . $snapToken;
+    }
+
+    /**
+     * Get payment expiry duration.
+     */
+    public function getPaymentExpiryDuration(): int
+    {
+        $duration = (int) config('midtrans.payment_expiry_duration', 60);
+        return $duration > 0 ? $duration : 60;
+    }
+
+    /**
+     * Get payment expiry unit with safe fallback.
+     */
+    public function getPaymentExpiryUnit(): string
+    {
+        $unit = strtolower((string) config('midtrans.payment_expiry_unit', 'minute'));
+        $allowed = ['second', 'minute', 'hour', 'day'];
+
+        return in_array($unit, $allowed, true) ? $unit : 'minute';
     }
 }

@@ -91,6 +91,7 @@ private function syncTransactionStatusFromMidtrans(Transaction $transaction): vo
             'status_pesanan' => $newStatus,
             'payment_type' => $data['payment_type'] ?? $transaction->payment_type,
             'transaction_id' => $data['transaction_id'] ?? $transaction->transaction_id,
+            'transaction_time' => $data['transaction_time'] ?? $transaction->transaction_time,
             'fraud_status' => $fraudStatus ?? $transaction->fraud_status,
             'waktu_pembayaran' => $newStatus === 'Complete'
                 ? ($transaction->waktu_pembayaran ?? now())
@@ -99,6 +100,8 @@ private function syncTransactionStatusFromMidtrans(Transaction $transaction): vo
 
         if ($newStatus === 'Complete' && $transaction->order && $transaction->order->status !== 'Booking') {
             $transaction->order->update(['status' => 'Booking']);
+        } elseif (in_array($status, ['expire', 'cancel'], true) && $transaction->order) {
+            $transaction->order->update(['status' => 'Expired']);
         }
     }
 
