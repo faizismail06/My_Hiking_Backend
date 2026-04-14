@@ -7,6 +7,46 @@ use Illuminate\Support\Facades\Http;
 
 class WeatherService
 {
+    /**
+     * Get normalized weather score for TOPSIS criterion C6.
+     * Score range: 0.0 - 1.0 (higher is better).
+     */
+    public function getRouteWeatherScore(float $lat, float $lng): array
+    {
+        [$normalizedLat, $normalizedLng] = $this->normalizeCoordinates($lat, $lng);
+        $cacheKey = sprintf('weather:route-score:v1:%s:%s', $normalizedLat, $normalizedLng);
+
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($normalizedLat, $normalizedLng) {
+            $openWeather = $this->fetchOpenWeatherCurrent($normalizedLat, $normalizedLng);
+
+            if ($openWeather === null) {
+                // Fallback to the existing weather pipeline so recommendations still run.
+                $legacy = $this->getCurrentWeather($normalizedLat, $normalizedLng);
+                $legacyCondition = strtolower((string) ($legacy['condition'] ?? 'unknown'));
+
+                return [
+                    'provider' => 'open-meteo-fallback',
+                    'condition' => $legacyCondition,
+                    'description' => $legacyCondition,
+                    'temperature' => $legacy['temperature'] ?? null,
+                    'weather_score' => $this->mapOpenWeatherConditionToScore($legacyCondition, $legacyCondition),
+                ];
+            }
+
+            $weatherMain = strtolower((string) ($openWeather['weather'][0]['main'] ?? 'unknown'));
+            $weatherDescription = strtolower((string) ($openWeather['weather'][0]['description'] ?? 'unknown'));
+            $temperature = $this->toNullableFloat($openWeather['main']['temp'] ?? null);
+
+            return [
+                'provider' => 'openweather',
+                'condition' => $weatherMain,
+                'description' => $weatherDescription,
+                'temperature' => $temperature,
+                'weather_score' => $this->mapOpenWeatherConditionToScore($weatherMain, $weatherDescription),
+            ];
+        });
+    }
+
     public function getCurrentWeather(float $lat, float $lng): array
     {
         [$normalizedLat, $normalizedLng] = $this->normalizeCoordinates($lat, $lng);
@@ -195,6 +235,88 @@ class WeatherService
     private function normalizeCoordinates(float $lat, float $lng): array
     {
         return [round($lat, 4), round($lng, 4)];
+    }
+
+    private function fetchOpenWeatherCurrent(float $lat, float $lng): ?array
+    {
+        $apiKey = (string) config('services.openweather.api_key', '');
+
+        if ($apiKey === '') {
+            return null;
+        }
+
+        $baseUrl = (string) config('services.openweather.base_url', 'https://api.openweathermap.org/data/2.5');
+        $units = (string) config('services.openweather.units', 'metric');
+
+        $response = Http::timeout(10)->get(rtrim($baseUrl, '/') . '/weather', [
+            'lat' => $lat,
+            'lon' => $lng,
+            'appid' => $apiKey,
+            'units' => $units,
+        ]);
+
+        if (!$response->ok()) {
+            return null;
+        }
+
+        $payload = $response->json();
+
+        return is_array($payload) ? $payload : null;
+    }
+
+    /**
+     * Mapping example requested:
+     * clear sky -> 1.0
+     * few clouds -> 0.8
+     * cloudy -> 0.7
+     * light rain -> 0.5
+     * heavy rain -> 0.2
+     */
+    private function mapOpenWeatherConditionToScore(string $main, string $description): float
+    {
+        $main = strtolower(trim($main));
+        $description = strtolower(trim($description));
+
+        if ($description === 'clear sky' || $main === 'clear') {
+            return 1.0;
+        }
+
+        if ($description === 'few clouds') {
+            return 0.8;
+        }
+
+        if (
+            str_contains($description, 'cloud') ||
+            $main === 'clouds' ||
+            $main === 'mist' ||
+            $main === 'fog' ||
+            $main === 'haze'
+        ) {
+            return 0.7;
+        }
+
+        if (
+            str_contains($description, 'light rain') ||
+            str_contains($description, 'drizzle')
+        ) {
+            return 0.5;
+        }
+
+        if (
+            str_contains($description, 'heavy rain') ||
+            str_contains($description, 'very heavy rain') ||
+            str_contains($description, 'extreme rain') ||
+            str_contains($description, 'thunderstorm') ||
+            str_contains($description, 'shower rain')
+        ) {
+            return 0.2;
+        }
+
+        if (str_contains($description, 'rain') || $main === 'rain') {
+            return 0.4;
+        }
+
+        return 0.6;
     }
 
     private function resolveCurrentPrecipitationProbability(array $payload): ?float

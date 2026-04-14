@@ -13,6 +13,8 @@ use App\Http\Controllers\Api\RuleController;
 use App\Http\Controllers\Api\FriendController;
 use App\Http\Controllers\Api\ExperienceOnboardingController;
 use App\Http\Controllers\Api\WeatherController;
+use App\Http\Controllers\Api\AiGatewayController;
+use App\Http\Controllers\RecommendationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -49,6 +51,8 @@ Route::get('/mountains/{id_gunung}/trails/{id_jalur}/preview', [MountainTrailDet
 Route::get('/mountains/{id_gunung}/trails/{id_jalur}/booking', [MountainTrailDetailController::class, 'trailBooking']);
 Route::get('/weather/current', [WeatherController::class, 'current']);
 Route::get('/weather/forecast', [WeatherController::class, 'forecast']);
+Route::get('/recommendations', [RecommendationController::class, 'index']);
+Route::post('/ai/predict-weather', [AiGatewayController::class, 'predictWeather']);
 
 // Order routes
 Route::get('/orders', [OrderController::class, 'index']);
