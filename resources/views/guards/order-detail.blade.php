@@ -35,7 +35,7 @@
                     </div>
                 </div>
                 <div class="col-md-6 text-md-end mt-3 mt-md-0">
-                    @if ($order->status == 'Dikonfirmasi')
+                    @if ($order->status == 'Booking' || $order->status == 'Dikonfirmasi')
                         <form action="{{ route('guards.updateStatus', $order->id) }}" method="POST" class="d-inline">
                             @csrf
                             @method('PUT')
@@ -79,7 +79,8 @@
                     </div>
                     <div class="info-row d-flex justify-content-between py-3 border-bottom">
                         <span class="text-muted">Tanggal Booking</span>
-                        <span class="fw-semibold">{{ \Carbon\Carbon::parse($order->tanggal_booking)->isoFormat('D MMMM Y') }}</span>
+                        <span
+                            class="fw-semibold">{{ \Carbon\Carbon::parse($order->tanggal_booking)->isoFormat('D MMMM Y') }}</span>
                     </div>
                     <div class="info-row d-flex justify-content-between py-3 border-bottom">
                         <span class="text-muted">Tanggal Naik</span>
@@ -145,13 +146,16 @@
                         </div>
                         <div class="info-row d-flex justify-content-between py-3">
                             <span class="text-muted">Tanggal Pembayaran</span>
-                            <span class="fw-semibold">{{ \Carbon\Carbon::parse($order->transaksi->created_at)->isoFormat('D MMMM Y HH:mm') }}</span>
+                            <span
+                                class="fw-semibold">{{ \Carbon\Carbon::parse($order->transaksi->created_at)->isoFormat('D MMMM Y HH:mm') }}</span>
                         </div>
                     @else
                         <div class="text-center py-5">
-                            <i class="fas fa-exclamation-triangle fa-3x mb-3" style="color: var(--accent-color); opacity: 0.5;"></i>
+                            <i class="fas fa-exclamation-triangle fa-3x mb-3"
+                                style="color: var(--accent-color); opacity: 0.5;"></i>
                             <h6>Belum Ada Data Pembayaran</h6>
-                            <p class="text-muted mb-0">Informasi pembayaran akan muncul setelah pendaki melakukan pembayaran</p>
+                            <p class="text-muted mb-0">Informasi pembayaran akan muncul setelah pendaki melakukan
+                                pembayaran</p>
                         </div>
                     @endif
                 </div>
@@ -181,7 +185,7 @@
                                 @forelse($order->anggotaPesanan as $index => $anggota)
                                     <tr>
                                         <td class="text-center">
-                                            @if($index == 0)
+                                            @if ($index == 0)
                                                 <span class="badge bg-primary rounded-pill" title="Ketua Rombongan">
                                                     <i class="fas fa-crown"></i>
                                                 </span>
@@ -192,7 +196,8 @@
                                         <td><code>{{ $anggota->nik }}</code></td>
                                         <td>
                                             <div class="d-flex align-items-center gap-2">
-                                                <div class="user-avatar" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                                                <div class="user-avatar"
+                                                    style="width: 32px; height: 32px; font-size: 0.75rem;">
                                                     {{ strtoupper(substr($anggota->nama, 0, 1)) }}
                                                 </div>
                                                 <span class="fw-medium">{{ $anggota->nama }}</span>
@@ -205,7 +210,8 @@
                                             </a>
                                         </td>
                                         <td>
-                                            <span class="text-truncate d-inline-block" style="max-width: 200px;" title="{{ $anggota->alamat }}">
+                                            <span class="text-truncate d-inline-block" style="max-width: 200px;"
+                                                title="{{ $anggota->alamat }}">
                                                 {{ $anggota->alamat }}
                                             </span>
                                         </td>
@@ -238,4 +244,3 @@
         </a>
     </div>
 @endsection
-

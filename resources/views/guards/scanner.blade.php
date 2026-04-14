@@ -4,94 +4,102 @@
 @section('page-subtitle', 'Scan QR code untuk check-in/out pendaki')
 
 @push('styles')
-<style>
-    .scanner-card {
-        background: white;
-        border-radius: 20px;
-        overflow: hidden;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    }
-    
-    .scanner-card .scanner-header {
-        padding: 1.25rem 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-    
-    .scanner-card .scanner-header.camera { background: linear-gradient(135deg, var(--info-color) 0%, #2980b9 100%); }
-    .scanner-card .scanner-header.upload { background: linear-gradient(135deg, var(--accent-color) 0%, #e67e22 100%); }
-    .scanner-card .scanner-header.manual { background: linear-gradient(135deg, var(--success-color) 0%, #1e8449 100%); }
-    
-    .scanner-card .scanner-header i {
-        font-size: 1.5rem;
-        color: white;
-    }
-    
-    .scanner-card .scanner-header h6 {
-        margin: 0;
-        color: white;
-        font-weight: 600;
-    }
-    
-    .scanner-card .scanner-body {
-        padding: 1.5rem;
-    }
-    
-    #reader {
-        border-radius: 12px;
-        overflow: hidden;
-    }
-    
-    #reader video {
-        border-radius: 12px;
-    }
-    
-    .upload-zone {
-        border: 2px dashed #e2e8f0;
-        border-radius: 12px;
-        padding: 2rem;
-        text-align: center;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        background: #f8fafc;
-    }
-    
-    .upload-zone:hover {
-        border-color: var(--primary-color);
-        background: var(--primary-light);
-    }
-    
-    .upload-zone i {
-        font-size: 3rem;
-        color: #94a3b8;
-        margin-bottom: 1rem;
-        display: block;
-    }
-    
-    .info-card {
-        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-        border-radius: 12px;
-        padding: 1.5rem;
-        border: 1px solid #bae6fd;
-    }
-    
-    .info-card h6 {
-        color: #0369a1;
-        font-weight: 600;
-        margin-bottom: 1rem;
-    }
-    
-    .info-card ol {
-        color: #0c4a6e;
-        margin: 0;
-        padding-left: 1.25rem;
-    }
-    
-    .info-card ol li {
-        margin-bottom: 0.5rem;
-    }
-</style>
+    <style>
+        .scanner-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .scanner-card .scanner-header {
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .scanner-card .scanner-header.camera {
+            background: linear-gradient(135deg, var(--info-color) 0%, #2980b9 100%);
+        }
+
+        .scanner-card .scanner-header.upload {
+            background: linear-gradient(135deg, var(--accent-color) 0%, #e67e22 100%);
+        }
+
+        .scanner-card .scanner-header.manual {
+            background: linear-gradient(135deg, var(--success-color) 0%, #1e8449 100%);
+        }
+
+        .scanner-card .scanner-header i {
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .scanner-card .scanner-header h6 {
+            margin: 0;
+            color: white;
+            font-weight: 600;
+        }
+
+        .scanner-card .scanner-body {
+            padding: 1.5rem;
+        }
+
+        #reader {
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        #reader video {
+            border-radius: 12px;
+        }
+
+        .upload-zone {
+            border: 2px dashed #e2e8f0;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f8fafc;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary-color);
+            background: var(--primary-light);
+        }
+
+        .upload-zone i {
+            font-size: 3rem;
+            color: #94a3b8;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .info-card {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid #bae6fd;
+        }
+
+        .info-card h6 {
+            color: #0369a1;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .info-card ol {
+            color: #0c4a6e;
+            margin: 0;
+            padding-left: 1.25rem;
+        }
+
+        .info-card ol li {
+            margin-bottom: 0.5rem;
+        }
+    </style>
 @endpush
 
 @section('content')
@@ -140,12 +148,12 @@
                         <div class="mb-3">
                             <label class="form-label-modern">ID Pesanan</label>
                             <div class="input-group">
-                                <span class="input-group-text" style="border-radius: 10px 0 0 10px; border: 1px solid #e2e8f0;">
+                                <span class="input-group-text"
+                                    style="border-radius: 10px 0 0 10px; border: 1px solid #e2e8f0;">
                                     <i class="fas fa-hashtag text-muted"></i>
                                 </span>
                                 <input type="text" name="pesanan_id" class="form-control form-modern"
-                                    style="border-radius: 0 10px 10px 0;"
-                                    placeholder="Masukkan ID Pesanan" required>
+                                    style="border-radius: 0 10px 10px 0;" placeholder="Masukkan ID Pesanan" required>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-modern btn-success-modern w-100">
@@ -176,21 +184,124 @@
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
         let html5QrcodeScanner;
+        let scanInProgress = false;
 
         function onScanSuccess(decodedText, decodedResult) {
+            if (scanInProgress) return; // Prevent multiple scans
+            scanInProgress = true;
+
             console.log(`Code matched = ${decodedText}`, decodedResult);
 
             // Stop scanner
             if (html5QrcodeScanner) {
                 html5QrcodeScanner.clear().then(() => {
-                    redirectToDetail(decodedText);
+                    autoScanOrder(decodedText);
                 }).catch(err => {
                     console.error('Error stopping scanner:', err);
-                    redirectToDetail(decodedText);
+                    autoScanOrder(decodedText);
                 });
             } else {
-                redirectToDetail(decodedText);
+                autoScanOrder(decodedText);
             }
+        }
+
+        function autoScanOrder(pesananId) {
+            // Show loading alert
+            const scanResult = document.getElementById('scan-result');
+            scanResult.innerHTML = `
+                <div class="alert alert-modern alert-info">
+                    <div class="spinner-border spinner-border-sm me-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    Memproses scan pesanan...
+                </div>
+            `;
+
+            // Call auto-scan endpoint
+            fetch(`/guards/scanner/auto-scan/${pesananId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.message || 'Error processing scan');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        scanResult.innerHTML = `
+                        <div class="alert alert-modern alert-success alert-dismissible fade show" role="alert">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="fas fa-check-circle"></i>
+                                <strong>Berhasil!</strong>
+                            </div>
+                            <p class="mb-2">${data.message}</p>
+                            <small class="text-muted">Status: <span class="badge bg-success">${data.new_status}</span></small>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+
+                        // Re-initialize scanner after 2 seconds
+                        setTimeout(() => {
+                            scanInProgress = false;
+                            scanResult.innerHTML = '';
+                            html5QrcodeScanner = new Html5QrcodeScanner(
+                                "reader", {
+                                    fps: 10,
+                                    qrbox: {
+                                        width: 250,
+                                        height: 250
+                                    },
+                                    formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+                                },
+                                false
+                            );
+                            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+                        }, 2000);
+                    } else {
+                        scanResult.innerHTML = `
+                        <div class="alert alert-modern alert-danger alert-dismissible fade show" role="alert">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <strong>Error!</strong>
+                            </div>
+                            <p class="mb-0">${data.message}</p>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+
+                        // Restart scanner
+                        setTimeout(() => {
+                            scanInProgress = false;
+                            initializeScanner();
+                        }, 3000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    scanResult.innerHTML = `
+                    <div class="alert alert-modern alert-danger alert-dismissible fade show" role="alert">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <strong>Error!</strong>
+                        </div>
+                        <p class="mb-0">${error.message}</p>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+
+                    // Restart scanner
+                    setTimeout(() => {
+                        scanInProgress = false;
+                        initializeScanner();
+                    }, 3000);
+                });
         }
 
         function redirectToDetail(pesananId) {
@@ -201,25 +312,30 @@
             // Silent error - normal untuk frame yang gagal decode
         }
 
-        // Configuration untuk camera scanner
-        const config = {
-            fps: 10,
-            qrbox: {
-                width: 250,
-                height: 250
-            },
-            formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
-        };
+        function initializeScanner() {
+            // Configuration untuk camera scanner
+            const config = {
+                fps: 10,
+                qrbox: {
+                    width: 250,
+                    height: 250
+                },
+                formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+            };
 
-        // Initialize camera scanner
-        html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader",
-            config,
-            false // verbose
-        );
+            // Initialize camera scanner
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader",
+                config,
+                false // verbose
+            );
 
-        // Render camera scanner
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+            // Render camera scanner
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        }
+
+        // Initialize scanner on page load
+        initializeScanner();
 
         // File upload scanner
         const fileInput = document.getElementById('qr-input-file');
@@ -244,8 +360,8 @@
                                 <strong>Berhasil!</strong>
                             </div>
                             <p class="mb-2">ID Pesanan: <code>${decodedText}</code></p>
-                            <button class="btn btn-modern btn-primary-modern w-100" onclick="redirectToDetail('${decodedText}')">
-                                <i class="fas fa-eye me-1"></i> Lihat Detail Pesanan
+                            <button class="btn btn-modern btn-primary-modern w-100" onclick="autoScanOrder('${decodedText}')">
+                                <i class="fas fa-arrow-right me-1"></i> Proses Auto-Scan
                             </button>
                         </div>
                     `;

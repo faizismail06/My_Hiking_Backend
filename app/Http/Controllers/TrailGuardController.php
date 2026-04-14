@@ -364,6 +364,64 @@ class TrailGuardController extends Controller
         return redirect()->back()->with('success', $message);
     }
 
+    // Auto scan - immediately update status based on current status
+    public function autoScan($orderId)
+    {
+        $user = Auth::user();
+        $trail = TrailWeb::where('user_id', $user->id)->first();
+
+        if (!$trail) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You have not been assigned to manage a trail.'
+            ], 403);
+        }
+
+        $order = OrderWeb::where('id', $orderId)
+            ->where('id_jalur', $trail->id)
+            ->first();
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found or not for your trail.'
+            ], 404);
+        }
+
+        // Auto update status based on current status
+        if ($order->status == 'Booking' || $order->status == 'Dikonfirmasi') {
+            $order->update([
+                'status' => 'Sedang Mendaki',
+                'check_in' => now()
+            ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Check-in successful! Hiker has started climbing.',
+                'new_status' => 'Sedang Mendaki'
+            ]);
+        } elseif ($order->status == 'Sedang Mendaki') {
+            $order->update([
+                'status' => 'Selesai',
+                'check_out' => now()
+            ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Check-out successful! Hiking completed.',
+                'new_status' => 'Selesai'
+            ]);
+        } elseif ($order->status == 'Selesai') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This order has already been completed.'
+            ], 400);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot update status from current state.'
+            ], 400);
+        }
+    }
+
     // Guard Profile
     public function profile()
     {

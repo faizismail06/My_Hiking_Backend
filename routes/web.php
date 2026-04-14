@@ -109,6 +109,7 @@ Route::middleware(['penjaga'])->prefix('guards')->name('guards.')->group(functio
     // QR Code Scanner
     Route::get('/scanner', [TrailGuardController::class, 'scanner'])->name('scanner');
     Route::get('/scanner/detail/{id}', [TrailGuardController::class, 'orderDetail'])->name('scanner.detail');
+    Route::post('/scanner/auto-scan/{id}', [TrailGuardController::class, 'autoScan'])->name('scanner.autoscan');
     Route::get('/order/{id}', [TrailGuardController::class, 'orderDetail'])->name('order.detail');
     Route::post('/scanner/manual', [TrailGuardController::class, 'manualSearch'])->name('scanner.manual');
     Route::put('/orders/{id}/status', [TrailGuardController::class, 'updateStatus'])->name('updateStatus');
