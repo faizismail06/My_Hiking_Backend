@@ -289,53 +289,57 @@
                     </div>
                 </div>
 
-                @if ($trail->penjaga)
-                    <hr class="my-4">
+                @php($penjaga = $trail->trailGuard)
+                <hr class="my-4">
 
-                    <h6 class="text-muted mb-3"><i class="fas fa-user-shield me-2"></i>Data Penjaga Jalur</h6>
+                <h6 class="text-muted mb-3"><i class="fas fa-user-shield me-2"></i>Data Penjaga Jalur</h6>
+                @if ($penjaga)
                     <div class="alert alert-info mb-3">
-                        <strong>Penjaga Saat Ini:</strong> {{ $trail->penjaga->name }} ({{ $trail->penjaga->email }})
+                        <strong>Penjaga Saat Ini:</strong> {{ $penjaga->name }} ({{ $penjaga->email }})
                     </div>
-
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Nama Penjaga</label>
-                            <input type="text" name="penjaga_name"
-                                class="form-control @error('penjaga_name') is-invalid @enderror"
-                                value="{{ old('penjaga_name', $trail->penjaga->name) }}"
-                                placeholder="Masukkan nama penjaga">
-                            @error('penjaga_name')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Email Penjaga</label>
-                            <input type="email" name="penjaga_email"
-                                class="form-control @error('penjaga_email') is-invalid @enderror"
-                                value="{{ old('penjaga_email', $trail->penjaga->email) }}"
-                                placeholder="email@example.com">
-                            @error('penjaga_email')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">No. Telepon</label>
-                            <input type="text" name="penjaga_phone"
-                                class="form-control @error('penjaga_phone') is-invalid @enderror"
-                                value="{{ old('penjaga_phone', $trail->penjaga->phone) }}" placeholder="08xxxxxxxxxx">
-                            @error('penjaga_phone')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label">Alamat (Opsional)</label>
-                            <textarea name="penjaga_address" class="form-control" rows="2" placeholder="Masukkan alamat penjaga">{{ old('penjaga_address', $trail->penjaga->address) }}</textarea>
-                        </div>
+                @else
+                    <div class="alert alert-warning mb-3">
+                        Jalur ini belum memiliki penjaga. Isi data berikut untuk membuat akun penjaga baru
+                        (password default: <strong>password123</strong>).
                     </div>
                 @endif
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Nama Penjaga</label>
+                        <input type="text" name="penjaga_name"
+                            class="form-control @error('penjaga_name') is-invalid @enderror"
+                            value="{{ old('penjaga_name', optional($penjaga)->name) }}" placeholder="Masukkan nama penjaga">
+                        @error('penjaga_name')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Email Penjaga</label>
+                        <input type="email" name="penjaga_email"
+                            class="form-control @error('penjaga_email') is-invalid @enderror"
+                            value="{{ old('penjaga_email', optional($penjaga)->email) }}" placeholder="email@example.com">
+                        @error('penjaga_email')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">No. Telepon</label>
+                        <input type="text" name="penjaga_phone"
+                            class="form-control @error('penjaga_phone') is-invalid @enderror"
+                            value="{{ old('penjaga_phone', optional($penjaga)->phone) }}" placeholder="08xxxxxxxxxx">
+                        @error('penjaga_phone')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Alamat (Opsional)</label>
+                        <textarea name="penjaga_address" class="form-control" rows="2" placeholder="Masukkan alamat penjaga">{{ old('penjaga_address', optional($penjaga)->address) }}</textarea>
+                    </div>
+                </div>
 
                 <hr class="my-4">
 
@@ -645,47 +649,68 @@
             })();
 
             $(document).ready(function() {
-                $('#province_id').change(function() {
-                    let provinceId = $(this).val();
-                    $('#regency_id').empty().append('<option value="" disabled selected>Loading...</option>');
-                    $('#district_id').empty().append(
-                        '<option value="" disabled selected>Pilih Kecamatan</option>');
-                    $('#village_id').empty().append('<option value="" disabled selected>Pilih Desa</option>');
-                    $.get(`/get-regencies/${provinceId}`, function(data) {
-                        $('#regency_id').empty().append(
-                            '<option value="" disabled selected>Pilih Kabupaten</option>');
-                        $.each(data, function(index, regency) {
-                            $('#regency_id').append(
-                                `<option value="${regency.id}">${regency.name}</option>`);
-                        });
+                const locationCache = {
+                    regencies: {},
+                    districts: {},
+                    villages: {}
+                };
+
+                const setPlaceholder = ($select, placeholder) => {
+                    $select.html(`<option value="" disabled selected>${placeholder}</option>`);
+                };
+
+                const setOptions = ($select, placeholder, items) => {
+                    let optionsHtml = `<option value="" disabled selected>${placeholder}</option>`;
+                    (items || []).forEach((item) => {
+                        optionsHtml += `<option value="${item.id}">${item.name}</option>`;
                     });
+                    $select.html(optionsHtml);
+                };
+
+                const fetchOptions = (bucket, parentId, endpoint) => {
+                    if (!parentId) {
+                        return $.Deferred().resolve([]).promise();
+                    }
+
+                    if (locationCache[bucket][parentId]) {
+                        return $.Deferred().resolve(locationCache[bucket][parentId]).promise();
+                    }
+
+                    return $.get(endpoint).then((rows) => {
+                        const normalized = Array.isArray(rows) ? rows : [];
+                        locationCache[bucket][parentId] = normalized;
+                        return normalized;
+                    });
+                };
+
+                $('#province_id').on('change', function() {
+                    const provinceId = $(this).val();
+                    setPlaceholder($('#regency_id'), 'Loading...');
+                    setPlaceholder($('#district_id'), 'Pilih Kecamatan');
+                    setPlaceholder($('#village_id'), 'Pilih Desa');
+
+                    fetchOptions('regencies', provinceId, `/get-regencies/${provinceId}`)
+                        .done((rows) => setOptions($('#regency_id'), 'Pilih Kabupaten', rows))
+                        .fail(() => setPlaceholder($('#regency_id'), 'Gagal memuat kabupaten'));
                 });
 
-                $('#regency_id').change(function() {
-                    let regencyId = $(this).val();
-                    $('#district_id').empty().append('<option value="" disabled selected>Loading...</option>');
-                    $('#village_id').empty().append('<option value="" disabled selected>Pilih Desa</option>');
-                    $.get(`/get-districts/${regencyId}`, function(data) {
-                        $('#district_id').empty().append(
-                            '<option value="" disabled selected>Pilih Kecamatan</option>');
-                        $.each(data, function(index, district) {
-                            $('#district_id').append(
-                                `<option value="${district.id}">${district.name}</option>`);
-                        });
-                    });
+                $('#regency_id').on('change', function() {
+                    const regencyId = $(this).val();
+                    setPlaceholder($('#district_id'), 'Loading...');
+                    setPlaceholder($('#village_id'), 'Pilih Desa');
+
+                    fetchOptions('districts', regencyId, `/get-districts/${regencyId}`)
+                        .done((rows) => setOptions($('#district_id'), 'Pilih Kecamatan', rows))
+                        .fail(() => setPlaceholder($('#district_id'), 'Gagal memuat kecamatan'));
                 });
 
-                $('#district_id').change(function() {
-                    let districtId = $(this).val();
-                    $('#village_id').empty().append('<option value="" disabled selected>Loading...</option>');
-                    $.get(`/get-villages/${districtId}`, function(data) {
-                        $('#village_id').empty().append(
-                            '<option value="" disabled selected>Pilih Desa</option>');
-                        $.each(data, function(index, village) {
-                            $('#village_id').append(
-                                `<option value="${village.id}">${village.name}</option>`);
-                        });
-                    });
+                $('#district_id').on('change', function() {
+                    const districtId = $(this).val();
+                    setPlaceholder($('#village_id'), 'Loading...');
+
+                    fetchOptions('villages', districtId, `/get-villages/${districtId}`)
+                        .done((rows) => setOptions($('#village_id'), 'Pilih Desa', rows))
+                        .fail(() => setPlaceholder($('#village_id'), 'Gagal memuat desa'));
                 });
             });
 

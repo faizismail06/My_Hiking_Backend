@@ -13,6 +13,7 @@ use App\Services\GpxRouteService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class TrailController extends Controller
@@ -32,11 +33,11 @@ class TrailController extends Controller
 
     public function create()
     {
-        $mountains = MountainWeb::all();
-        $province_id = ProvinceWeb::all();
-        $regency_id = RegencyWeb::all();
-        $district_id = DistrictWeb::all();
-        $village_id = VillageWeb::all();
+        $mountains = MountainWeb::query()->select(['id', 'nama'])->orderBy('nama')->get();
+        $province_id = ProvinceWeb::query()->select(['id', 'name'])->orderBy('name')->get();
+        $regency_id = collect();
+        $district_id = collect();
+        $village_id = collect();
 
         return view('trails.create', compact('province_id', 'regency_id', 'district_id', 'village_id', 'mountains'));
     }
@@ -176,9 +177,19 @@ class TrailController extends Controller
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             // Validation for trail guard data (optional when editing)
-            'penjaga_name' => 'nullable|string|max:255',
-            'penjaga_email' => 'nullable|email|unique:users,email,' . $trail->user_id,
-            'penjaga_phone' => 'nullable|numeric|unique:users,phone,' . $trail->user_id,
+            'penjaga_name' => 'nullable|string|max:255|required_with:penjaga_email,penjaga_phone',
+            'penjaga_email' => [
+                'nullable',
+                'email',
+                'required_with:penjaga_name,penjaga_phone',
+                Rule::unique('users', 'email')->ignore($trail->user_id),
+            ],
+            'penjaga_phone' => [
+                'nullable',
+                'numeric',
+                'required_with:penjaga_name,penjaga_email',
+                Rule::unique('users', 'phone')->ignore($trail->user_id),
+            ],
             'penjaga_address' => 'nullable|string|max:255',
         ]);
 
@@ -251,14 +262,25 @@ class TrailController extends Controller
             }
         }
 
-        // Update guard data if exists
-        if ($trail->trailGuard && $request->filled('penjaga_name')) {
-            $trail->trailGuard->update([
+        // Update existing guard, or create and assign a new guard when the trail has none.
+        if ($request->filled('penjaga_name') && $request->filled('penjaga_email') && $request->filled('penjaga_phone')) {
+            $guardPayload = [
                 'name' => $request->penjaga_name,
                 'email' => $request->penjaga_email,
                 'phone' => $request->penjaga_phone,
                 'address' => $request->penjaga_address,
-            ]);
+            ];
+
+            if ($trail->trailGuard) {
+                $trail->trailGuard->update($guardPayload);
+            } else {
+                $guard = UserWeb::create(array_merge($guardPayload, [
+                    'password' => Hash::make('password123'),
+                    'level' => 2,
+                ]));
+
+                $trail->update(['user_id' => $guard->id]);
+            }
         }
 
         return redirect()->route('trails.index')->with('success', 'Trail updated successfully!');
@@ -285,11 +307,17 @@ class TrailController extends Controller
     {
         $trail = TrailWeb::with(['trailGuard', 'posts'])->findOrFail($id);
 
-        $mountains = MountainWeb::all();
-        $provinces = ProvinceWeb::all();
-        $regencies = RegencyWeb::where('province_id', $trail->province_id)->get();
-        $districts = DistrictWeb::where('regency_id', $trail->regency_id)->get();
-        $villages = VillageWeb::where('district_id', $trail->district_id)->get();
+        $mountains = MountainWeb::query()->select(['id', 'nama'])->orderBy('nama')->get();
+        $provinces = ProvinceWeb::query()->select(['id', 'name'])->orderBy('name')->get();
+        $regencies = $trail->province_id
+            ? RegencyWeb::query()->select(['id', 'name', 'province_id'])->where('province_id', $trail->province_id)->orderBy('name')->get()
+            : collect();
+        $districts = $trail->regency_id
+            ? DistrictWeb::query()->select(['id', 'name', 'regency_id'])->where('regency_id', $trail->regency_id)->orderBy('name')->get()
+            : collect();
+        $villages = $trail->district_id
+            ? VillageWeb::query()->select(['id', 'name', 'district_id'])->where('district_id', $trail->district_id)->orderBy('name')->get()
+            : collect();
 
         return view('trails.edit', compact('trail', 'mountains', 'provinces', 'regencies', 'districts', 'villages'));
     }
