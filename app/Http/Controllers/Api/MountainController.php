@@ -21,6 +21,9 @@ class MountainController extends Controller
                 'id' => $mountain->id,
                 'nama' => $mountain->nama,
                 'gambar' => $imageUrl,
+                'latitude' => $mountain->latitude,
+                'longitude' => $mountain->longitude,
+                'ketinggian' => $mountain->ketinggian,
                 'province' => $mountain->province ? ['id' => $mountain->province->id, 'name' => $mountain->province->name] : null,
             ];
         });
@@ -116,6 +119,9 @@ class MountainController extends Controller
             'id' => $mountain->id,
             'nama' => $mountain->nama,
             'gambar' => url('api/images/' . $mountain->gambar_gunung),
+            'latitude' => $mountain->latitude,
+            'longitude' => $mountain->longitude,
+            'ketinggian' => $mountain->ketinggian,
             'province' => $mountain->province
                 ? ['id' => $mountain->province->id, 'name' => $mountain->province->name]
                 : null,
