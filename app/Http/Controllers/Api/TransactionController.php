@@ -98,9 +98,13 @@ private function syncTransactionStatusFromMidtrans(Transaction $transaction): vo
                 : null,
         ]);
 
-        if ($newStatus === 'Complete' && $transaction->order && $transaction->order->status !== 'Booking') {
+        if ($newStatus === 'Complete' && $transaction->order && $transaction->order->status === 'Expired') {
             $transaction->order->update(['status' => 'Booking']);
-        } elseif (in_array($status, ['expire', 'cancel'], true) && $transaction->order) {
+        } elseif (
+            in_array($status, ['expire', 'cancel'], true)
+            && $transaction->order
+            && in_array($transaction->order->status, ['Booking', 'Expired'], true)
+        ) {
             $transaction->order->update(['status' => 'Expired']);
         }
     }

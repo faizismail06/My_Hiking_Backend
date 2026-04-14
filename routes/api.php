@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\FriendController;
 use App\Http\Controllers\Api\ExperienceOnboardingController;
 use App\Http\Controllers\Api\WeatherController;
 use App\Http\Controllers\Api\AiGatewayController;
+use App\Http\Controllers\Api\RefundRequestController;
 use App\Http\Controllers\RecommendationController;
 
 /*
@@ -93,6 +94,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/update-password/{id}', [AuthController::class, 'updatePassword']);
     Route::get('/onboarding/experience/status', [ExperienceOnboardingController::class, 'status']);
     Route::post('/onboarding/experience', [ExperienceOnboardingController::class, 'store']);
+
+    // Refund routes (user)
+    Route::get('/refund-preview/{orderId}', [RefundRequestController::class, 'preview']);
+    Route::post('/refund-requests', [RefundRequestController::class, 'store']);
+    Route::get('/refund-requests/order/{orderId}', [RefundRequestController::class, 'byOrder']);
+
+    // Refund routes (admin)
+    Route::prefix('admin/refund-requests')->group(function () {
+        Route::get('/', [RefundRequestController::class, 'adminIndex']);
+        Route::post('/{id}/approve', [RefundRequestController::class, 'approve']);
+        Route::post('/{id}/reject', [RefundRequestController::class, 'reject']);
+        Route::post('/{id}/refunded', [RefundRequestController::class, 'markRefunded']);
+    });
 });
 Route::get('/user-data/{id?}', [AuthController::class, 'getUserData']);
 Route::post('users/{id}', [AuthController::class, 'update']);

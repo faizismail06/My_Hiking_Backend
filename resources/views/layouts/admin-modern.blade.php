@@ -624,6 +624,10 @@
         </div>
 
         <nav class="sidebar-menu">
+            @php
+                $pendingRefundCount = \App\Models\RefundRequest::where('refund_status', 'pending')->count();
+            @endphp
+
             <div class="menu-label">Menu Utama</div>
             
             <a href="{{ route('home') }}" class="menu-item {{ request()->routeIs('home') ? 'active' : '' }}">
@@ -653,6 +657,14 @@
             <a href="{{ route('transactions.index') }}" class="menu-item {{ request()->routeIs('transactions.*') ? 'active' : '' }}">
                 <i class="fas fa-credit-card"></i>
                 <span>Transaksi</span>
+            </a>
+
+            <a href="{{ route('admin.refunds.index') }}" class="menu-item {{ request()->routeIs('admin.refunds.*') ? 'active' : '' }}">
+                <i class="fas fa-rotate-left"></i>
+                <span>Manual Refund</span>
+                @if ($pendingRefundCount > 0)
+                    <span class="ms-auto badge bg-danger rounded-pill">{{ $pendingRefundCount }}</span>
+                @endif
             </a>
 
             <a href="{{ route('history.index') }}" class="menu-item {{ request()->routeIs('history.*') ? 'active' : '' }}">

@@ -91,6 +91,10 @@ class OrderWeb extends Model
         switch ($this->status) {
             case 'Booking':
                 return 'Booking';
+            case 'Cancel Requested':
+                return 'Cancel Requested';
+            case 'Cancelled':
+                return 'Cancelled';
             case 'Sedang Mendaki':
                 return 'Sedang Mendaki';
             case 'Selesai':

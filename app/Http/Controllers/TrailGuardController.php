@@ -384,7 +384,7 @@ class TrailGuardController extends Controller
         }
 
         $request->validate([
-            'status' => 'required|in:Booking,Sedang Mendaki,Selesai'
+            'status' => 'required|in:Booking,Cancel Requested,Cancelled,Sedang Mendaki,Selesai,Expired'
         ]);
 
         $newStatus = $request->status;

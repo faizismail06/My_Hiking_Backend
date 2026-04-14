@@ -105,6 +105,11 @@
                                 <i class="fas fa-users"></i> Kelola Pengguna
                             </a>
                         </div>
+                        <div class="col-md-3">
+                            <a href="{{ route('admin.refunds.index') }}" class="btn btn-modern btn-danger-modern w-100">
+                                <i class="fas fa-rotate-left"></i> Manual Refund
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

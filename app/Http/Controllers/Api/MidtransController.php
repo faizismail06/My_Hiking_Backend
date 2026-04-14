@@ -75,6 +75,13 @@ class MidtransController extends Controller
                 ], 410);
             }
 
+            if (in_array($order->status, ['Cancel Requested', 'Cancelled'], true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pesanan ini sedang/ sudah dibatalkan dan tidak dapat diproses pembayarannya.'
+                ], 422);
+            }
+
             if ($transaction && $transaction->midtrans_order_id) {
                 $remoteStatus = $this->refreshMidtransStatus($transaction);
                 $transaction->refresh();
@@ -250,9 +257,13 @@ class MidtransController extends Controller
             ]);
 
             // Update order status if payment is complete
-            if ($newStatus === 'Complete') {
+            if ($newStatus === 'Complete' && $transaction->order && $this->canSetOrderToBooking($transaction->order)) {
                 $transaction->order->update(['status' => 'Booking']);
-            } elseif (in_array($transactionStatus, ['expire', 'cancel'], true)) {
+            } elseif (
+                in_array($transactionStatus, ['expire', 'cancel'], true)
+                && $transaction->order
+                && $this->canSetOrderToExpired($transaction->order)
+            ) {
                 $transaction->order->update(['status' => 'Expired']);
             }
 
@@ -296,7 +307,7 @@ class MidtransController extends Controller
             $transaction->refresh()->loadMissing('order');
 
             $paymentExpired = $transaction->status_pesanan !== 'Complete' && $this->isPaymentExpiredByWindow($transaction);
-            if ($paymentExpired && $transaction->order && $transaction->order->status !== 'Expired') {
+            if ($paymentExpired && $transaction->order && $this->canSetOrderToExpired($transaction->order)) {
                 $transaction->order->update(['status' => 'Expired']);
                 $transaction->order->refresh();
             }
@@ -346,7 +357,7 @@ class MidtransController extends Controller
                 $newStatus = $this->mapTransactionStatus($transactionStatus, null);
                 $transaction->update(['status_pesanan' => $newStatus]);
                 
-                if ($newStatus === 'Complete') {
+                if ($newStatus === 'Complete' && $transaction->order && $this->canSetOrderToBooking($transaction->order)) {
                     $transaction->update(['waktu_pembayaran' => now()]);
                     $transaction->order->update(['status' => 'Booking']);
                 }
@@ -411,11 +422,11 @@ class MidtransController extends Controller
 
         $transaction->loadMissing('order');
 
-        if ($newStatus === 'Complete' && $transaction->order && $transaction->order->status !== 'Booking') {
+        if ($newStatus === 'Complete' && $transaction->order && $this->canSetOrderToBooking($transaction->order)) {
             $transaction->order->update(['status' => 'Booking']);
         }
 
-        if (in_array($transactionStatus, ['expire', 'cancel'], true) && $transaction->order) {
+        if (in_array($transactionStatus, ['expire', 'cancel'], true) && $transaction->order && $this->canSetOrderToExpired($transaction->order)) {
             $transaction->order->update(['status' => 'Expired']);
         }
 
@@ -500,5 +511,15 @@ class MidtransController extends Controller
             default:
                 return 'Incomplete';
         }
+    }
+
+    protected function canSetOrderToBooking(Order $order): bool
+    {
+        return in_array($order->status, ['Booking', 'Expired'], true);
+    }
+
+    protected function canSetOrderToExpired(Order $order): bool
+    {
+        return in_array($order->status, ['Booking', 'Expired'], true);
     }
 }

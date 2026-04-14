@@ -12,6 +12,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RuleController;
 use App\Http\Controllers\TrailGuardController;
+use App\Http\Controllers\RefundWebController;
 
 
 /*
@@ -32,6 +33,14 @@ Auth::routes();
 
 Route::middleware(['auth', 'level3'])->group(function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
+
+    Route::prefix('admin/refunds')->name('admin.refunds.')->group(function () {
+        Route::get('/', [RefundWebController::class, 'index'])->name('index');
+        Route::get('/{id}', [RefundWebController::class, 'show'])->name('show');
+        Route::post('/{id}/approve', [RefundWebController::class, 'approve'])->name('approve');
+        Route::post('/{id}/reject', [RefundWebController::class, 'reject'])->name('reject');
+        Route::post('/{id}/refunded', [RefundWebController::class, 'markRefunded'])->name('refunded');
+    });
 });
 
 Route::get('/profile', [ProfileController::class, 'index'])->name('profile');

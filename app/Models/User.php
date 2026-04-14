@@ -100,4 +100,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Trail::class, 'user_id');
     }
+
+    public function refundRequests()
+    {
+        return $this->hasMany(RefundRequest::class, 'user_id');
+    }
 }

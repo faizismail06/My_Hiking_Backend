@@ -108,6 +108,11 @@ class Order extends Model
         return $this->hasOne(Transaction::class, 'id_pesanan');
     }
 
+    public function refundRequests()
+    {
+        return $this->hasMany(RefundRequest::class, 'order_id');
+    }
+
     // Alias for backward compatibility
     public function transaksi()
     {
