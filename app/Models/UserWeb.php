@@ -87,5 +87,10 @@ class UserWeb extends Authenticatable
         return $this->hasMany(PesananWeb::class, 'id_user');
     }
 
+    // Relasi ke tabel `routes` (user sebagai penjaga jalur)
+    public function trails()
+    {
+        return $this->hasMany(TrailWeb::class, 'user_id');
+    }
 
 }

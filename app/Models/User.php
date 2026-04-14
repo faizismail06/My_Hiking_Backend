@@ -37,10 +37,10 @@ class User extends Authenticatable
     ];
 
     /**
-    * The attributes that should be hidden for serialization.
-    *
-    * @var array<int, string>
-    */
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
     protected $hidden = [
         'password',
         'remember_token',
@@ -78,7 +78,7 @@ class User extends Authenticatable
         return $id;
     }
 
-     // Relasi ke tabel `pesanan` (user sebagai pemesan utama)
+    // Relasi ke tabel `pesanan` (user sebagai pemesan utama)
     public function pesanan()
     {
         return $this->hasMany(Order::class, 'id_user');
@@ -93,5 +93,11 @@ class User extends Authenticatable
     public function experience()
     {
         return $this->hasOne(UserExperience::class, 'user_id');
+    }
+
+    // Relasi ke tabel `routes` (user sebagai penjaga jalur)
+    public function trails()
+    {
+        return $this->hasMany(Trail::class, 'user_id');
     }
 }
