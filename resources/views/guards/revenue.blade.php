@@ -5,14 +5,16 @@
 
 @section('content')
     <!-- Summary Card -->
-    <div class="stat-card mb-4 animate-fade-in" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%); color: white;">
+    <div class="stat-card mb-4 animate-fade-in"
+        style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%); color: white;">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <p class="mb-1 opacity-75">Total Pendapatan {{ \Carbon\Carbon::create()->month($month)->format('F') }} {{ $year }}</p>
+                <p class="mb-1 opacity-75">Total Pendapatan {{ \Carbon\Carbon::create()->month($month)->format('F') }}
+                    {{ $year }}</p>
                 <h2 class="mb-1 fw-bold">Rp {{ number_format($totalRevenue, 0, ',', '.') }}</h2>
                 <small class="opacity-75">
                     <i class="fas fa-receipt me-1"></i>
-                    Dari {{ $transactions->count() }} transaksi berhasil
+                    Dari {{ $totalPaidVisitors }} pengunjung yang sudah lunas
                 </small>
             </div>
             <div style="font-size: 4rem; opacity: 0.3;">
@@ -43,7 +45,8 @@
                         <label class="form-label-modern">Tahun</label>
                         <select name="tahun" class="form-control form-modern">
                             @for ($i = date('Y'); $i >= date('Y') - 5; $i--)
-                                <option value="{{ $i }}" {{ $year == $i ? 'selected' : '' }}>{{ $i }}</option>
+                                <option value="{{ $i }}" {{ $year == $i ? 'selected' : '' }}>{{ $i }}
+                                </option>
                             @endfor
                         </select>
                     </div>
@@ -84,7 +87,7 @@
                             <th>Tanggal</th>
                             <th>Kode</th>
                             <th>Pendaki</th>
-                            <th class="text-center">Anggota</th>
+                            <th class="text-center">Pengunjung</th>
                             <th>Pembayaran</th>
                             <th class="text-end">Total</th>
                             <th class="text-center">Status</th>
@@ -112,7 +115,8 @@
                                     </div>
                                 </td>
                                 <td class="text-center">
-                                    <span class="badge bg-secondary rounded-pill">{{ $item->order->orderMembers->count() }}</span>
+                                    <span
+                                        class="badge bg-secondary rounded-pill">{{ $item->order->orderMembers->count() + 1 }}</span>
                                 </td>
                                 <td>
                                     <span class="d-flex align-items-center gap-1">
@@ -219,5 +223,3 @@
         </script>
     @endif
 @endpush
-
-

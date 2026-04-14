@@ -33,17 +33,33 @@ class TrailGuardController extends Controller
             return view('guards.no-trail', ['user' => $user]);
         }
 
-        // Today's statistics
-        $today = Carbon::today();
-        $visitorsToday = OrderWeb::where('id_jalur', $trail->id)
-            ->whereDate('created_at', $today)
-            ->count();
+        $paidStatuses = $this->paidTransactionStatuses();
 
-        // Total visitors this month
-        $visitorsThisMonth = OrderWeb::where('id_jalur', $trail->id)
+        // Today's paid visitors = booker + additional members from paid orders.
+        $today = Carbon::today();
+        $paidOrdersToday = OrderWeb::where('id_jalur', $trail->id)
+            ->whereDate('created_at', $today)
+            ->whereHas('transaction', function ($query) use ($paidStatuses) {
+                $query->whereIn('status_pesanan', $paidStatuses);
+            })
+            ->withCount('orderMembers')
+            ->get();
+        $visitorsToday = $paidOrdersToday->sum(function ($order) {
+            return ((int) $order->order_members_count) + 1;
+        });
+
+        // Total paid visitors this month.
+        $paidOrdersThisMonth = OrderWeb::where('id_jalur', $trail->id)
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
-            ->count();
+            ->whereHas('transaction', function ($query) use ($paidStatuses) {
+                $query->whereIn('status_pesanan', $paidStatuses);
+            })
+            ->withCount('orderMembers')
+            ->get();
+        $visitorsThisMonth = $paidOrdersThisMonth->sum(function ($order) {
+            return ((int) $order->order_members_count) + 1;
+        });
 
         // Revenue this month
         $revenueThisMonth = TransactionWeb::whereHas('order', function ($query) use ($trail) {
@@ -51,7 +67,7 @@ class TrailGuardController extends Controller
         })
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
-            ->where('status_pesanan', 'Verified')
+            ->whereIn('status_pesanan', $paidStatuses)
             ->sum('total_bayar');
 
         // Recent orders
@@ -207,14 +223,22 @@ class TrailGuardController extends Controller
         $transactions = TransactionWeb::whereHas('order', function ($query) use ($trail) {
             $query->where('id_jalur', $trail->id);
         })
-            ->with(['order.user', 'payment'])
+            ->with(['order.user', 'order.orderMembers'])
             ->whereMonth('created_at', $month)
             ->whereYear('created_at', $year)
-            ->where('status_pesanan', 'Verified')
+            ->whereIn('status_pesanan', $this->paidTransactionStatuses())
             ->orderBy('created_at', 'desc')
             ->get();
 
         $totalRevenue = $transactions->sum('total_bayar');
+        $totalPaidVisitors = $transactions->sum(function ($transaction) {
+            if (!$transaction->order) {
+                return 0;
+            }
+
+            $memberCount = (int) $transaction->order->orderMembers->count();
+            return $memberCount + 1;
+        });
 
         // Daily revenue chart
         $dailyRevenue = TransactionWeb::whereHas('order', function ($query) use ($trail) {
@@ -222,13 +246,13 @@ class TrailGuardController extends Controller
         })
             ->whereMonth('created_at', $month)
             ->whereYear('created_at', $year)
-            ->where('status_pesanan', 'Verified')
+            ->whereIn('status_pesanan', $this->paidTransactionStatuses())
             ->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(total_bayar) as total'))
             ->groupBy('date')
             ->orderBy('date')
             ->get();
 
-        return view('guards.revenue', compact('transactions', 'totalRevenue', 'dailyRevenue', 'trail', 'month', 'year'));
+        return view('guards.revenue', compact('transactions', 'totalRevenue', 'totalPaidVisitors', 'dailyRevenue', 'trail', 'month', 'year'));
     }
 
     // Check in visitor
@@ -314,10 +338,31 @@ class TrailGuardController extends Controller
     public function manualSearch(Request $request)
     {
         $request->validate([
-            'order_id' => 'required|integer'
+            'pesanan_id' => 'required|integer'
         ]);
 
-        return redirect()->route('guards.scanner.detail', $request->order_id);
+        $user = Auth::user();
+        $trail = TrailWeb::where('user_id', $user->id)->first();
+
+        if (!$trail) {
+            return redirect()->route('guards.scanner')
+                ->with('manual_search_status', 'no_trail')
+                ->with('manual_search_message', 'Anda belum ditugaskan ke jalur manapun.');
+        }
+
+        $orderId = (int) $request->pesanan_id;
+        $orderExists = OrderWeb::where('id', $orderId)
+            ->where('id_jalur', $trail->id)
+            ->exists();
+
+        if (!$orderExists) {
+            return redirect()->route('guards.scanner')
+                ->with('manual_search_status', 'not_found')
+                ->with('manual_search_id', $orderId)
+                ->with('manual_search_message', 'ID pesanan tidak ditemukan atau bukan untuk jalur Anda.');
+        }
+
+        return redirect()->route('guards.order.detail', $orderId);
     }
 
     // Update order status
@@ -571,5 +616,13 @@ class TrailGuardController extends Controller
         if (!empty($rows)) {
             $trail->posts()->createMany($rows);
         }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function paidTransactionStatuses(): array
+    {
+        return ['Verified', 'Complete'];
     }
 }

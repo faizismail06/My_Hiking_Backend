@@ -43,6 +43,7 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <p class="label mb-1">Pengunjung Hari Ini</p>
+                        <small class="text-muted">(sudah lunas)</small>
                         <h3 class="value mb-0">{{ $visitorsToday }}</h3>
                     </div>
                     <div class="icon primary">
@@ -56,6 +57,7 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <p class="label mb-1">Total Bulan Ini</p>
+                        <small class="text-muted">(sudah lunas)</small>
                         <h3 class="value mb-0">{{ $visitorsThisMonth }}</h3>
                     </div>
                     <div class="icon success">
@@ -174,18 +176,21 @@
                                 </td>
                                 <td>
                                     <div class="d-flex gap-2">
-                                        <a href="{{ route('guards.order.detail', $order->id) }}" class="btn btn-modern btn-outline-modern btn-sm">
+                                        <a href="{{ route('guards.order.detail', $order->id) }}"
+                                            class="btn btn-modern btn-outline-modern btn-sm">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         @if ($order->status == 'Dikonfirmasi')
-                                            <form action="{{ route('guards.checkin', $order->id) }}" method="POST" class="d-inline">
+                                            <form action="{{ route('guards.checkin', $order->id) }}" method="POST"
+                                                class="d-inline">
                                                 @csrf
                                                 <button type="submit" class="btn btn-modern btn-success-modern btn-sm">
                                                     <i class="fas fa-sign-in-alt"></i> Check In
                                                 </button>
                                             </form>
                                         @elseif($order->status == 'Sedang Mendaki')
-                                            <form action="{{ route('guards.checkout', $order->id) }}" method="POST" class="d-inline">
+                                            <form action="{{ route('guards.checkout', $order->id) }}" method="POST"
+                                                class="d-inline">
                                                 @csrf
                                                 <button type="submit" class="btn btn-modern btn-info-modern btn-sm">
                                                     <i class="fas fa-sign-out-alt"></i> Check Out
@@ -211,6 +216,3 @@
         </div>
     </div>
 @endsection
-
-
-

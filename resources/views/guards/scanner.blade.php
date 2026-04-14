@@ -99,6 +99,93 @@
         .info-card ol li {
             margin-bottom: 0.5rem;
         }
+
+        .manual-search-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(3px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1080;
+            padding: 1rem;
+        }
+
+        .manual-search-overlay.show {
+            display: flex;
+            animation: fadeInOverlay 0.2s ease;
+        }
+
+        .manual-search-modal {
+            width: 100%;
+            max-width: 440px;
+            background: #ffffff;
+            border-radius: 18px;
+            box-shadow: 0 20px 50px rgba(2, 6, 23, 0.28);
+            overflow: hidden;
+            animation: popInModal 0.24s ease;
+        }
+
+        .manual-search-modal-header {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: #fff;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .manual-search-modal-header i {
+            font-size: 1.25rem;
+        }
+
+        .manual-search-modal-body {
+            padding: 1.2rem 1.25rem 1rem;
+        }
+
+        .manual-search-id-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: #fff1f2;
+            color: #be123c;
+            border: 1px solid #fecdd3;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 0.3rem 0.75rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .manual-search-modal-actions {
+            display: flex;
+            gap: 0.6rem;
+            justify-content: flex-end;
+            padding: 0 1.25rem 1.2rem;
+        }
+
+        @keyframes fadeInOverlay {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes popInModal {
+            from {
+                opacity: 0;
+                transform: translateY(8px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
     </style>
 @endpush
 
@@ -153,7 +240,8 @@
                                     <i class="fas fa-hashtag text-muted"></i>
                                 </span>
                                 <input type="text" name="pesanan_id" class="form-control form-modern"
-                                    style="border-radius: 0 10px 10px 0;" placeholder="Masukkan ID Pesanan" required>
+                                    style="border-radius: 0 10px 10px 0;" placeholder="Masukkan ID Pesanan"
+                                    value="{{ old('pesanan_id') }}" required>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-modern btn-success-modern w-100">
@@ -175,6 +263,28 @@
                         </ol>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="manual-search-popup" class="manual-search-overlay" role="dialog" aria-modal="true"
+        aria-labelledby="manual-search-popup-title">
+        <div class="manual-search-modal">
+            <div class="manual-search-modal-header">
+                <i class="fas fa-circle-exclamation"></i>
+                <strong id="manual-search-popup-title">ID Pesanan Tidak Ditemukan</strong>
+            </div>
+            <div class="manual-search-modal-body">
+                <div id="manual-search-popup-id" class="manual-search-id-badge d-none"></div>
+                <p id="manual-search-popup-message" class="mb-0 text-muted"></p>
+            </div>
+            <div class="manual-search-modal-actions">
+                <button type="button" id="manual-search-popup-close" class="btn btn-outline-secondary">
+                    Tutup
+                </button>
+                <button type="button" id="manual-search-popup-retry" class="btn btn-danger">
+                    Coba Lagi
+                </button>
             </div>
         </div>
     </div>
@@ -340,6 +450,49 @@
         // File upload scanner
         const fileInput = document.getElementById('qr-input-file');
         const fileScanResult = document.getElementById('file-scan-result');
+        const manualSearchPopup = document.getElementById('manual-search-popup');
+        const manualSearchPopupClose = document.getElementById('manual-search-popup-close');
+        const manualSearchPopupRetry = document.getElementById('manual-search-popup-retry');
+        const manualSearchPopupMessage = document.getElementById('manual-search-popup-message');
+        const manualSearchPopupId = document.getElementById('manual-search-popup-id');
+
+        function showManualSearchPopup(message, orderId = null) {
+            manualSearchPopupMessage.textContent = message || 'ID pesanan tidak ditemukan.';
+
+            if (orderId !== null && orderId !== '') {
+                manualSearchPopupId.classList.remove('d-none');
+                manualSearchPopupId.innerHTML = `<i class="fas fa-hashtag"></i> ID: ${orderId}`;
+            } else {
+                manualSearchPopupId.classList.add('d-none');
+                manualSearchPopupId.textContent = '';
+            }
+
+            manualSearchPopup.classList.add('show');
+        }
+
+        function hideManualSearchPopup() {
+            manualSearchPopup.classList.remove('show');
+        }
+
+        manualSearchPopupClose.addEventListener('click', hideManualSearchPopup);
+        manualSearchPopupRetry.addEventListener('click', () => {
+            hideManualSearchPopup();
+            const input = document.querySelector('input[name="pesanan_id"]');
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        });
+
+        manualSearchPopup.addEventListener('click', function(event) {
+            if (event.target === manualSearchPopup) {
+                hideManualSearchPopup();
+            }
+        });
+
+        @if (session('manual_search_status') === 'not_found' || session('manual_search_status') === 'no_trail')
+            showManualSearchPopup(@json(session('manual_search_message')), @json(session('manual_search_id')));
+        @endif
 
         fileInput.addEventListener('change', function(event) {
             const file = event.target.files[0];

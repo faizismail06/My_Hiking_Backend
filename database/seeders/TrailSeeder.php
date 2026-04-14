@@ -16,9 +16,8 @@ class TrailSeeder extends Seeder
         $mountain2 = Mountain::find(2); // Mount Slamet
         $mountain3 = Mountain::find(3); // Mount Sumbing
 
-        // Get all penjaga jalur (level 2) - ordered by creation
-        $guards = User::where('level', 2)->orderBy('created_at')->get();
-        $guardIndex = 0;
+        // Map penjaga jalur by email to avoid mismatch when user order changes.
+        $guardsByEmail = User::where('level', 2)->pluck('id', 'email');
 
         // Add trail data
         Trail::create([
@@ -33,11 +32,10 @@ class TrailSeeder extends Seeder
             'gambar_jalur' => 'img_image_merbabu_jalur.jpg',
             'biaya' => 15000,
             'id_gunung' => $mountain1->id,
-            'user_id' => isset($guards[$guardIndex]) ? $guards[$guardIndex]->id : null,
+            'user_id' => $guardsByEmail->get('penjaga.selo@myhiking.com'),
             'latitude' => -7.4553,
             'longitude' => 110.4394,
         ]);
-        $guardIndex++;
 
         Trail::create([
             'nama' => 'Jalur Cuntel',
@@ -51,11 +49,10 @@ class TrailSeeder extends Seeder
             'gambar_jalur' => 'img_image_merbabu_jalur.jpg',
             'biaya' => 20000,
             'id_gunung' => $mountain1->id,
-            'user_id' => isset($guards[$guardIndex]) ? $guards[$guardIndex]->id : null,
+            'user_id' => $guardsByEmail->get('penjaga.cuntel@myhiking.com'),
             'latitude' => -7.4563,
             'longitude' => 110.4404,
         ]);
-        $guardIndex++;
 
         Trail::create([
             'nama' => 'Jalur Suwanting',
@@ -69,11 +66,10 @@ class TrailSeeder extends Seeder
             'gambar_jalur' => 'img_image_merbabu_jalur.jpg',
             'biaya' => 15000,
             'id_gunung' => $mountain1->id,
-            'user_id' => isset($guards[$guardIndex]) ? $guards[$guardIndex]->id : null,
+            'user_id' => $guardsByEmail->get('penjaga.suwanting@myhiking.com'),
             'latitude' => -7.4543,
             'longitude' => 110.4384,
         ]);
-        $guardIndex++;
 
         Trail::create([
             'nama' => 'Jalur Thekelan',
@@ -86,12 +82,11 @@ class TrailSeeder extends Seeder
             'map_basecamp' => 'https://maps.app.goo.gl/MZqsJix5HKBzqohFA',
             'gambar_jalur' => 'img_image_merbabu_jalur.jpg',
             'biaya' => 15000,
-            'user_id' => isset($guards[$guardIndex]) ? $guards[$guardIndex]->id : null,
+            'user_id' => $guardsByEmail->get('penjaga.thekelan@myhiking.com'),
             'id_gunung' => $mountain1->id,
             'latitude' => -7.4533,
             'longitude' => 110.4414,
         ]);
-        $guardIndex++;
 
         Trail::create([
             'nama' => 'Jalur Wekas',
@@ -104,12 +99,11 @@ class TrailSeeder extends Seeder
             'map_basecamp' => 'https://maps.app.goo.gl/T8exLZEpHB5MJmYo9',
             'gambar_jalur' => 'img_image_merbabu_jalur.jpg',
             'biaya' => 15000,
-            'user_id' => isset($guards[$guardIndex]) ? $guards[$guardIndex]->id : null,
+            'user_id' => $guardsByEmail->get('penjaga.wekas@myhiking.com'),
             'id_gunung' => $mountain1->id,
             'latitude' => -7.4573,
             'longitude' => 110.4374,
         ]);
-        $guardIndex++;
 
         Trail::create([
             'nama' => 'Jalur Bambangan',
@@ -122,12 +116,11 @@ class TrailSeeder extends Seeder
             'map_basecamp' => 'https://maps.app.goo.gl/dXWsBUbJ7nscW1Ug7',
             'gambar_jalur' => 'img_image_slamet_jalur.png',
             'biaya' => 15000,
-            'user_id' => isset($guards[$guardIndex]) ? $guards[$guardIndex]->id : null,
+            'user_id' => $guardsByEmail->get('penjaga.bambangan@myhiking.com'),
             'id_gunung' => $mountain2->id,
             'latitude' => -7.2426,
             'longitude' => 109.2083,
         ]);
-        $guardIndex++;
 
         Trail::create([
             'nama' => 'Jalur Kaliwadas',
@@ -140,12 +133,11 @@ class TrailSeeder extends Seeder
             'map_basecamp' => 'https://maps.app.goo.gl/pC7NcEiTYTRPEPH19',
             'gambar_jalur' => 'img_image_slamet_jalur.png',
             'biaya' => 20000,
-            'user_id' => isset($guards[$guardIndex]) ? $guards[$guardIndex]->id : null,
+            'user_id' => $guardsByEmail->get('penjaga.kaliwadas@myhiking.com'),
             'id_gunung' => $mountain2->id,
             'latitude' => -7.2436,
             'longitude' => 109.2093,
         ]);
-        $guardIndex++;
 
         Trail::create([
             'nama' => 'Jalur Guci',
@@ -157,13 +149,12 @@ class TrailSeeder extends Seeder
             'deskripsi' => 'Jalur pendakian melalui Guci',
             'map_basecamp' => 'https://maps.app.goo.gl/qHCr9D4q1yq4fWNg8',
             'gambar_jalur' => 'img_image_slamet_jalur.png',
-            'user_id' => isset($guards[$guardIndex]) ? $guards[$guardIndex]->id : null,
+            'user_id' => $guardsByEmail->get('penjaga.guci@myhiking.com'),
             'biaya' => 15000,
             'id_gunung' => $mountain2->id,
             'latitude' => -7.2416,
             'longitude' => 109.2073,
         ]);
-        $guardIndex++;
 
         Trail::create([
             'nama' => 'Jalur Dipajaya',
@@ -175,13 +166,12 @@ class TrailSeeder extends Seeder
             'deskripsi' => 'Jalur pendakian melalui Dipajaya',
             'map_basecamp' => 'https://maps.app.goo.gl/MmqKGYuSdzQ1Xyut8',
             'gambar_jalur' => 'img_image_slamet_jalur.png',
-            'user_id' => isset($guards[$guardIndex]) ? $guards[$guardIndex]->id : null,
+            'user_id' => $guardsByEmail->get('penjaga.dipajaya@myhiking.com'),
             'biaya' => 15000,
             'id_gunung' => $mountain2->id,
             'latitude' => -7.2406,
             'longitude' => 109.2103,
         ]);
-        $guardIndex++;
 
         Trail::create([
             'nama' => 'Jalur Baturraden',
@@ -193,13 +183,12 @@ class TrailSeeder extends Seeder
             'deskripsi' => 'Jalur pendakian melalui Baturraden',
             'map_basecamp' => 'https://maps.app.goo.gl/95W2evfaFubNTX9N6',
             'gambar_jalur' => 'img_image_slamet_jalur.png',
-            'user_id' => isset($guards[$guardIndex]) ? $guards[$guardIndex]->id : null,
+            'user_id' => $guardsByEmail->get('penjaga.baturraden@myhiking.com'),
             'biaya' => 15000,
             'id_gunung' => $mountain2->id,
             'latitude' => -7.2446,
             'longitude' => 109.2063,
         ]);
-        $guardIndex++;
 
         Trail::create([
             'nama' => 'Jalur Mangli',
@@ -210,14 +199,13 @@ class TrailSeeder extends Seeder
             'jarak' => '5',
             'deskripsi' => 'Jalur pendakian melalui Mangli',
             'map_basecamp' => 'https://maps.app.goo.gl/PTxfDKtt8ArNvXBLA',
-            'user_id' => isset($guards[$guardIndex]) ? $guards[$guardIndex]->id : null,
+            'user_id' => $guardsByEmail->get('penjaga.mangli@myhiking.com'),
             'gambar_jalur' => 'img_image_sumbing_jalur.jpg',
             'biaya' => 15000,
             'id_gunung' => $mountain3->id,
             'latitude' => -7.3833,
             'longitude' => 110.0708,
         ]);
-        $guardIndex++;
 
         Trail::create([
             'nama' => 'Jalur Gajah Mungkur',
@@ -228,14 +216,13 @@ class TrailSeeder extends Seeder
             'jarak' => '6',
             'deskripsi' => 'Jalur pendakian melalui Gajah Mungkur',
             'map_basecamp' => 'https://maps.app.goo.gl/G4VJ5u6R2GkfQBAD8',
-            'user_id' => isset($guards[$guardIndex]) ? $guards[$guardIndex]->id : null,
+            'user_id' => $guardsByEmail->get('penjaga.gajahmungkur@myhiking.com'),
             'gambar_jalur' => 'img_image_sumbing_jalur.jpg',
             'biaya' => 20000,
             'id_gunung' => $mountain3->id,
             'latitude' => -7.3843,
             'longitude' => 110.0718,
         ]);
-        $guardIndex++;
 
         Trail::create([
             'nama' => 'Jalur Cepit Parakan',
@@ -246,14 +233,13 @@ class TrailSeeder extends Seeder
             'jarak' => '5',
             'deskripsi' => 'Jalur pendakian melalui Cepit Parakan',
             'map_basecamp' => 'https://maps.app.goo.gl/jg3MHesSX6tGzpsJ6',
-            'user_id' => isset($guards[$guardIndex]) ? $guards[$guardIndex]->id : null,
+            'user_id' => $guardsByEmail->get('penjaga.cepitparakan@myhiking.com'),
             'gambar_jalur' => 'img_image_sumbing_jalur.jpg',
             'biaya' => 15000,
             'id_gunung' => $mountain3->id,
             'latitude' => -7.3823,
             'longitude' => 110.0698,
         ]);
-        $guardIndex++;
 
         Trail::create([
             'nama' => 'Jalur Bowongso',
@@ -263,7 +249,7 @@ class TrailSeeder extends Seeder
             'village_id' => '3328152007',
             'jarak' => '5',
             'deskripsi' => 'Jalur pendakian melalui Bowongso',
-            'user_id' => isset($guards[$guardIndex]) ? $guards[$guardIndex]->id : null,
+            'user_id' => $guardsByEmail->get('penjaga.bowongso@myhiking.com'),
             'map_basecamp' => 'https://maps.app.goo.gl/WmQuVz7adzsxnmVv5',
             'gambar_jalur' => 'img_image_sumbing_jalur.jpg',
             'biaya' => 15000,
@@ -271,7 +257,6 @@ class TrailSeeder extends Seeder
             'latitude' => -7.3813,
             'longitude' => 110.0728,
         ]);
-        $guardIndex++;
 
         Trail::create([
             'nama' => 'Jalur Garung',
@@ -281,7 +266,7 @@ class TrailSeeder extends Seeder
             'village_id' => '3328152007',
             'jarak' => '4',
             'deskripsi' => 'Jalur pendakian melalui Garung',
-            'user_id' => isset($guards[$guardIndex]) ? $guards[$guardIndex]->id : null,
+            'user_id' => $guardsByEmail->get('penjaga.garung@myhiking.com'),
             'map_basecamp' => 'https://maps.app.goo.gl/MZ6dt5YVxnbsQM5c7',
             'gambar_jalur' => 'img_image_sumbing_jalur.jpg',
             'biaya' => 15000,
@@ -289,6 +274,5 @@ class TrailSeeder extends Seeder
             'latitude' => -7.3853,
             'longitude' => 110.0688,
         ]);
-        $guardIndex++;
     }
 }
