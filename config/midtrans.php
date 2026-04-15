@@ -31,7 +31,7 @@ return [
 
     // Payment expiry window configuration
     // Supported units by Midtrans: second, minute, hour, day
-    'payment_expiry_duration' => (int) env('MIDTRANS_PAYMENT_EXPIRY_DURATION', 60),
+    'payment_expiry_duration' => (int) env('MIDTRANS_PAYMENT_EXPIRY_DURATION', 15),
     'payment_expiry_unit' => env('MIDTRANS_PAYMENT_EXPIRY_UNIT', 'minute'),
     
     // Snap API URL

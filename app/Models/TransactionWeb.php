@@ -17,6 +17,11 @@ class TransactionWeb extends Model
         'id_pesanan',
         'total_bayar',
         'status_pesanan',
+        'payment_status',
+        'payment_code',
+        'payment_code_label',
+        'payment_instruction',
+        'deeplink_url',
         'waktu_pembayaran',
         'bukti',
         'snap_token',
@@ -30,6 +35,7 @@ class TransactionWeb extends Model
     // Nilai default untuk status pesanan
     protected $attributes = [
         'status_pesanan' => 'Incomplete',
+        'payment_status' => 'pending',
     ];
 
     /**
@@ -51,6 +57,11 @@ class TransactionWeb extends Model
      */
     public function isPaid()
     {
+        $status = strtolower((string) ($this->payment_status ?? ''));
+        if (in_array($status, ['pending', 'paid', 'expired', 'failed'], true)) {
+            return $status === 'paid';
+        }
+
         return $this->status_pesanan === 'Complete';
     }
 
@@ -65,6 +76,10 @@ class TransactionWeb extends Model
             // Jika status tidak Complete dan belum bayar, set status menjadi 'Incomplete'
             if ($model->status_pesanan !== 'Complete' && is_null($model->waktu_pembayaran)) {
                 $model->status_pesanan = 'Incomplete';
+            }
+
+            if (empty($model->payment_status)) {
+                $model->payment_status = $model->status_pesanan === 'Complete' ? 'paid' : 'pending';
             }
         });
     }
@@ -130,8 +145,13 @@ class TransactionWeb extends Model
         $labels = [
             'Complete' => 'Lunas',
             'Incomplete' => 'Belum Dibayar',
+            'pending' => 'Menunggu Pembayaran',
+            'paid' => 'Lunas',
+            'expired' => 'Kedaluwarsa',
+            'failed' => 'Gagal',
         ];
 
-        return $labels[$this->status_pesanan] ?? $this->status_pesanan;
+        $status = $this->payment_status ?? $this->status_pesanan;
+        return $labels[$status] ?? $status;
     }
 }

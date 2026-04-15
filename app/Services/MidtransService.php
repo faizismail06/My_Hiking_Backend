@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -17,20 +16,16 @@ class MidtransService
     protected $serverKey;
     protected $clientKey;
     protected $isProduction;
-    protected $isSanitized;
     protected $is3ds;
     protected $snapUrl;
-    protected $apiUrl;
 
     public function __construct()
     {
         $this->serverKey = config('midtrans.server_key');
         $this->clientKey = config('midtrans.client_key');
         $this->isProduction = config('midtrans.is_production');
-        $this->isSanitized = config('midtrans.is_sanitized');
         $this->is3ds = config('midtrans.is_3ds');
         $this->snapUrl = config('midtrans.snap_url');
-        $this->apiUrl = config('midtrans.api_url');
     }
 
     /**
@@ -79,6 +74,47 @@ class MidtransService
             return [
                 'success' => false,
                 'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Create direct charge transaction (Core API).
+     * Useful when app already knows the selected payment method.
+     */
+    public function createDirectCharge(array $params): array
+    {
+        try {
+            $url = $this->isProduction
+                ? 'https://api.midtrans.com/v2/charge'
+                : 'https://api.sandbox.midtrans.com/v2/charge';
+
+            $response = Http::timeout(15)
+                ->withBasicAuth($this->serverKey, '')
+                ->withHeaders([
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json',
+                ])
+                ->post($url, $params);
+
+            if ($response->successful()) {
+                return [
+                    'success' => true,
+                    'data' => $response->json(),
+                ];
+            }
+
+            return [
+                'success' => false,
+                'message' => 'Failed to create direct charge',
+                'error' => $response->json(),
+            ];
+        } catch (\Exception $e) {
+            Log::error('Midtrans Direct Charge Error', ['error' => $e->getMessage()]);
+
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
             ];
         }
     }
@@ -153,11 +189,11 @@ class MidtransService
             'finish' => config('app.url') . '/api/midtrans/finish',
         ];
 
-        // Enforce payment expiry window so pending payments do not live forever.
-        $customExpiry = [
-            'order_time' => Carbon::now('Asia/Jakarta')->format('Y-m-d H:i:s O'),
-            'expiry_duration' => $this->getPaymentExpiryDuration(),
-            'unit' => $this->getPaymentExpiryUnit(),
+        // Fixed payment expiry window to stay in sync with Flutter countdown.
+        $expiry = [
+            'start_time' => now()->format('Y-m-d H:i:s O'),
+            'unit' => 'minute',
+            'duration' => 15,
         ];
 
         return [
@@ -167,8 +203,93 @@ class MidtransService
             'credit_card' => $creditCard,
             'enabled_payments' => $enabledPayments,
             'callbacks' => $callbacks,
+            'expiry' => $expiry,
+        ];
+    }
+
+    /**
+     * Build direct charge params based on selected payment method.
+     */
+    public function buildDirectChargeParams($order, $user, $amount, $orderId, string $paymentMethod): array
+    {
+        $transactionDetails = [
+            'order_id' => $orderId,
+            'gross_amount' => (int) $amount,
+        ];
+
+        $customerDetails = [
+            'first_name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone ? (string) $user->phone : '',
+        ];
+
+        $customExpiry = [
+            'order_time' => now()->format('Y-m-d H:i:s O'),
+            'expiry_duration' => 15,
+            'unit' => 'minute',
+        ];
+
+        $base = [
+            'transaction_details' => $transactionDetails,
+            'customer_details' => $customerDetails,
             'custom_expiry' => $customExpiry,
         ];
+
+        $method = strtolower(trim($paymentMethod));
+
+        return match ($method) {
+            'bca_va', 'bni_va', 'bri_va', 'permata_va', 'cimb_va', 'bank_transfer' =>
+                $this->buildBankTransferCharge($base, $method),
+            'mandiri_va' => array_merge($base, [
+                'payment_type' => 'echannel',
+                'echannel' => [
+                    'bill_info1' => 'Payment:',
+                    'bill_info2' => 'MyHiking',
+                ],
+            ]),
+            'indomaret', 'alfamart' => array_merge($base, [
+                'payment_type' => 'cstore',
+                'cstore' => [
+                    'store' => $method,
+                    'message' => 'Pembayaran tiket pendakian MyHiking',
+                ],
+            ]),
+            'gopay' => array_merge($base, [
+                'payment_type' => 'gopay',
+                'gopay' => [
+                    'enable_callback' => false,
+                ],
+            ]),
+            'shopeepay' => array_merge($base, [
+                'payment_type' => 'shopeepay',
+            ]),
+            'qris' => array_merge($base, [
+                'payment_type' => 'qris',
+                'qris' => [
+                    'acquirer' => 'gopay',
+                ],
+            ]),
+            default => throw new \InvalidArgumentException('Payment method not supported for direct charge: ' . $paymentMethod),
+        };
+    }
+
+    protected function buildBankTransferCharge(array $base, string $method): array
+    {
+        $bank = match ($method) {
+            'bca_va' => 'bca',
+            'bni_va' => 'bni',
+            'bri_va' => 'bri',
+            'permata_va' => 'permata',
+            'cimb_va' => 'cimb',
+            default => 'bca',
+        };
+
+        return array_merge($base, [
+            'payment_type' => 'bank_transfer',
+            'bank_transfer' => [
+                'bank' => $bank,
+            ],
+        ]);
     }
 
     /**
@@ -279,8 +400,7 @@ class MidtransService
      */
     public function getPaymentExpiryDuration(): int
     {
-        $duration = (int) config('midtrans.payment_expiry_duration', 60);
-        return $duration > 0 ? $duration : 60;
+        return 15;
     }
 
     /**
@@ -288,9 +408,6 @@ class MidtransService
      */
     public function getPaymentExpiryUnit(): string
     {
-        $unit = strtolower((string) config('midtrans.payment_expiry_unit', 'minute'));
-        $allowed = ['second', 'minute', 'hour', 'day'];
-
-        return in_array($unit, $allowed, true) ? $unit : 'minute';
+        return 'minute';
     }
 }

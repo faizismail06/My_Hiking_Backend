@@ -95,7 +95,7 @@ class OrderController extends Controller
             'id_jalur' => 'required|exists:routes,id',
             'id_user' => 'nullable|exists:users,id',
             'tanggal_naik' => 'required|date',
-            'tanggal_turun' => 'required|date',
+            'tanggal_turun' => 'required|date|after_or_equal:tanggal_naik',
             'total_harga_tiket' => 'required|numeric',
             'anggota_ids' => 'array',
             'anggota_ids.*' => 'exists:users,id',

@@ -15,6 +15,11 @@ class Transaction extends Model
         'id_pesanan',
         'total_bayar',
         'status_pesanan',
+        'payment_status',
+        'payment_code',
+        'payment_code_label',
+        'payment_instruction',
+        'deeplink_url',
         'waktu_pembayaran',
         'bukti',
         // Midtrans fields
@@ -29,6 +34,11 @@ class Transaction extends Model
     protected $casts = [
         'waktu_pembayaran' => 'datetime',
         'transaction_time' => 'datetime',
+    ];
+
+    protected $attributes = [
+        'status_pesanan' => 'Incomplete',
+        'payment_status' => 'pending',
     ];
 
     // Relasi ke model Order
@@ -74,7 +84,7 @@ class Transaction extends Model
      */
     public function isPaid()
     {
-        return $this->status_pesanan === 'Complete';
+        return $this->normalizedPaymentStatus() === 'paid';
     }
 
     /**
@@ -82,7 +92,20 @@ class Transaction extends Model
      */
     public function isPending()
     {
-        return $this->status_pesanan === 'Incomplete';
+        return $this->normalizedPaymentStatus() === 'pending';
+    }
+
+    public function normalizedPaymentStatus(): string
+    {
+        $status = strtolower((string) ($this->payment_status ?? ''));
+
+        if (in_array($status, ['pending', 'paid', 'expired', 'failed'], true)) {
+            return $status;
+        }
+
+        return strtolower((string) $this->status_pesanan) === 'complete'
+            ? 'paid'
+            : 'pending';
     }
 
     /**
@@ -93,8 +116,13 @@ class Transaction extends Model
         $labels = [
             'Complete' => 'Lunas',
             'Incomplete' => 'Belum Dibayar',
+            'pending' => 'Menunggu Pembayaran',
+            'paid' => 'Lunas',
+            'expired' => 'Kedaluwarsa',
+            'failed' => 'Gagal',
         ];
 
-        return $labels[$this->status_pesanan] ?? $this->status_pesanan;
+        $status = $this->payment_status ?? $this->status_pesanan;
+        return $labels[$status] ?? $status;
     }
 }

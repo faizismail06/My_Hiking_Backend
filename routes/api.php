@@ -131,6 +131,9 @@ Route::prefix('midtrans')->group(function () {
     Route::get('/finish', [\App\Http\Controllers\Api\MidtransController::class, 'finish']);
 });
 
+Route::get('/payment/status/{orderId}', [\App\Http\Controllers\Api\MidtransController::class, 'paymentStatus']);
+Route::get('/payment/qris-image/{orderId}', [\App\Http\Controllers\Api\MidtransController::class, 'paymentQrisImage']);
+
 // Panic/Emergency routes
 Route::post('/panic', [\App\Http\Controllers\Api\PanicController::class, 'store'])->middleware(['auth:sanctum', 'hiker.ready']);
 Route::get('/panic/order/{orderId}', [\App\Http\Controllers\Api\PanicController::class, 'getByOrder']);
