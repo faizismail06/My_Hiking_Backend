@@ -239,20 +239,6 @@ private function syncTransactionStatusFromMidtrans(Transaction $transaction): vo
     {
         $paymentMethods = [
             [
-                'id' => 'gopay',
-                'name' => 'GoPay',
-                'type' => 'e_wallet',
-                'icon' => 'gopay.png',
-                'description' => 'Bayar dengan GoPay',
-            ],
-            [
-                'id' => 'shopeepay',
-                'name' => 'ShopeePay',
-                'type' => 'e_wallet',
-                'icon' => 'shopeepay.png',
-                'description' => 'Bayar dengan ShopeePay',
-            ],
-            [
                 'id' => 'qris',
                 'name' => 'QRIS',
                 'type' => 'e_wallet',
