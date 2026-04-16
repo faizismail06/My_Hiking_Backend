@@ -13,10 +13,15 @@ class UserExperience extends Model
         'user_id',
         'jumlah_pendakian',
         'jumlah_summit',
+        'questionnaire_answers',
+        'weighted_score',
+        'weighted_tier',
         'onboarding_completed_at',
     ];
 
     protected $casts = [
+        'questionnaire_answers' => 'array',
+        'weighted_score' => 'integer',
         'onboarding_completed_at' => 'datetime',
     ];
 

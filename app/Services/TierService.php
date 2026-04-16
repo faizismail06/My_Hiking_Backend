@@ -9,6 +9,19 @@ use Illuminate\Support\Facades\DB;
 
 class TierService
 {
+    public function determineTierByWeightedScore(int $weightedScore): string
+    {
+        if ($weightedScore <= 34) {
+            return 'pemula';
+        }
+
+        if ($weightedScore <= 69) {
+            return 'menengah';
+        }
+
+        return 'mahir';
+    }
+
     public function determineTierByPendakian(int $jumlahPendakian): string
     {
         if ($jumlahPendakian <= 2) {
@@ -22,13 +35,31 @@ class TierService
         return 'mahir';
     }
 
-    public function createSelfClaimExperience(User $user, int $jumlahPendakian, int $jumlahSummit): User
+    public function createSelfClaimExperience(
+        User $user,
+        int $jumlahPendakian,
+        int $jumlahSummit,
+        ?array $questionnaireAnswers = null,
+        ?int $weightedScore = null
+    ): User
     {
-        return DB::transaction(function () use ($user, $jumlahPendakian, $jumlahSummit) {
+        return DB::transaction(function () use ($user, $jumlahPendakian, $jumlahSummit, $questionnaireAnswers, $weightedScore) {
+            $resolvedWeightedScore = $weightedScore;
+            if (!is_null($resolvedWeightedScore)) {
+                $resolvedWeightedScore = max(0, min(100, $resolvedWeightedScore));
+            }
+
+            $weightedTier = !is_null($resolvedWeightedScore)
+                ? $this->determineTierByWeightedScore($resolvedWeightedScore)
+                : null;
+
             UserExperience::create([
                 'user_id' => $user->id,
                 'jumlah_pendakian' => $jumlahPendakian,
                 'jumlah_summit' => $jumlahSummit,
+                'questionnaire_answers' => $questionnaireAnswers,
+                'weighted_score' => $resolvedWeightedScore,
+                'weighted_tier' => $weightedTier,
                 'onboarding_completed_at' => now(),
             ]);
 

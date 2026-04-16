@@ -72,8 +72,19 @@ class ExperienceOnboardingController extends Controller
         $validator = Validator::make($request->all(), [
             'jumlah_pendakian' => 'required|integer|min:0',
             'jumlah_summit' => 'required|integer|min:0|lte:jumlah_pendakian',
+            'weighted_score' => 'nullable|integer|min:0|max:100',
+            'questionnaire_answers' => 'nullable|array|min:5|max:5',
+            'questionnaire_answers.*.question_id' => 'required_with:questionnaire_answers|string|max:100',
+            'questionnaire_answers.*.question_title' => 'required_with:questionnaire_answers|string|max:255',
+            'questionnaire_answers.*.weight' => 'required_with:questionnaire_answers|integer|min:1|max:100',
+            'questionnaire_answers.*.selected_option_id' => 'required_with:questionnaire_answers|string|max:100',
+            'questionnaire_answers.*.selected_option_title' => 'required_with:questionnaire_answers|string|max:255',
+            'questionnaire_answers.*.score' => 'required_with:questionnaire_answers|integer|min:0|max:4',
+            'questionnaire_answers.*.weighted_score' => 'required_with:questionnaire_answers|integer|min:0|max:100',
         ], [
             'jumlah_summit.lte' => 'jumlah_summit tidak boleh lebih besar dari jumlah_pendakian.',
+            'questionnaire_answers.min' => 'Jumlah pertanyaan onboarding harus tepat 5.',
+            'questionnaire_answers.max' => 'Jumlah pertanyaan onboarding harus tepat 5.',
         ]);
 
         if ($validator->fails()) {
@@ -87,7 +98,9 @@ class ExperienceOnboardingController extends Controller
         $user = $this->tierService->createSelfClaimExperience(
             $user,
             (int) $request->jumlah_pendakian,
-            (int) $request->jumlah_summit
+            (int) $request->jumlah_summit,
+            $request->input('questionnaire_answers'),
+            $request->filled('weighted_score') ? (int) $request->weighted_score : null
         );
 
         return response()->json([
@@ -96,6 +109,8 @@ class ExperienceOnboardingController extends Controller
             'data' => [
                 'tier' => $user->tier,
                 'tier_source' => $user->tier_source,
+                'weighted_score' => optional($user->experience)->weighted_score,
+                'weighted_tier' => optional($user->experience)->weighted_tier,
                 'experience' => $user->experience,
             ],
         ], 201);
