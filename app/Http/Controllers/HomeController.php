@@ -33,9 +33,9 @@ class HomeController extends Controller
         $totalGunung = MountainWeb::count(); // Hitung jumlah gunung
         $totalJalur = TrailWeb::count(); // Hitung jumlah jalur
         $totalUser = UserWeb::count(); // Hitung jumlah user
-        $totalPendapatan = TransactionWeb::sum('total_bayar'); // Total pendapatan dari semua transaksi
+        $totalPendapatan = TransactionWeb::where('status_pesanan', 'Complete')->sum('total_bayar'); // Total pendapatan dari transaksi yang berhasil
 
         // Mengirim data ke view
-        return view('home', compact('totalTransaksi', 'totalGunung', 'totalJalur', 'totalUser','totalPendapatan'));
+        return view('home', compact('totalTransaksi', 'totalGunung', 'totalJalur', 'totalUser', 'totalPendapatan'));
     }
 }

@@ -270,12 +270,13 @@
     <div id="manual-search-popup" class="manual-search-overlay" role="dialog" aria-modal="true"
         aria-labelledby="manual-search-popup-title">
         <div class="manual-search-modal">
-            <div class="manual-search-modal-header">
+            <div class="manual-search-modal-header" id="manual-search-popup-header">
                 <i class="fas fa-circle-exclamation"></i>
                 <strong id="manual-search-popup-title">ID Pesanan Tidak Ditemukan</strong>
             </div>
             <div class="manual-search-modal-body">
                 <div id="manual-search-popup-id" class="manual-search-id-badge d-none"></div>
+                <div id="manual-search-popup-alert" class="alert d-none mb-3"></div>
                 <p id="manual-search-popup-message" class="mb-0 text-muted"></p>
             </div>
             <div class="manual-search-modal-actions">
@@ -456,18 +457,72 @@
         const manualSearchPopupMessage = document.getElementById('manual-search-popup-message');
         const manualSearchPopupId = document.getElementById('manual-search-popup-id');
 
-        function showManualSearchPopup(message, orderId = null) {
-            manualSearchPopupMessage.textContent = message || 'ID pesanan tidak ditemukan.';
+        function showManualSearchPopup(message, orderId = null, status = 'not_found') {
+            const headerEl = document.getElementById('manual-search-popup-header');
+            const alertEl = document.getElementById('manual-search-popup-alert');
+            const titleEl = document.getElementById('manual-search-popup-title');
+            const messageEl = document.getElementById('manual-search-popup-message');
+            const idEl = document.getElementById('manual-search-popup-id');
+            const retryBtn = document.getElementById('manual-search-popup-retry');
 
-            if (orderId !== null && orderId !== '') {
-                manualSearchPopupId.classList.remove('d-none');
-                manualSearchPopupId.innerHTML = `<i class="fas fa-hashtag"></i> ID: ${orderId}`;
+            // Reset styling
+            headerEl.style.background = '';
+            alertEl.classList.remove('alert-danger', 'alert-warning', 'alert-info', 'd-none');
+            alertEl.innerHTML = '';
+            retryBtn.className = 'btn btn-danger';
+            retryBtn.textContent = 'Coba Lagi';
+
+            // Set pesan utama dan styling berdasarkan status
+            messageEl.textContent = message || 'ID pesanan tidak ditemukan.';
+
+            if (status === 'payment_incomplete') {
+                // Status: Pembayaran belum selesai
+                titleEl.innerHTML = '<i class="fas fa-credit-card"></i> Pembayaran Belum Selesai';
+                headerEl.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+                alertEl.classList.add('alert-warning');
+                alertEl.innerHTML =
+                    '<i class="fas fa-exclamation-triangle me-2"></i><strong>⚠️ PENTING:</strong> Pesanan ini belum dibayar. Pelanggan harus menyelesaikan pembayaran terlebih dahulu.';
+                retryBtn.className = 'btn btn-warning';
+                retryBtn.textContent = 'Ingatkan Pembayaran';
+            } else if (status === 'payment_expired') {
+                // Status: Pembayaran sudah expired
+                titleEl.innerHTML = '<i class="fas fa-hourglass-end"></i> ID Pesanan Sudah Expired';
+                headerEl.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                alertEl.classList.add('alert-danger');
+                alertEl.innerHTML =
+                    '<i class="fas fa-times-circle me-2"></i><strong>❌ KRITIS:</strong> Waktu pembayaran untuk pesanan ini sudah habis. ID pesanan tidak dapat digunakan lagi.';
+                retryBtn.className = 'btn btn-secondary';
+                retryBtn.textContent = 'Tutup';
+                retryBtn.style.pointerEvents = 'none';
+                retryBtn.style.opacity = '0.6';
+            } else if (status === 'order_invalid') {
+                // Status: Order tidak valid
+                titleEl.innerHTML = '<i class="fas fa-ban"></i> Pesanan Tidak Valid';
+                headerEl.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)';
+                alertEl.classList.add('alert-danger');
+                alertEl.innerHTML =
+                    '<i class="fas fa-ban me-2"></i><strong>⛔ TIDAK VALID:</strong> Pesanan ini tidak dapat digunakan (status: ' +
+                    (orderId || '') + ').';
+                retryBtn.className = 'btn btn-secondary';
+                retryBtn.textContent = 'Tutup';
             } else {
-                manualSearchPopupId.classList.add('d-none');
-                manualSearchPopupId.textContent = '';
+                // Status: Tidak ditemukan (default)
+                titleEl.innerHTML = '<i class="fas fa-circle-exclamation"></i> ID Pesanan Tidak Ditemukan';
+                headerEl.style.background = '';
+                alertEl.classList.add('d-none');
+                retryBtn.className = 'btn btn-danger';
+                retryBtn.textContent = 'Coba Lagi';
             }
 
-            manualSearchPopup.classList.add('show');
+            if (orderId !== null && orderId !== '') {
+                idEl.classList.remove('d-none');
+                idEl.innerHTML = `<i class="fas fa-hashtag"></i> ID: ${orderId}`;
+            } else {
+                idEl.classList.add('d-none');
+                idEl.textContent = '';
+            }
+
+            document.getElementById('manual-search-popup').classList.add('show');
         }
 
         function hideManualSearchPopup() {
@@ -490,8 +545,12 @@
             }
         });
 
-        @if (session('manual_search_status') === 'not_found' || session('manual_search_status') === 'no_trail')
-            showManualSearchPopup(@json(session('manual_search_message')), @json(session('manual_search_id')));
+        @if (session('manual_search_status'))
+            showManualSearchPopup(
+                @json(session('manual_search_message')),
+                @json(session('manual_search_id')),
+                @json(session('manual_search_status'))
+            );
         @endif
 
         fileInput.addEventListener('change', function(event) {

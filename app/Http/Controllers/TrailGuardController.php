@@ -188,7 +188,10 @@ class TrailGuardController extends Controller
         $status = $request->input('status');
 
         $query = OrderWeb::where('id_jalur', $trail->id)
-            ->with(['user', 'orderMembers']);
+            ->with(['user', 'orderMembers', 'transaction'])
+            ->whereHas('transaction', function ($q) {
+                $q->where('status_pesanan', 'Complete');
+            });
 
         if ($search) {
             $query->whereHas('user', function ($q) use ($search) {
@@ -331,6 +334,24 @@ class TrailGuardController extends Controller
             return redirect()->route('guards.scanner')->with('error', 'Order not found or not for your trail.');
         }
 
+        // CRUCIAL: Validasi pembayaran - order hanya bisa diakses jika pembayaran sudah COMPLETE
+        if (!$order->transaction || $order->transaction->status_pesanan !== 'Complete') {
+            return redirect()->route('guards.scanner')
+                ->with('error', 'Pesanan ini belum dibayar. Pembayaran harus diselesaikan terlebih dahulu.');
+        }
+
+        // CRUCIAL: Validasi waktu pembayaran - cek apakah order sudah expired
+        if ($this->isPaymentExpired($order->transaction)) {
+            return redirect()->route('guards.scanner')
+                ->with('error', 'ID pesanan ini sudah expired. Waktu pembayaran telah habis.');
+        }
+
+        // Validasi order status
+        if ($order->status === 'Expired' || $order->status === 'Cancelled') {
+            return redirect()->route('guards.scanner')
+                ->with('error', 'Pesanan ini tidak valid (status: ' . $order->status . ').');
+        }
+
         return view('guards.order-detail', compact('order', 'trail'));
     }
 
@@ -351,15 +372,40 @@ class TrailGuardController extends Controller
         }
 
         $orderId = (int) $request->pesanan_id;
-        $orderExists = OrderWeb::where('id', $orderId)
+        $order = OrderWeb::with('transaction')
+            ->where('id', $orderId)
             ->where('id_jalur', $trail->id)
-            ->exists();
+            ->first();
 
-        if (!$orderExists) {
+        if (!$order) {
             return redirect()->route('guards.scanner')
                 ->with('manual_search_status', 'not_found')
                 ->with('manual_search_id', $orderId)
                 ->with('manual_search_message', 'ID pesanan tidak ditemukan atau bukan untuk jalur Anda.');
+        }
+
+        // CRUCIAL: Validasi pembayaran - order hanya bisa di-scan jika pembayaran sudah COMPLETE
+        if (!$order->transaction || $order->transaction->status_pesanan !== 'Complete') {
+            return redirect()->route('guards.scanner')
+                ->with('manual_search_status', 'payment_incomplete')
+                ->with('manual_search_id', $orderId)
+                ->with('manual_search_message', 'Pembayaran pesanan ini belum selesai. Pelanggan harus menyelesaikan pembayaran terlebih dahulu.');
+        }
+
+        // CRUCIAL: Validasi waktu pembayaran - cek apakah order sudah expired
+        if ($this->isPaymentExpired($order->transaction)) {
+            return redirect()->route('guards.scanner')
+                ->with('manual_search_status', 'payment_expired')
+                ->with('manual_search_id', $orderId)
+                ->with('manual_search_message', 'ID pesanan ini sudah expired. Waktu pembayaran telah habis.');
+        }
+
+        // Validasi order status
+        if ($order->status === 'Expired' || $order->status === 'Cancelled') {
+            return redirect()->route('guards.scanner')
+                ->with('manual_search_status', 'order_invalid')
+                ->with('manual_search_id', $orderId)
+                ->with('manual_search_message', 'Pesanan ini tidak valid (status: ' . $order->status . ').');
         }
 
         return redirect()->route('guards.order.detail', $orderId);
@@ -375,12 +421,23 @@ class TrailGuardController extends Controller
             return redirect()->back()->with('error', 'You do not have access.');
         }
 
-        $order = OrderWeb::where('id', $orderId)
+        $order = OrderWeb::with('transaction')
+            ->where('id', $orderId)
             ->where('id_jalur', $trail->id)
             ->first();
 
         if (!$order) {
             return redirect()->back()->with('error', 'Order not found.');
+        }
+
+        // CRUCIAL: Validasi pembayaran sebelum update status
+        if (!$order->transaction || $order->transaction->status_pesanan !== 'Complete') {
+            return redirect()->back()->with('error', 'Pesanan ini belum dibayar. Pembayaran harus diselesaikan terlebih dahulu sebelum check-in.');
+        }
+
+        // CRUCIAL: Validasi waktu pembayaran
+        if ($this->isPaymentExpired($order->transaction)) {
+            return redirect()->back()->with('error', 'ID pesanan ini sudah expired. Waktu pembayaran telah habis. Check-in tidak dapat dilakukan.');
         }
 
         $request->validate([
@@ -422,7 +479,8 @@ class TrailGuardController extends Controller
             ], 403);
         }
 
-        $order = OrderWeb::where('id', $orderId)
+        $order = OrderWeb::with('transaction')
+            ->where('id', $orderId)
             ->where('id_jalur', $trail->id)
             ->first();
 
@@ -431,6 +489,30 @@ class TrailGuardController extends Controller
                 'success' => false,
                 'message' => 'Order not found or not for your trail.'
             ], 404);
+        }
+
+        // CRUCIAL: Validasi pembayaran - order hanya bisa di-scan jika pembayaran sudah COMPLETE
+        if (!$order->transaction || $order->transaction->status_pesanan !== 'Complete') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pembayaran pesanan ini belum selesai. Pelanggan harus menyelesaikan pembayaran terlebih dahulu.'
+            ], 400);
+        }
+
+        // CRUCIAL: Validasi waktu pembayaran - cek apakah order sudah expired
+        if ($this->isPaymentExpired($order->transaction)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ID pesanan ini sudah expired. Waktu pembayaran telah habis.'
+            ], 400);
+        }
+
+        // Validasi order status sebelum check-in
+        if ($order->status === 'Expired' || $order->status === 'Cancelled') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pesanan ini tidak valid (status: ' . $order->status . ').'
+            ], 400);
         }
 
         // Auto update status based on current status
@@ -624,5 +706,53 @@ class TrailGuardController extends Controller
     private function paidTransactionStatuses(): array
     {
         return ['Verified', 'Complete'];
+    }
+
+    /**
+     * CRUCIAL: Check if payment for a transaction has expired
+     * Payment is considered expired if it's pending and has passed the payment window
+     * 
+     * @param TransactionWeb $transaction
+     * @return bool True if payment has expired, false otherwise
+     */
+    private function isPaymentExpired($transaction): bool
+    {
+        // Jika sudah Complete, tidak expired
+        if ($transaction->status_pesanan === 'Complete') {
+            return false;
+        }
+
+        // Base time untuk pengecekan
+        $baseTime = $transaction->transaction_time ?? $transaction->created_at;
+        if (!$baseTime) {
+            return true; // Jika tidak ada waktu transaksi, dianggap expired
+        }
+
+        // Ambil konfigurasi durasi pembayaran dari config Midtrans
+        $duration = config('midtrans.payment_expiry_duration', 15);
+        $unit = config('midtrans.payment_expiry_unit', 'minute');
+
+        // Hitung waktu ekspirasi berdasarkan durasi dan unit
+        $baseTimeCarbon = Carbon::parse($baseTime);
+
+        switch ($unit) {
+            case 'second':
+                $expiryTime = $baseTimeCarbon->addSeconds($duration);
+                break;
+            case 'minute':
+                $expiryTime = $baseTimeCarbon->addMinutes($duration);
+                break;
+            case 'hour':
+                $expiryTime = $baseTimeCarbon->addHours($duration);
+                break;
+            case 'day':
+                $expiryTime = $baseTimeCarbon->addDays($duration);
+                break;
+            default:
+                $expiryTime = $baseTimeCarbon->addMinutes(15); // Default 15 menit
+        }
+
+        // Cek apakah waktu sekarang sudah melewati waktu ekspirasi
+        return now()->isAfter($expiryTime);
     }
 }
