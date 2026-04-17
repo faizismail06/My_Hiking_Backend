@@ -52,7 +52,7 @@ Route::get('/mountains/{id_gunung}/trails/{id_jalur}/preview', [MountainTrailDet
 Route::get('/mountains/{id_gunung}/trails/{id_jalur}/booking', [MountainTrailDetailController::class, 'trailBooking']);
 Route::get('/weather/current', [WeatherController::class, 'current']);
 Route::get('/weather/forecast', [WeatherController::class, 'forecast']);
-Route::get('/recommendations', [RecommendationController::class, 'index']);
+Route::get('/recommendations', [RecommendationController::class, 'index'])->middleware('auth:sanctum');
 Route::post('/ai/predict-weather', [AiGatewayController::class, 'predictWeather']);
 
 // Order routes

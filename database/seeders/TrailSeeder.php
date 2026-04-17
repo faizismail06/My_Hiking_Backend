@@ -274,5 +274,28 @@ class TrailSeeder extends Seeder
             'latitude' => -7.3853,
             'longitude' => 110.0688,
         ]);
+
+        // Pastikan metrik rute konsisten untuk DSS (sesuai data acuan).
+        $routeMetrics = [
+            1 => ['jarak' => 5.63, 'elevasi' => 1300, 'durasi' => 8, 'tingkat_kesulitan' => 'sedang'],
+            2 => ['jarak' => 6.43, 'elevasi' => 1400, 'durasi' => 10, 'tingkat_kesulitan' => 'sedang'],
+            3 => ['jarak' => 5.68, 'elevasi' => 1500, 'durasi' => 10, 'tingkat_kesulitan' => 'sulit'],
+            4 => ['jarak' => 6.10, 'elevasi' => 1400, 'durasi' => 9, 'tingkat_kesulitan' => 'sedang'],
+            5 => ['jarak' => 4.86, 'elevasi' => 1200, 'durasi' => 8, 'tingkat_kesulitan' => 'sedang'],
+            6 => ['jarak' => 10, 'elevasi' => 1500, 'durasi' => 9, 'tingkat_kesulitan' => 'sulit'],
+            7 => ['jarak' => 11, 'elevasi' => 1600, 'durasi' => 10, 'tingkat_kesulitan' => 'sulit'],
+            8 => ['jarak' => 9, 'elevasi' => 1400, 'durasi' => 8, 'tingkat_kesulitan' => 'sulit'],
+            9 => ['jarak' => 8, 'elevasi' => 1300, 'durasi' => 7, 'tingkat_kesulitan' => 'sedang'],
+            10 => ['jarak' => 12, 'elevasi' => 1700, 'durasi' => 11, 'tingkat_kesulitan' => 'sangat_sulit'],
+            11 => ['jarak' => 6.5, 'elevasi' => 1300, 'durasi' => 7, 'tingkat_kesulitan' => 'sedang'],
+            12 => ['jarak' => 8, 'elevasi' => 1500, 'durasi' => 9, 'tingkat_kesulitan' => 'sulit'],
+            13 => ['jarak' => 7.5, 'elevasi' => 1400, 'durasi' => 8, 'tingkat_kesulitan' => 'sulit'],
+            14 => ['jarak' => 7, 'elevasi' => 1400, 'durasi' => 8, 'tingkat_kesulitan' => 'sulit'],
+            15 => ['jarak' => 6, 'elevasi' => 1200, 'durasi' => 7, 'tingkat_kesulitan' => 'sedang'],
+        ];
+
+        foreach ($routeMetrics as $routeId => $metrics) {
+            Trail::where('id', $routeId)->update($metrics);
+        }
     }
 }

@@ -38,9 +38,9 @@ class DSSService
         $difficultyLevel = $this->difficultyMap[$difficultyKey];
 
         $riskGap = $difficultyLevel - $userTier;
-        $finalScore = round(($metrics['route_score'] * 0.6) + (($weather['weather_score_final'] ?? 0) * 0.4), 4);
+        $finalScore = round(($metrics['route_score'] * 0.75) + (($weather['weather_score_final'] ?? 0) * 0.25), 4);
 
-        $riskLevel = $this->resolveRiskLevel($riskGap, $finalScore);
+        $riskLevel = $this->resolveRiskLevel($riskGap, $finalScore, $userTier);
         $recommendation = $riskLevel === 'high_risk' ? 'not_recommended' : 'recommended';
         $reasoning = $this->buildReasoning($weather, $riskGap);
 
@@ -156,21 +156,40 @@ class DSSService
         ];
     }
 
-    private function resolveRiskLevel(int $riskGap, float $finalScore): string
+    private function resolveRiskLevel(int $riskGap, float $finalScore, int $userTier): string
     {
-        if ($riskGap >= 2 || $finalScore >= 2.5) {
+        $cautionThresholdByTier = [
+            1 => 1.6,
+            2 => 2.0,
+            3 => 2.4,
+        ];
+
+        $highThresholdByTier = [
+            1 => 2.3,
+            2 => 2.7,
+            3 => 3.1,
+        ];
+
+        $cautionThreshold = $cautionThresholdByTier[$userTier] ?? 2.0;
+        $highThreshold = $highThresholdByTier[$userTier] ?? 2.7;
+
+        if ($riskGap >= 2) {
             return 'high_risk';
         }
 
-        if ($riskGap === 1 || $finalScore >= 1.7) {
+        if ($riskGap === 1) {
+            return $finalScore >= $highThreshold ? 'high_risk' : 'caution';
+        }
+
+        if ($finalScore >= ($highThreshold + 0.3)) {
+            return 'high_risk';
+        }
+
+        if ($finalScore >= $cautionThreshold) {
             return 'caution';
         }
 
-        if ($riskGap <= 0) {
-            return 'safe';
-        }
-
-        return 'caution';
+        return 'safe';
     }
 
     private function buildReasoning(array $weather, int $riskGap): array

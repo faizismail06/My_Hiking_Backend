@@ -9,6 +9,12 @@ use Illuminate\Support\Facades\DB;
 
 class TierService
 {
+    private array $tierPriority = [
+        'pemula' => 1,
+        'menengah' => 2,
+        'mahir' => 3,
+    ];
+
     public function determineTierByWeightedScore(int $weightedScore): string
     {
         if ($weightedScore <= 34) {
@@ -53,6 +59,9 @@ class TierService
                 ? $this->determineTierByWeightedScore($resolvedWeightedScore)
                 : null;
 
+            $pendakianTier = $this->determineTierByPendakian($jumlahPendakian);
+            $resolvedTier = $this->resolveSelfClaimTier($pendakianTier, $weightedTier);
+
             UserExperience::create([
                 'user_id' => $user->id,
                 'jumlah_pendakian' => $jumlahPendakian,
@@ -64,7 +73,7 @@ class TierService
             ]);
 
             $user->forceFill([
-                'tier' => $this->determineTierByPendakian($jumlahPendakian),
+                'tier' => $resolvedTier,
                 'tier_source' => 'self_claim',
             ])->save();
 
@@ -78,9 +87,8 @@ class TierService
             return $user;
         }
 
-        $jumlahBooking = Order::where('id_user', $user->id)->count();
         $jumlahSelesai = Order::where('id_user', $user->id)->where('status', 'Selesai')->count();
-        $jumlahPendakianSistem = max($jumlahBooking, $jumlahSelesai);
+        $jumlahPendakianSistem = $jumlahSelesai;
 
         if ($jumlahPendakianSistem <= 0) {
             return $user;
@@ -96,5 +104,17 @@ class TierService
         }
 
         return $user->fresh();
+    }
+
+    private function resolveSelfClaimTier(string $pendakianTier, ?string $weightedTier): string
+    {
+        if (empty($weightedTier) || !isset($this->tierPriority[$weightedTier])) {
+            return $pendakianTier;
+        }
+
+        $pendakianTierLevel = $this->tierPriority[$pendakianTier] ?? 1;
+        $weightedTierLevel = $this->tierPriority[$weightedTier];
+
+        return $weightedTierLevel >= $pendakianTierLevel ? $weightedTier : $pendakianTier;
     }
 }
