@@ -32,6 +32,10 @@ class User extends Authenticatable
         'level',
         'tier',
         'tier_source',
+        'total_earnings',
+        'withdrawn_amount',
+        'available_balance',
+        'transaction_count',
         'profile_picture',
         'date_of_birth',
     ];

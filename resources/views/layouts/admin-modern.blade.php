@@ -12,10 +12,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -64,7 +64,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .sidebar-brand img {
@@ -83,7 +83,7 @@
         }
 
         .sidebar-brand small {
-            color: rgba(255,255,255,0.7);
+            color: rgba(255, 255, 255, 0.7);
             font-size: 0.75rem;
         }
 
@@ -93,7 +93,7 @@
 
         .menu-label {
             padding: 0.75rem 1.5rem;
-            color: rgba(255,255,255,0.5);
+            color: rgba(255, 255, 255, 0.5);
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -104,7 +104,7 @@
             display: flex;
             align-items: center;
             padding: 0.875rem 1.5rem;
-            color: rgba(255,255,255,0.7);
+            color: rgba(255, 255, 255, 0.7);
             text-decoration: none;
             transition: all 0.2s ease;
             gap: 12px;
@@ -113,7 +113,7 @@
         }
 
         .menu-item:hover {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             color: white;
         }
 
@@ -146,7 +146,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -222,14 +222,14 @@
             background: white;
             border-radius: 16px;
             padding: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             transition: all 0.3s ease;
             border: 1px solid #e2e8f0;
         }
 
         .stat-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
         }
 
         .stat-card .icon {
@@ -242,11 +242,30 @@
             font-size: 1.5rem;
         }
 
-        .stat-card .icon.primary { background: var(--primary-light); color: var(--primary-color); }
-        .stat-card .icon.success { background: #dcfce7; color: var(--success-color); }
-        .stat-card .icon.warning { background: #fef3c7; color: var(--warning-color); }
-        .stat-card .icon.info { background: #dbeafe; color: var(--info-color); }
-        .stat-card .icon.danger { background: #fee2e2; color: var(--danger-color); }
+        .stat-card .icon.primary {
+            background: var(--primary-light);
+            color: var(--primary-color);
+        }
+
+        .stat-card .icon.success {
+            background: #dcfce7;
+            color: var(--success-color);
+        }
+
+        .stat-card .icon.warning {
+            background: #fef3c7;
+            color: var(--warning-color);
+        }
+
+        .stat-card .icon.info {
+            background: #dbeafe;
+            color: var(--info-color);
+        }
+
+        .stat-card .icon.danger {
+            background: #fee2e2;
+            color: var(--danger-color);
+        }
 
         .stat-card .value {
             font-size: 1.75rem;
@@ -263,7 +282,7 @@
         .modern-card {
             background: white;
             border-radius: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             border: 1px solid #e2e8f0;
             overflow: hidden;
         }
@@ -329,11 +348,30 @@
             font-weight: 600;
         }
 
-        .badge-pending { background: #fef3c7; color: #d97706; }
-        .badge-success { background: #dcfce7; color: #16a34a; }
-        .badge-danger { background: #fee2e2; color: #dc2626; }
-        .badge-info { background: #dbeafe; color: #2563eb; }
-        .badge-secondary { background: #f1f5f9; color: #475569; }
+        .badge-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .badge-success {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .badge-info {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .badge-secondary {
+            background: #f1f5f9;
+            color: #475569;
+        }
 
         /* Buttons */
         .btn-modern {
@@ -438,7 +476,7 @@
             top: 100%;
             background: white;
             border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
             min-width: 200px;
             padding: 0.5rem;
             display: none;
@@ -500,8 +538,15 @@
 
         /* Animation */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .animate-fade-in {
@@ -589,8 +634,15 @@
         }
 
         @keyframes chatIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         @media (max-width: 576px) {
@@ -629,7 +681,7 @@
             @endphp
 
             <div class="menu-label">Menu Utama</div>
-            
+
             <a href="{{ route('home') }}" class="menu-item {{ request()->routeIs('home') ? 'active' : '' }}">
                 <i class="fas fa-home"></i>
                 <span>Dashboard</span>
@@ -637,29 +689,34 @@
 
             <div class="menu-label">Manajemen Data</div>
 
-            <a href="{{ route('mountains.index') }}" class="menu-item {{ request()->routeIs('mountains.*') ? 'active' : '' }}">
+            <a href="{{ route('mountains.index') }}"
+                class="menu-item {{ request()->routeIs('mountains.*') ? 'active' : '' }}">
                 <i class="fas fa-mountain"></i>
                 <span>Gunung</span>
             </a>
 
-            <a href="{{ route('trails.index') }}" class="menu-item {{ request()->routeIs('trails.*') ? 'active' : '' }}">
+            <a href="{{ route('trails.index') }}"
+                class="menu-item {{ request()->routeIs('trails.*') ? 'active' : '' }}">
                 <i class="fas fa-route"></i>
                 <span>Jalur</span>
             </a>
 
-            <a href="{{ route('rules.index') }}" class="menu-item {{ request()->routeIs('rules.*') ? 'active' : '' }}">
+            <a href="{{ route('rules.index') }}"
+                class="menu-item {{ request()->routeIs('rules.*') ? 'active' : '' }}">
                 <i class="fas fa-book"></i>
                 <span>Tata Tertib</span>
             </a>
 
             <div class="menu-label">Transaksi</div>
 
-            <a href="{{ route('transactions.index') }}" class="menu-item {{ request()->routeIs('transactions.*') ? 'active' : '' }}">
+            <a href="{{ route('transactions.index') }}"
+                class="menu-item {{ request()->routeIs('transactions.*') ? 'active' : '' }}">
                 <i class="fas fa-credit-card"></i>
                 <span>Transaksi</span>
             </a>
 
-            <a href="{{ route('admin.refunds.index') }}" class="menu-item {{ request()->routeIs('admin.refunds.*') ? 'active' : '' }}">
+            <a href="{{ route('admin.refunds.index') }}"
+                class="menu-item {{ request()->routeIs('admin.refunds.*') ? 'active' : '' }}">
                 <i class="fas fa-rotate-left"></i>
                 <span>Manual Refund</span>
                 @if ($pendingRefundCount > 0)
@@ -667,14 +724,22 @@
                 @endif
             </a>
 
-            <a href="{{ route('history.index') }}" class="menu-item {{ request()->routeIs('history.*') ? 'active' : '' }}">
+            <a href="{{ route('admin.earnings.index') }}"
+                class="menu-item {{ request()->routeIs('admin.earnings.*') ? 'active' : '' }}">
+                <i class="fas fa-wallet"></i>
+                <span>Earnings & Withdrawal</span>
+            </a>
+
+            <a href="{{ route('history.index') }}"
+                class="menu-item {{ request()->routeIs('history.*') ? 'active' : '' }}">
                 <i class="fas fa-history"></i>
                 <span>Riwayat</span>
             </a>
 
             <div class="menu-label">Pengguna</div>
 
-            <a href="{{ route('users.index') }}" class="menu-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
+            <a href="{{ route('users.index') }}"
+                class="menu-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
                 <i class="fas fa-users"></i>
                 <span>Pengguna</span>
             </a>
@@ -688,7 +753,8 @@
 
             <form action="{{ route('logout') }}" method="POST" class="mx-3 mt-2">
                 @csrf
-                <button type="submit" class="menu-item w-100 text-start border-0 bg-transparent" style="color: rgba(255,255,255,0.7);">
+                <button type="submit" class="menu-item w-100 text-start border-0 bg-transparent"
+                    style="color: rgba(255,255,255,0.7);">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Keluar</span>
                 </button>
@@ -729,7 +795,9 @@
                         <hr>
                         <form action="{{ route('logout') }}" method="POST">
                             @csrf
-                            <button type="submit" class="w-100 text-start border-0 bg-transparent d-flex align-items-center gap-2 px-3 py-2" style="color: var(--danger-color);">
+                            <button type="submit"
+                                class="w-100 text-start border-0 bg-transparent d-flex align-items-center gap-2 px-3 py-2"
+                                style="color: var(--danger-color);">
                                 <i class="fas fa-sign-out-alt"></i>
                                 <span>Keluar</span>
                             </button>
@@ -782,20 +850,22 @@
                 <h6 class="mb-0">Admin Assistant</h6>
                 <small>{{ Auth::user()->name }}</small>
             </div>
-            <button id="globalChatClose" class="btn-close btn-close-white" type="button" aria-label="Tutup"></button>
+            <button id="globalChatClose" class="btn-close btn-close-white" type="button"
+                aria-label="Tutup"></button>
         </div>
 
         <div id="globalChatBox" class="global-chat-body"></div>
 
         <form id="globalChatForm" class="global-chat-footer">
-            <input id="globalChatInput" type="text" class="form-control" placeholder="Ketik perintah admin..." autocomplete="off" required>
+            <input id="globalChatInput" type="text" class="form-control" placeholder="Ketik perintah admin..."
+                autocomplete="off" required>
             <button class="btn btn-success" type="submit">Kirim</button>
         </form>
     </div>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script>
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('show');
@@ -809,7 +879,7 @@
         document.addEventListener('click', function(e) {
             const dropdown = document.getElementById('userDropdown');
             const userBtn = document.querySelector('.header-user');
-            
+
             if (!userBtn.contains(e.target) && dropdown.classList.contains('show')) {
                 dropdown.classList.remove('show');
             }
@@ -819,9 +889,9 @@
         document.addEventListener('click', function(e) {
             const sidebar = document.getElementById('sidebar');
             const toggleBtn = document.querySelector('.toggle-sidebar');
-            
-            if (window.innerWidth <= 992 && 
-                !sidebar.contains(e.target) && 
+
+            if (window.innerWidth <= 992 &&
+                !sidebar.contains(e.target) &&
                 !toggleBtn.contains(e.target) &&
                 sidebar.classList.contains('show')) {
                 sidebar.classList.remove('show');
@@ -849,7 +919,8 @@
                 wrap.className = `d-flex ${sender === 'user' ? 'justify-content-end' : 'justify-content-start'} mb-2`;
 
                 const bubble = document.createElement('div');
-                bubble.className = `px-3 py-2 rounded ${sender === 'user' ? 'global-chat-bubble-user' : 'global-chat-bubble-bot'}`;
+                bubble.className =
+                    `px-3 py-2 rounded ${sender === 'user' ? 'global-chat-bubble-user' : 'global-chat-bubble-bot'}`;
                 bubble.style.maxWidth = '82%';
                 bubble.style.whiteSpace = 'pre-wrap';
                 bubble.textContent = text;
@@ -899,19 +970,32 @@
 
             async function sendMessage(message) {
                 appendMessage(message, 'user');
-                history.push({ message, isUser: true });
+                history.push({
+                    message,
+                    isUser: true
+                });
 
                 try {
                     const resp = await fetch('http://127.0.0.1:5000/api/chat', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message, history, role, user_id: userId })
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message,
+                            history,
+                            role,
+                            user_id: userId
+                        })
                     });
 
                     const data = await resp.json();
                     const botMsg = data?.message || 'Tidak ada respons dari chatbot.';
                     appendMessage(botMsg, 'bot');
-                    history.push({ message: botMsg, isUser: false });
+                    history.push({
+                        message: botMsg,
+                        isUser: false
+                    });
 
                     if (data?.download_url) {
                         appendDownloadButton(data.download_url);

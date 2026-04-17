@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             MountainSeeder::class,
             TrailSeeder::class,
             RuleSeeder::class,
+            AdminFeeSettingsSeeder::class,
             // PaymentsTableSeeder removed - no longer using payments table (Midtrans handles payment methods)
         ]);
     }

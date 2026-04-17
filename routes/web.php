@@ -13,6 +13,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RuleController;
 use App\Http\Controllers\TrailGuardController;
 use App\Http\Controllers\RefundWebController;
+use App\Http\Controllers\AdminEarningsController;
+use App\Http\Controllers\TrailGuardWithdrawalController;
 
 
 /*
@@ -40,6 +42,18 @@ Route::middleware(['auth', 'level3'])->group(function () {
         Route::post('/{id}/approve', [RefundWebController::class, 'approve'])->name('approve');
         Route::post('/{id}/reject', [RefundWebController::class, 'reject'])->name('reject');
         Route::post('/{id}/refunded', [RefundWebController::class, 'markRefunded'])->name('refunded');
+    });
+
+    // Admin Earnings Routes
+    Route::prefix('admin/earnings')->name('admin.earnings.')->group(function () {
+        Route::get('/', [AdminEarningsController::class, 'index'])->name('index');
+        Route::get('/withdrawal-requests', [AdminEarningsController::class, 'withdrawalRequests'])->name('withdrawal-requests');
+        Route::get('/withdrawal/{id}', [AdminEarningsController::class, 'showWithdrawalRequest'])->name('withdrawal-request-detail');
+        Route::post('/withdrawal/{id}/approve', [AdminEarningsController::class, 'approveWithdrawalRequest'])->name('withdrawal-request-approve');
+        Route::post('/withdrawal/{id}/reject', [AdminEarningsController::class, 'rejectWithdrawalRequest'])->name('withdrawal-request-reject');
+        Route::post('/withdrawal/{id}/complete', [AdminEarningsController::class, 'completeWithdrawalRequest'])->name('withdrawal-request-complete');
+        Route::get('/admin-fee-settings', [AdminEarningsController::class, 'adminFeeSettings'])->name('admin-fee-settings');
+        Route::put('/admin-fee-settings', [AdminEarningsController::class, 'updateAdminFeeSettings'])->name('admin-fee-settings-update');
     });
 });
 
@@ -132,4 +146,13 @@ Route::middleware(['penjaga'])->prefix('guards')->name('guards.')->group(functio
     // Guard Profile
     Route::get('/profile', [TrailGuardController::class, 'profile'])->name('profile');
     Route::put('/profile', [TrailGuardController::class, 'updateProfile'])->name('profile.update');
+});
+
+// Trail Guard Withdrawal Routes
+Route::middleware(['auth'])->prefix('trail-guard/withdrawal')->name('trail-guard.withdrawal.')->group(function () {
+    Route::get('/', [TrailGuardWithdrawalController::class, 'index'])->name('index');
+    Route::get('/create', [TrailGuardWithdrawalController::class, 'create'])->name('create');
+    Route::post('/', [TrailGuardWithdrawalController::class, 'store'])->name('store');
+    Route::get('/{id}', [TrailGuardWithdrawalController::class, 'show'])->name('show');
+    Route::delete('/{id}/cancel', [TrailGuardWithdrawalController::class, 'cancel'])->name('cancel');
 });

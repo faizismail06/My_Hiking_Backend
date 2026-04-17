@@ -12,10 +12,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -64,7 +64,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .sidebar-brand img {
@@ -83,7 +83,7 @@
         }
 
         .sidebar-brand small {
-            color: rgba(255,255,255,0.7);
+            color: rgba(255, 255, 255, 0.7);
             font-size: 0.75rem;
         }
 
@@ -93,7 +93,7 @@
 
         .menu-label {
             padding: 0.75rem 1.5rem;
-            color: rgba(255,255,255,0.5);
+            color: rgba(255, 255, 255, 0.5);
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -104,7 +104,7 @@
             display: flex;
             align-items: center;
             padding: 0.875rem 1.5rem;
-            color: rgba(255,255,255,0.8);
+            color: rgba(255, 255, 255, 0.8);
             text-decoration: none;
             transition: all 0.2s ease;
             gap: 12px;
@@ -113,12 +113,12 @@
         }
 
         .menu-item:hover {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             color: white;
         }
 
         .menu-item.active {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             color: white;
             font-weight: 500;
         }
@@ -146,7 +146,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -208,14 +208,14 @@
             background: white;
             border-radius: 16px;
             padding: 1.5rem;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
             transition: all 0.3s ease;
             border: 1px solid #f1f5f9;
         }
 
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
         }
 
         .stat-card .icon {
@@ -228,10 +228,25 @@
             font-size: 1.5rem;
         }
 
-        .stat-card .icon.primary { background: var(--primary-light); color: var(--primary-color); }
-        .stat-card .icon.success { background: #dcfce7; color: var(--success-color); }
-        .stat-card .icon.warning { background: #fef3c7; color: var(--accent-color); }
-        .stat-card .icon.info { background: #dbeafe; color: var(--info-color); }
+        .stat-card .icon.primary {
+            background: var(--primary-light);
+            color: var(--primary-color);
+        }
+
+        .stat-card .icon.success {
+            background: #dcfce7;
+            color: var(--success-color);
+        }
+
+        .stat-card .icon.warning {
+            background: #fef3c7;
+            color: var(--accent-color);
+        }
+
+        .stat-card .icon.info {
+            background: #dbeafe;
+            color: var(--info-color);
+        }
 
         .stat-card .value {
             font-size: 1.75rem;
@@ -248,7 +263,7 @@
         .modern-card {
             background: white;
             border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
             border: 1px solid #f1f5f9;
             overflow: hidden;
         }
@@ -314,12 +329,35 @@
             font-weight: 600;
         }
 
-        .badge-booking { background: #fef3c7; color: #d97706; }
-        .badge-hiking { background: #dbeafe; color: #2563eb; }
-        .badge-done { background: #dcfce7; color: #16a34a; }
-        .badge-pending { background: #fef3c7; color: #d97706; }
-        .badge-verified { background: #dcfce7; color: #16a34a; }
-        .badge-cancelled { background: #fee2e2; color: #dc2626; }
+        .badge-booking {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .badge-hiking {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .badge-done {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .badge-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .badge-verified {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .badge-cancelled {
+            background: #fee2e2;
+            color: #dc2626;
+        }
 
         /* Buttons */
         .btn-modern {
@@ -394,7 +432,7 @@
         .quick-action:hover {
             border-color: var(--primary-color);
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(17,121,88,0.15);
+            box-shadow: 0 10px 30px rgba(17, 121, 88, 0.15);
         }
 
         .quick-action .icon {
@@ -437,7 +475,7 @@
             right: -20%;
             width: 300px;
             height: 300px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 50%;
         }
 
@@ -460,7 +498,7 @@
         }
 
         .trail-info-card .info-item {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             padding: 1rem;
             border-radius: 12px;
         }
@@ -501,7 +539,7 @@
 
         .form-modern:focus {
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(17,121,88,0.1);
+            box-shadow: 0 0 0 3px rgba(17, 121, 88, 0.1);
             outline: none;
         }
 
@@ -541,8 +579,15 @@
 
         /* Animation */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .animate-fade-in {
@@ -622,8 +667,15 @@
         }
 
         @keyframes chatIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         @media (max-width: 576px) {
@@ -658,49 +710,63 @@
 
         <nav class="sidebar-menu">
             <div class="menu-label">Menu Utama</div>
-            
-            <a href="{{ route('guards.dashboard') }}" class="menu-item {{ request()->routeIs('guards.dashboard') ? 'active' : '' }}">
+
+            <a href="{{ route('guards.dashboard') }}"
+                class="menu-item {{ request()->routeIs('guards.dashboard') ? 'active' : '' }}">
                 <i class="fas fa-home"></i>
                 <span>Dashboard</span>
             </a>
 
-            <a href="{{ route('guards.scanner') }}" class="menu-item {{ request()->routeIs('guards.scanner*') ? 'active' : '' }}">
+            <a href="{{ route('guards.scanner') }}"
+                class="menu-item {{ request()->routeIs('guards.scanner*') ? 'active' : '' }}">
                 <i class="fas fa-qrcode"></i>
                 <span>Scanner QR</span>
             </a>
 
-            <a href="{{ route('guards.sar.index') }}" class="menu-item {{ request()->routeIs('guards.sar*') ? 'active' : '' }}">
+            <a href="{{ route('guards.sar.index') }}"
+                class="menu-item {{ request()->routeIs('guards.sar*') ? 'active' : '' }}">
                 <i class="fas fa-exclamation-triangle"></i>
                 <span>SAR Dashboard</span>
             </a>
 
-            <a href="{{ route('guards.history') }}" class="menu-item {{ request()->routeIs('guards.history') ? 'active' : '' }}">
+            <a href="{{ route('guards.history') }}"
+                class="menu-item {{ request()->routeIs('guards.history') ? 'active' : '' }}">
                 <i class="fas fa-history"></i>
                 <span>Riwayat Pengunjung</span>
             </a>
 
             <div class="menu-label">Manajemen</div>
 
-            <a href="{{ route('guards.trail') }}" class="menu-item {{ request()->routeIs('guards.trail') ? 'active' : '' }}">
+            <a href="{{ route('guards.trail') }}"
+                class="menu-item {{ request()->routeIs('guards.trail') ? 'active' : '' }}">
                 <i class="fas fa-route"></i>
                 <span>Kelola Jalur</span>
             </a>
 
-            <a href="{{ route('guards.revenue') }}" class="menu-item {{ request()->routeIs('guards.revenue') ? 'active' : '' }}">
+            <a href="{{ route('guards.revenue') }}"
+                class="menu-item {{ request()->routeIs('guards.revenue') ? 'active' : '' }}">
                 <i class="fas fa-chart-line"></i>
                 <span>Laporan Pendapatan</span>
             </a>
 
+            <a href="{{ route('trail-guard.withdrawal.index') }}"
+                class="menu-item {{ request()->routeIs('trail-guard.withdrawal.*') ? 'active' : '' }}">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>Tarik Saldo</span>
+            </a>
+
             <div class="menu-label">Akun</div>
 
-            <a href="{{ route('guards.profile') }}" class="menu-item {{ request()->routeIs('guards.profile') ? 'active' : '' }}">
+            <a href="{{ route('guards.profile') }}"
+                class="menu-item {{ request()->routeIs('guards.profile') ? 'active' : '' }}">
                 <i class="fas fa-user-cog"></i>
                 <span>Profil Saya</span>
             </a>
 
             <form action="{{ route('logout') }}" method="POST" class="mx-3 mt-2">
                 @csrf
-                <button type="submit" class="menu-item w-100 text-start border-0 bg-transparent" style="color: rgba(255,255,255,0.8);">
+                <button type="submit" class="menu-item w-100 text-start border-0 bg-transparent"
+                    style="color: rgba(255,255,255,0.8);">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Keluar</span>
                 </button>
@@ -771,14 +837,15 @@
         <div id="globalChatBox" class="global-chat-body"></div>
 
         <form id="globalChatForm" class="global-chat-footer">
-            <input id="globalChatInput" type="text" class="form-control" placeholder="Ketik pertanyaan penjaga..." autocomplete="off" required>
+            <input id="globalChatInput" type="text" class="form-control" placeholder="Ketik pertanyaan penjaga..."
+                autocomplete="off" required>
             <button class="btn btn-success" type="submit">Kirim</button>
         </form>
     </div>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script>
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('show');
@@ -788,9 +855,9 @@
         document.addEventListener('click', function(e) {
             const sidebar = document.getElementById('sidebar');
             const toggleBtn = document.querySelector('.toggle-sidebar');
-            
-            if (window.innerWidth <= 992 && 
-                !sidebar.contains(e.target) && 
+
+            if (window.innerWidth <= 992 &&
+                !sidebar.contains(e.target) &&
                 !toggleBtn.contains(e.target) &&
                 sidebar.classList.contains('show')) {
                 sidebar.classList.remove('show');
@@ -818,7 +885,8 @@
                 wrap.className = `d-flex ${sender === 'user' ? 'justify-content-end' : 'justify-content-start'} mb-2`;
 
                 const bubble = document.createElement('div');
-                bubble.className = `px-3 py-2 rounded ${sender === 'user' ? 'global-chat-bubble-user' : 'global-chat-bubble-bot'}`;
+                bubble.className =
+                    `px-3 py-2 rounded ${sender === 'user' ? 'global-chat-bubble-user' : 'global-chat-bubble-bot'}`;
                 bubble.style.maxWidth = '82%';
                 bubble.style.whiteSpace = 'pre-wrap';
                 bubble.textContent = text;
@@ -868,19 +936,32 @@
 
             async function sendMessage(message) {
                 appendMessage(message, 'user');
-                history.push({ message, isUser: true });
+                history.push({
+                    message,
+                    isUser: true
+                });
 
                 try {
                     const resp = await fetch('http://127.0.0.1:5000/api/chat', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message, history, role, user_id: userId })
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message,
+                            history,
+                            role,
+                            user_id: userId
+                        })
                     });
 
                     const data = await resp.json();
                     const botMsg = data?.message || 'Tidak ada respons dari chatbot.';
                     appendMessage(botMsg, 'bot');
-                    history.push({ message: botMsg, isUser: false });
+                    history.push({
+                        message: botMsg,
+                        isUser: false
+                    });
 
                     if (data?.download_url) {
                         appendDownloadButton(data.download_url);
