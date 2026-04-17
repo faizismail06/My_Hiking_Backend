@@ -60,6 +60,8 @@ Route::get('/orders', [OrderController::class, 'index']);
 
 Route::prefix('orders')->group(function () {
     Route::post('/', [OrderController::class, 'createOrder'])->middleware(['auth:sanctum', 'hiker.ready']);
+    Route::post('{orderId}/offline-track-sync', [OrderController::class, 'offlineTrackSync'])->middleware(['auth:sanctum', 'hiker.ready']);
+    Route::get('{orderId}/offline-track-syncs', [OrderController::class, 'listOfflineTrackSyncs'])->middleware('auth:sanctum');
     Route::post('{orderId}/add-members', [OrderController::class, 'addMembers']);
     Route::get('{orderId}', [OrderController::class, 'viewOrder']);
     Route::delete('{id}', [OrderController::class, 'destroy']);

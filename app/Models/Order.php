@@ -113,6 +113,11 @@ class Order extends Model
         return $this->hasMany(RefundRequest::class, 'order_id');
     }
 
+    public function offlineTrackSyncs()
+    {
+        return $this->hasMany(OfflineTrackSync::class, 'order_id');
+    }
+
     // Alias for backward compatibility
     public function transaksi()
     {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 use Illuminate\Support\Facades\Log;
+use App\Models\OfflineTrackSync;
 use App\Models\Order;
 use App\Models\Trail;
 use App\Models\Transaction;
@@ -16,6 +17,8 @@ use Exception;
 
 class OrderController extends Controller
 {
+    private const MAX_GPX_CONTENT_CHARS = 1000000;
+
     protected MidtransService $midtransService;
     protected DSSService $dssService;
 
@@ -368,6 +371,225 @@ class OrderController extends Controller
         };
 
         return now()->greaterThanOrEqualTo($expiredAt);
+    }
+
+    public function offlineTrackSync(Request $request, $orderId)
+    {
+        $authUser = $request->user();
+        if (!$authUser) {
+            return response()->json([
+                'success' => false,
+                'code' => 'UNAUTHENTICATED',
+                'message' => 'User belum login.',
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'client_cache_id' => 'required|string|max:191',
+            'source' => 'nullable|string|max:80',
+            'cached_at' => 'nullable|date',
+            'point_count' => 'required|integer|min:1',
+            'distance_meters' => 'required|numeric|min:0',
+            'duration_seconds' => 'required|integer|min:0',
+            'gpx_content' => 'required|string',
+        ]);
+
+        $order = Order::find($orderId);
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'code' => 'ORDER_NOT_FOUND',
+                'message' => 'Order tidak ditemukan.',
+            ], 404);
+        }
+
+        if ((string) $order->id_user !== (string) $authUser->id) {
+            Log::warning('offline_track_sync_forbidden_order_access', [
+                'order_id' => (string) $orderId,
+                'auth_user_id' => (string) $authUser->id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'code' => 'FORBIDDEN_ORDER_ACCESS',
+                'message' => 'Order bukan milik user yang sedang login.',
+            ], 403);
+        }
+
+        if ($order->status !== 'Sedang Mendaki') {
+            Log::warning('offline_track_sync_invalid_order_status', [
+                'order_id' => (string) $order->id,
+                'auth_user_id' => (string) $authUser->id,
+                'order_status' => $order->status,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'code' => 'ORDER_STATUS_NOT_SYNCABLE',
+                'message' => 'Sync track offline hanya boleh saat status order Sedang Mendaki.',
+                'order_status' => $order->status,
+            ], 409);
+        }
+
+        if (mb_strlen($validated['gpx_content']) > self::MAX_GPX_CONTENT_CHARS) {
+            Log::warning('offline_track_sync_gpx_too_large', [
+                'order_id' => (string) $order->id,
+                'auth_user_id' => (string) $authUser->id,
+                'client_cache_id' => $validated['client_cache_id'],
+                'gpx_chars' => mb_strlen($validated['gpx_content']),
+                'max_chars' => self::MAX_GPX_CONTENT_CHARS,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'code' => 'GPX_TOO_LARGE',
+                'message' => 'Konten GPX terlalu besar. Silakan pecah track menjadi beberapa bagian.',
+                'max_chars' => self::MAX_GPX_CONTENT_CHARS,
+            ], 422);
+        }
+
+        $existing = OfflineTrackSync::where('order_id', $order->id)
+            ->where('client_cache_id', $validated['client_cache_id'])
+            ->first();
+
+        if ($existing) {
+            Log::info('offline_track_sync_duplicate', [
+                'order_id' => (string) $order->id,
+                'auth_user_id' => (string) $authUser->id,
+                'client_cache_id' => $validated['client_cache_id'],
+                'sync_id' => $existing->id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Track offline sudah pernah disinkronkan.',
+                'data' => [
+                    'sync_id' => $existing->id,
+                    'order_id' => (string) $existing->order_id,
+                    'client_cache_id' => $existing->client_cache_id,
+                    'sync_status' => 'duplicate',
+                    'is_duplicate' => true,
+                    'synced_at' => optional($existing->synced_at)->toIso8601String(),
+                ],
+            ], 200);
+        }
+
+        $sync = OfflineTrackSync::create([
+            'order_id' => $order->id,
+            'user_id' => $authUser->id,
+            'client_cache_id' => $validated['client_cache_id'],
+            'source' => $validated['source'] ?? 'mobile_offline_tracking',
+            'cached_at' => $validated['cached_at'] ?? null,
+            'point_count' => $validated['point_count'],
+            'distance_meters' => $validated['distance_meters'],
+            'duration_seconds' => $validated['duration_seconds'],
+            'gpx_content' => $validated['gpx_content'],
+            'sync_status' => 'synced',
+            'synced_at' => now(),
+        ]);
+
+        Log::info('offline_track_sync_created', [
+            'order_id' => (string) $order->id,
+            'auth_user_id' => (string) $authUser->id,
+            'client_cache_id' => $sync->client_cache_id,
+            'sync_id' => $sync->id,
+            'point_count' => $sync->point_count,
+            'distance_meters' => $sync->distance_meters,
+            'duration_seconds' => $sync->duration_seconds,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Track offline berhasil disinkronkan.',
+            'data' => [
+                'sync_id' => $sync->id,
+                'order_id' => (string) $sync->order_id,
+                'client_cache_id' => $sync->client_cache_id,
+                'sync_status' => $sync->sync_status,
+                'is_duplicate' => false,
+                'synced_at' => optional($sync->synced_at)->toIso8601String(),
+            ],
+        ], 201);
+    }
+
+    public function listOfflineTrackSyncs(Request $request, $orderId)
+    {
+        $authUser = $request->user();
+        if (!$authUser) {
+            return response()->json([
+                'success' => false,
+                'code' => 'UNAUTHENTICATED',
+                'message' => 'User belum login.',
+            ], 401);
+        }
+
+        $order = Order::find($orderId);
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'code' => 'ORDER_NOT_FOUND',
+                'message' => 'Order tidak ditemukan.',
+            ], 404);
+        }
+
+        if ((string) $order->id_user !== (string) $authUser->id) {
+            return response()->json([
+                'success' => false,
+                'code' => 'FORBIDDEN_ORDER_ACCESS',
+                'message' => 'Order bukan milik user yang sedang login.',
+            ], 403);
+        }
+
+        $limit = (int) $request->input('limit', 50);
+        if ($limit < 1) {
+            $limit = 1;
+        }
+        if ($limit > 200) {
+            $limit = 200;
+        }
+
+        $withGpx = filter_var($request->input('with_gpx', false), FILTER_VALIDATE_BOOLEAN);
+
+        $items = OfflineTrackSync::query()
+            ->where('order_id', $order->id)
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get()
+            ->map(function (OfflineTrackSync $item) use ($withGpx) {
+                $data = [
+                    'sync_id' => $item->id,
+                    'order_id' => (string) $item->order_id,
+                    'user_id' => (string) $item->user_id,
+                    'client_cache_id' => $item->client_cache_id,
+                    'source' => $item->source,
+                    'cached_at' => optional($item->cached_at)->toIso8601String(),
+                    'point_count' => $item->point_count,
+                    'distance_meters' => $item->distance_meters,
+                    'duration_seconds' => $item->duration_seconds,
+                    'sync_status' => $item->sync_status,
+                    'synced_at' => optional($item->synced_at)->toIso8601String(),
+                    'created_at' => optional($item->created_at)->toIso8601String(),
+                ];
+
+                if ($withGpx) {
+                    $data['gpx_content'] = $item->gpx_content;
+                }
+
+                return $data;
+            })
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar offline track sync berhasil diambil.',
+            'data' => $items,
+            'meta' => [
+                'order_id' => (string) $order->id,
+                'count' => $items->count(),
+                'limit' => $limit,
+                'with_gpx' => $withGpx,
+            ],
+        ], 200);
     }
     
     public function getOrderDetail($orderId)
