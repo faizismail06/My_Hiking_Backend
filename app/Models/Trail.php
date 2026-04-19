@@ -26,6 +26,7 @@ class Trail extends Model
         'deskripsi',
         'map_basecamp',
         'biaya',
+        'daily_hiker_limit',
         'gambar_jalur',
         'latitude',
         'longitude',
@@ -35,8 +36,9 @@ class Trail extends Model
     protected $casts = [
         'gambar' => 'array',
         'route_points' => 'array',
+        'daily_hiker_limit' => 'integer',
     ];
-    
+
     // Relasi dengan model Mountain
     public function mountain()
     {

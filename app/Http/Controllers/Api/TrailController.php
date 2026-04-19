@@ -39,6 +39,7 @@ class TrailController extends Controller
                         'durasi' => $trail->durasi,
                         'tingkat_kesulitan' => $trail->tingkat_kesulitan,
                         'biaya' => $trail->biaya,
+                        'daily_hiker_limit' => $trail->daily_hiker_limit !== null ? (int) $trail->daily_hiker_limit : null,
                         'latitude' => $trail->latitude,
                         'longitude' => $trail->longitude,
                     ];

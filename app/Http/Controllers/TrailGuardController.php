@@ -116,6 +116,7 @@ class TrailGuardController extends Controller
             'map_basecamp' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
+            'daily_hiker_limit' => 'nullable|integer|min:1|max:100000',
             'gambar_jalur' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'gpx_file' => 'nullable|file|mimes:gpx,xml|max:10240',
             'route_source' => 'nullable|string|max:50',
@@ -128,6 +129,7 @@ class TrailGuardController extends Controller
             'map_basecamp' => $request->map_basecamp,
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
+            'daily_hiker_limit' => $request->filled('daily_hiker_limit') ? (int) $request->daily_hiker_limit : null,
         ];
 
         if ($request->hasFile('gambar_jalur')) {

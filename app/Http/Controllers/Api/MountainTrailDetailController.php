@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Services\DSSService;
 use Illuminate\Http\Request;
 use App\Models\Trail;
 use App\Models\Mountain;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 class MountainTrailDetailController extends Controller
@@ -47,6 +49,7 @@ class MountainTrailDetailController extends Controller
             'tingkat_kesulitan' => $trail->tingkat_kesulitan,
             'gambar' => $imageUrl,
             'biaya' => $trail->biaya,
+            'daily_hiker_limit' => $trail->daily_hiker_limit !== null ? (int) $trail->daily_hiker_limit : null,
             'latitude' => $trail->latitude,
             'longitude' => $trail->longitude,
             'route_preview' => $this->buildRoutePreview($trail),
@@ -77,6 +80,11 @@ class MountainTrailDetailController extends Controller
 
     public function trailBooking(Request $request, $id_gunung, $id_jalur)
     {
+        $request->validate([
+            'tanggal_naik' => 'nullable|date',
+            'tanggal_turun' => 'nullable|date|after_or_equal:tanggal_naik',
+        ]);
+
         // Find trail based on trail ID and ensure relation with mountain
         $trail = Trail::with(['mountain', 'village', 'district', 'regency', 'province'])
             ->where('id', $id_jalur)
@@ -106,6 +114,7 @@ class MountainTrailDetailController extends Controller
             'tingkat_kesulitan' => $trail->tingkat_kesulitan,
             'gambar' => $imageUrl,
             'biaya' => $trail->biaya,
+            'daily_hiker_limit' => $trail->daily_hiker_limit !== null ? (int) $trail->daily_hiker_limit : null,
             'route_preview' => $this->buildRoutePreview($trail),
             'posts' => $this->serializePosts($trail),
             'mountain' => [
@@ -121,13 +130,101 @@ class MountainTrailDetailController extends Controller
             $dssEvaluation = $this->dssService->evaluateRoute($request->user(), $trail);
         }
 
+        $slotAvailability = $this->buildSlotAvailability(
+            $trail,
+            $request->input('tanggal_naik'),
+            $request->input('tanggal_turun')
+        );
+
         // Return JSON response with trail data
         return response()->json([
             'status' => true,
             'message' => 'Trail details fetched successfully',
             'trail' => $result,
+            'slot_availability' => $slotAvailability,
             'dss' => $dssEvaluation,
         ]);
+    }
+
+    private function buildSlotAvailability(Trail $trail, ?string $tanggalNaik, ?string $tanggalTurun): array
+    {
+        $limit = $trail->daily_hiker_limit !== null ? (int) $trail->daily_hiker_limit : null;
+
+        if ($limit === null || $limit <= 0) {
+            return [
+                'is_limited' => false,
+                'daily_hiker_limit' => null,
+                'range' => null,
+                'days' => [],
+            ];
+        }
+
+        if (!$tanggalNaik || !$tanggalTurun) {
+            return [
+                'is_limited' => true,
+                'daily_hiker_limit' => $limit,
+                'range' => null,
+                'days' => [],
+                'note' => 'Kirim tanggal_naik dan tanggal_turun untuk melihat sisa slot per tanggal.',
+            ];
+        }
+
+        $startDate = Carbon::parse($tanggalNaik)->startOfDay();
+        $endDate = Carbon::parse($tanggalTurun)->startOfDay();
+
+        $existingOrders = Order::where('id_jalur', $trail->id)
+            ->whereNotIn('status', ['Cancelled', 'Expired'])
+            ->whereDate('tanggal_naik', '<=', $endDate->toDateString())
+            ->whereDate('tanggal_turun', '>=', $startDate->toDateString())
+            ->withCount('members')
+            ->get(['id', 'tanggal_naik', 'tanggal_turun']);
+
+        $dailyOccupancy = [];
+        foreach ($existingOrders as $order) {
+            $orderStart = Carbon::parse($order->tanggal_naik)->startOfDay();
+            $orderEnd = Carbon::parse($order->tanggal_turun)->startOfDay();
+
+            if ($orderEnd->lt($startDate) || $orderStart->gt($endDate)) {
+                continue;
+            }
+
+            $loopDate = $orderStart->copy()->greaterThan($startDate) ? $orderStart->copy() : $startDate->copy();
+            $loopEnd = $orderEnd->copy()->lessThan($endDate) ? $orderEnd->copy() : $endDate->copy();
+            $orderParticipants = ((int) $order->members_count) + 1;
+
+            while ($loopDate->lte($loopEnd)) {
+                $key = $loopDate->toDateString();
+                $dailyOccupancy[$key] = ($dailyOccupancy[$key] ?? 0) + $orderParticipants;
+                $loopDate->addDay();
+            }
+        }
+
+        $days = [];
+        $cursor = $startDate->copy();
+        while ($cursor->lte($endDate)) {
+            $dateKey = $cursor->toDateString();
+            $currentHikers = (int) ($dailyOccupancy[$dateKey] ?? 0);
+            $remainingSlots = max(0, $limit - $currentHikers);
+
+            $days[] = [
+                'date' => $dateKey,
+                'current_hikers' => $currentHikers,
+                'remaining_slots' => $remainingSlots,
+                'is_full' => $remainingSlots <= 0,
+            ];
+
+            $cursor->addDay();
+        }
+
+        return [
+            'is_limited' => true,
+            'daily_hiker_limit' => $limit,
+            'range' => [
+                'tanggal_naik' => $startDate->toDateString(),
+                'tanggal_turun' => $endDate->toDateString(),
+            ],
+            'days' => $days,
+        ];
     }
 
     public function preview($id_gunung, $id_jalur)

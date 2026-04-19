@@ -38,39 +38,39 @@ class OrderController extends Controller
                 ->orderBy('id')
                 ->get()
                 ->map(function ($item) {
-                $transaction = $item->transaction;
+                    $transaction = $item->transaction;
 
-                if ($transaction) {
-                    $this->syncTransactionStatusFromMidtrans($transaction);
-                    $transaction->refresh();
-                }
+                    if ($transaction) {
+                        $this->syncTransactionStatusFromMidtrans($transaction);
+                        $transaction->refresh();
+                    }
 
-                $this->syncOrderLifecycleStatus($item, $transaction);
-                $item->refresh();
+                    $this->syncOrderLifecycleStatus($item, $transaction);
+                    $item->refresh();
 
-                $transactionStatus = $transaction?->status_pesanan ?? 'Incomplete';
-                $isPaid = $transactionStatus === 'Complete';
-                $displayStatus = $isPaid
-                    ? $item->status
-                    : ($item->status === 'Expired' ? 'Expired' : 'Bayar');
+                    $transactionStatus = $transaction?->status_pesanan ?? 'Incomplete';
+                    $isPaid = $transactionStatus === 'Complete';
+                    $displayStatus = $isPaid
+                        ? $item->status
+                        : ($item->status === 'Expired' ? 'Expired' : 'Bayar');
 
-                return [
-                    "id" => (string) $item->id,
-                    "id_gunung" => $item->id_gunung,
-                    "id_jalur" => $item->id_jalur,
-                    "id_user" => $item->id_user,
-                    "tanggal_naik" => $item->tanggal_naik,
-                    "tanggal_turun" => $item->tanggal_turun,
-                    "total_harga_tiket" => $item->total_harga_tiket,
-                    "status" => $displayStatus,
-                    "order_status" => $item->status,
-                    "transaction_status" => $transactionStatus,
-                    "is_paid" => $isPaid,
-                    "gunung" => $item->mountain->nama,
-                    "jalur" => $item->trail->nama,
-                    "user" => $item->booker->name,
-                ];
-            });
+                    return [
+                        "id" => (string) $item->id,
+                        "id_gunung" => $item->id_gunung,
+                        "id_jalur" => $item->id_jalur,
+                        "id_user" => $item->id_user,
+                        "tanggal_naik" => $item->tanggal_naik,
+                        "tanggal_turun" => $item->tanggal_turun,
+                        "total_harga_tiket" => $item->total_harga_tiket,
+                        "status" => $displayStatus,
+                        "order_status" => $item->status,
+                        "transaction_status" => $transactionStatus,
+                        "is_paid" => $isPaid,
+                        "gunung" => $item->mountain->nama,
+                        "jalur" => $item->trail->nama,
+                        "user" => $item->booker->name,
+                    ];
+                });
 
             return response()->json([
                 'success' => true,
@@ -134,6 +134,32 @@ class OrderController extends Controller
         $dssEvaluation = null;
         $forceContinue = filter_var($request->input('force_continue', false), FILTER_VALIDATE_BOOLEAN);
 
+        // Normalize member IDs: unique, valid, and exclude the booker itself.
+        $memberIds = collect($request->input('anggota_ids', []))
+            ->filter(fn($id) => is_numeric($id))
+            ->map(fn($id) => (int) $id)
+            ->filter(fn($id) => $id > 0 && $id !== (int) $bookerId)
+            ->unique()
+            ->values()
+            ->all();
+
+        $participantCount = count($memberIds) + 1;
+        $limitViolation = $this->resolveDailyLimitViolation(
+            $trail,
+            (string) $request->tanggal_naik,
+            (string) $request->tanggal_turun,
+            $participantCount
+        );
+
+        if ($limitViolation !== null) {
+            return response()->json([
+                'success' => false,
+                'code' => 'TRAIL_DAILY_LIMIT_EXCEEDED',
+                'message' => 'Kuota pendaki harian untuk jalur ini sudah melebihi batas pada tanggal tertentu.',
+                'limit' => $limitViolation,
+            ], 422);
+        }
+
         if ((int) $booker->level === 1) {
             $dssEvaluation = $this->dssService->evaluateRoute($booker, $trail);
 
@@ -148,7 +174,7 @@ class OrderController extends Controller
         }
 
         try {
-            $order = DB::transaction(function () use ($request, $bookerId) {
+            $order = DB::transaction(function () use ($request, $bookerId, $memberIds) {
                 // Create order
                 $order = Order::create([
                     'id_gunung' => $request->id_gunung,
@@ -158,15 +184,6 @@ class OrderController extends Controller
                     'tanggal_turun' => $request->tanggal_turun,
                     'total_harga_tiket' => $request->total_harga_tiket,
                 ]);
-
-                // Normalize member IDs: unique, valid, and exclude the booker itself.
-                $memberIds = collect($request->input('anggota_ids', []))
-                    ->filter(fn ($id) => is_numeric($id))
-                    ->map(fn ($id) => (int) $id)
-                    ->filter(fn ($id) => $id > 0 && $id !== (int) $bookerId)
-                    ->unique()
-                    ->values()
-                    ->all();
 
                 if (!empty($memberIds)) {
                     // Avoid duplicate pivot rows if endpoint is retried.
@@ -210,6 +227,73 @@ class OrderController extends Controller
                 'type' => 'high_risk',
                 'message' => $dssEvaluation['message'] ?? 'Rute berisiko tinggi.',
             ];
+        }
+
+        return null;
+    }
+
+    private function resolveDailyLimitViolation(
+        Trail $trail,
+        string $tanggalNaik,
+        string $tanggalTurun,
+        int $requestedParticipants
+    ): ?array {
+        $limit = $trail->daily_hiker_limit !== null ? (int) $trail->daily_hiker_limit : null;
+        if ($limit === null || $limit <= 0) {
+            return null;
+        }
+
+        $startDate = Carbon::parse($tanggalNaik)->startOfDay();
+        $endDate = Carbon::parse($tanggalTurun)->startOfDay();
+        if ($endDate->lt($startDate)) {
+            return null;
+        }
+
+        $existingOrders = Order::where('id_jalur', $trail->id)
+            ->whereNotIn('status', ['Cancelled', 'Expired'])
+            ->whereDate('tanggal_naik', '<=', $endDate->toDateString())
+            ->whereDate('tanggal_turun', '>=', $startDate->toDateString())
+            ->withCount('members')
+            ->get(['id', 'tanggal_naik', 'tanggal_turun']);
+
+        $dailyOccupancy = [];
+        foreach ($existingOrders as $order) {
+            $orderStart = Carbon::parse($order->tanggal_naik)->startOfDay();
+            $orderEnd = Carbon::parse($order->tanggal_turun)->startOfDay();
+
+            if ($orderEnd->lt($startDate) || $orderStart->gt($endDate)) {
+                continue;
+            }
+
+            $loopDate = $orderStart->copy()->greaterThan($startDate) ? $orderStart->copy() : $startDate->copy();
+            $loopEnd = $orderEnd->copy()->lessThan($endDate) ? $orderEnd->copy() : $endDate->copy();
+            $orderParticipants = ((int) $order->members_count) + 1;
+
+            while ($loopDate->lte($loopEnd)) {
+                $key = $loopDate->toDateString();
+                $dailyOccupancy[$key] = ($dailyOccupancy[$key] ?? 0) + $orderParticipants;
+                $loopDate->addDay();
+            }
+        }
+
+        $checkDate = $startDate->copy();
+        while ($checkDate->lte($endDate)) {
+            $key = $checkDate->toDateString();
+            $current = (int) ($dailyOccupancy[$key] ?? 0);
+            $projected = $current + $requestedParticipants;
+
+            if ($projected > $limit) {
+                return [
+                    'date' => $key,
+                    'daily_hiker_limit' => $limit,
+                    'current_hikers' => $current,
+                    'requested_hikers' => $requestedParticipants,
+                    'projected_hikers' => $projected,
+                    'available_slots' => max(0, $limit - $current),
+                ];
+            }
+
+            $checkDate->addDay();
         }
 
         return null;
@@ -591,7 +675,7 @@ class OrderController extends Controller
             ],
         ], 200);
     }
-    
+
     public function getOrderDetail($orderId)
     {
         try {
