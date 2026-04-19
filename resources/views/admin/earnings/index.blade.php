@@ -4,14 +4,12 @@
 @section('page-subtitle', 'Kelola saldo pendapatan dan request penarikan dari penjaga jalur')
 
 @section('main-content')
-    <!-- Statistics Cards -->
     <div class="row g-4 mb-4">
-        <!-- Total Earnings -->
         <div class="col-xl-3 col-md-6 animate-fade-in">
             <div class="stat-card">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <p class="label mb-1">Total Pendapatan</p>
+                        <p class="label mb-1">Pendapatan Kotor Penjaga</p>
                         <h3 class="value mb-0">
                             Rp {{ number_format($totalEarnings ?? 0, 0, ',', '.') }}
                         </h3>
@@ -23,14 +21,13 @@
             </div>
         </div>
 
-        <!-- Total Withdrawn -->
         <div class="col-xl-3 col-md-6 animate-fade-in" style="animation-delay: 0.1s">
             <div class="stat-card">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <p class="label mb-1">Total Dicairkan</p>
+                        <p class="label mb-1">Dana Diterima Penjaga</p>
                         <h3 class="value mb-0">
-                            Rp {{ number_format($totalWithdrawn ?? 0, 0, ',', '.') }}
+                            Rp {{ number_format($totalTransferredToGuards ?? 0, 0, ',', '.') }}
                         </h3>
                     </div>
                     <div class="icon success">
@@ -40,31 +37,68 @@
             </div>
         </div>
 
-        <!-- Pending Requests -->
         <div class="col-xl-3 col-md-6 animate-fade-in" style="animation-delay: 0.2s">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="label mb-1">Fee Admin Masuk Sistem</p>
+                        <h3 class="value mb-0">Rp {{ number_format($adminFeeCollected ?? 0, 0, ',', '.') }}</h3>
+                    </div>
+                    <div class="icon warning">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 animate-fade-in" style="animation-delay: 0.3s">
             <div class="stat-card">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <p class="label mb-1">Request Pending</p>
                         <h3 class="value mb-0">{{ $pendingRequests ?? 0 }}</h3>
                     </div>
-                    <div class="icon warning">
+                    <div class="icon info">
                         <i class="fas fa-hourglass-half"></i>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Approved Requests -->
-        <div class="col-xl-3 col-md-6 animate-fade-in" style="animation-delay: 0.3s">
-            <div class="stat-card">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <p class="label mb-1">Request Disetujui</p>
-                        <h3 class="value mb-0">{{ $approvedRequests ?? 0 }}</h3>
-                    </div>
-                    <div class="icon info">
-                        <i class="fas fa-check-circle"></i>
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="modern-card animate-fade-in" style="animation-delay: 0.35s; background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);">
+                <div class="card-body">
+                    <div class="row g-4 align-items-center">
+                        <div class="col-lg-7">
+                            <h5 class="mb-2"><i class="fas fa-circle-info"></i> Alur Saldo Withdrawal</h5>
+                            <p class="mb-0" style="color: #475569;">
+                                Saat withdrawal selesai, <strong>jumlah request penuh</strong> mengurangi saldo penjaga.
+                                Dari jumlah itu, <strong>dana bersih</strong> ditransfer ke penjaga dan <strong>fee admin</strong>
+                                dicatat sebagai pendapatan sistem admin.
+                            </p>
+                        </div>
+                        <div class="col-lg-5">
+                            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem;">
+                                <div style="background: white; border-radius: 16px; padding: 1rem; border: 1px solid #dbeafe;">
+                                    <p class="label mb-1">Total Withdrawal Diproses</p>
+                                    <h4 class="mb-0">Rp {{ number_format($totalProcessedWithdrawal ?? 0, 0, ',', '.') }}</h4>
+                                </div>
+                                <div style="background: white; border-radius: 16px; padding: 1rem; border: 1px solid #fde68a;">
+                                    <p class="label mb-1">Nominal Pending</p>
+                                    <h4 class="mb-0">Rp {{ number_format($pendingWithdrawalAmount ?? 0, 0, ',', '.') }}</h4>
+                                </div>
+                                <div style="background: white; border-radius: 16px; padding: 1rem; border: 1px solid #dcfce7;">
+                                    <p class="label mb-1">Request Selesai</p>
+                                    <h4 class="mb-0">{{ $completedRequests ?? 0 }}</h4>
+                                </div>
+                                <div style="background: white; border-radius: 16px; padding: 1rem; border: 1px solid #e0e7ff;">
+                                    <p class="label mb-1">Request Disetujui</p>
+                                    <h4 class="mb-0">{{ $approvedRequests ?? 0 }}</h4>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -105,8 +139,8 @@
                                 <tr>
                                     <th>Nama Penjaga</th>
                                     <th>Email / Phone</th>
-                                    <th>Total Pendapatan</th>
-                                    <th>Sudah Dicairkan</th>
+                                    <th>Pendapatan Kotor</th>
+                                    <th>Saldo Sudah Diproses</th>
                                     <th>Saldo Tersedia</th>
                                     <th>Transaksi</th>
                                 </tr>
@@ -131,11 +165,11 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <strong>Rp
+                                            <strong title="Total pendapatan kotor penjaga">Rp
                                                 {{ number_format($guard->total_earnings ?? 0, 0, ',', '.') }}</strong>
                                         </td>
                                         <td>
-                                            <span style="color: var(--success-color);">Rp
+                                            <span style="color: var(--success-color);" title="Jumlah saldo yang sudah keluar dari akun penjaga, termasuk fee admin">Rp
                                                 {{ number_format($guard->withdrawn_amount ?? 0, 0, ',', '.') }}</span>
                                         </td>
                                         <td>

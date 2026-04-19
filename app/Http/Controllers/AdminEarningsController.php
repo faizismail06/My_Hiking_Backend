@@ -38,10 +38,14 @@ class AdminEarningsController extends Controller
             ->select('id', 'name', 'email', 'phone', 'total_earnings', 'withdrawn_amount', 'available_balance', 'transaction_count')
             ->get();
 
-        // Calculate total pending and approved requests
+        // Calculate total request stats
         $pendingRequests = WithdrawalRequest::where('status', 'pending')->count();
         $approvedRequests = WithdrawalRequest::where('status', 'approved')->count();
-        $totalWithdrawn = WithdrawalRequest::where('status', 'completed')->sum('net_amount');
+        $completedRequests = WithdrawalRequest::where('status', 'completed')->count();
+        $totalProcessedWithdrawal = WithdrawalRequest::where('status', 'completed')->sum('amount');
+        $totalTransferredToGuards = WithdrawalRequest::where('status', 'completed')->sum('net_amount');
+        $adminFeeCollected = WithdrawalRequest::where('status', 'completed')->sum('admin_fee');
+        $pendingWithdrawalAmount = WithdrawalRequest::where('status', 'pending')->sum('amount');
 
         // Calculate total earnings
         $totalEarnings = $trailGuards->sum('total_earnings');
@@ -54,7 +58,11 @@ class AdminEarningsController extends Controller
             'totalEarnings' => $totalEarnings,
             'pendingRequests' => $pendingRequests,
             'approvedRequests' => $approvedRequests,
-            'totalWithdrawn' => $totalWithdrawn,
+            'completedRequests' => $completedRequests,
+            'totalProcessedWithdrawal' => $totalProcessedWithdrawal,
+            'totalTransferredToGuards' => $totalTransferredToGuards,
+            'adminFeeCollected' => $adminFeeCollected,
+            'pendingWithdrawalAmount' => $pendingWithdrawalAmount,
             'adminFeeSettings' => $adminFeeSettings,
         ];
 
@@ -87,12 +95,18 @@ class AdminEarningsController extends Controller
             $query->where('user_id', $request->user_id);
         }
 
+        $filteredSummaryQuery = clone $query;
         $withdrawalRequests = $query->orderBy('created_at', 'desc')->paginate(20);
         $trailGuards = User::where('level', 'penjaga_jalur')->get();
+        $filteredSummary = [
+            'transferred_to_guards' => (float) (clone $filteredSummaryQuery)->where('status', 'completed')->sum('net_amount'),
+            'admin_fee_to_system' => (float) (clone $filteredSummaryQuery)->where('status', 'completed')->sum('admin_fee'),
+        ];
 
         return view('admin.earnings.withdrawal-requests', [
             'withdrawalRequests' => $withdrawalRequests,
             'trailGuards' => $trailGuards,
+            'filteredSummary' => $filteredSummary,
             'filters' => $request->all(),
         ]);
     }
@@ -185,11 +199,12 @@ class AdminEarningsController extends Controller
 
             $withdrawalRequest->update($updateData);
 
-            // Update user's withdrawn amount
+            // Update user's balance summary.
+            // Gross amount reduces guard balance, while admin_fee stays as system revenue.
             $user = $withdrawalRequest->user;
             $user->update([
-                'withdrawn_amount' => $user->withdrawn_amount + $withdrawalRequest->net_amount,
-                'available_balance' => $user->available_balance - $withdrawalRequest->net_amount,
+                'withdrawn_amount' => $user->withdrawn_amount + $withdrawalRequest->amount,
+                'available_balance' => $user->available_balance - $withdrawalRequest->amount,
             ]);
         });
 
@@ -239,13 +254,15 @@ class AdminEarningsController extends Controller
     public function getEarningStatistics()
     {
         $totalEarnings = User::where('level', 'penjaga_jalur')->sum('total_earnings');
-        $totalWithdrawn = WithdrawalRequest::where('status', 'completed')->sum('net_amount');
+        $totalWithdrawn = WithdrawalRequest::where('status', 'completed')->sum('amount');
+        $totalTransferred = WithdrawalRequest::where('status', 'completed')->sum('net_amount');
         $adminFeeCollected = WithdrawalRequest::where('status', 'completed')->sum('admin_fee');
-        $pendingAmount = WithdrawalRequest::where('status', 'pending')->sum('net_amount');
+        $pendingAmount = WithdrawalRequest::where('status', 'pending')->sum('amount');
 
         return [
             'total_earnings' => $totalEarnings,
             'total_withdrawn' => $totalWithdrawn,
+            'total_transferred' => $totalTransferred,
             'admin_fee_collected' => $adminFeeCollected,
             'pending_amount' => $pendingAmount,
             'available_balance' => $totalEarnings - $totalWithdrawn - $pendingAmount,

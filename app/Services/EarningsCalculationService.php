@@ -45,7 +45,7 @@ class EarningsCalculationService
         $totalWithdrawn = DB::table('withdrawal_requests')
             ->where('user_id', $user->id)
             ->where('status', 'completed')
-            ->sum('net_amount');
+            ->sum('amount');
 
         // Calculate available balance
         $availableBalance = $totalEarnings - $totalWithdrawn;

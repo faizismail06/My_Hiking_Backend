@@ -50,6 +50,20 @@ class TrailGuardWithdrawalController extends Controller
     }
 
     /**
+     * Withdrawal summary for clearer balance presentation on guard pages.
+     */
+    private function getWithdrawalSummary(int $userId): array
+    {
+        $completedQuery = WithdrawalRequest::where('user_id', $userId)->where('status', 'completed');
+
+        return [
+            'processed_amount' => (float) (clone $completedQuery)->sum('amount'),
+            'received_amount' => (float) (clone $completedQuery)->sum('net_amount'),
+            'admin_fee_paid' => (float) (clone $completedQuery)->sum('admin_fee'),
+        ];
+    }
+
+    /**
      * Show withdrawal request form
      */
     public function create()
@@ -63,6 +77,7 @@ class TrailGuardWithdrawalController extends Controller
             'user' => $user,
             'adminFeeSettings' => $adminFeeSettings,
             'availableBalance' => $user->available_balance,
+            'withdrawalSummary' => $this->getWithdrawalSummary($user->id),
         ];
 
         return view('trail-guard.withdrawal.create', $data);
@@ -147,6 +162,7 @@ class TrailGuardWithdrawalController extends Controller
         return view('trail-guard.withdrawal.index', [
             'withdrawalRequests' => $withdrawalRequests,
             'user' => $user,
+            'withdrawalSummary' => $this->getWithdrawalSummary($user->id),
             'filters' => $request->all(),
         ]);
     }
@@ -161,6 +177,7 @@ class TrailGuardWithdrawalController extends Controller
 
         return view('trail-guard.withdrawal.show', [
             'withdrawalRequest' => $withdrawalRequest,
+            'withdrawalSummary' => $this->getWithdrawalSummary(Auth::id()),
         ]);
     }
 

@@ -4,6 +4,38 @@
 @section('page-subtitle', 'Kelola dan proses request penarikan saldo dari penjaga jalur')
 
 @section('main-content')
+    <div class="row g-4 mb-4">
+        <div class="col-xl-4 col-md-6">
+            <div class="modern-card animate-fade-in">
+                <div class="card-body">
+                    <p class="label mb-1">Dana Bersih ke Penjaga</p>
+                    <h3 class="mb-1">Rp {{ number_format($filteredSummary['transferred_to_guards'] ?? 0, 0, ',', '.') }}</h3>
+                    <small style="color: #64748b;">Total dana bersih yang sudah ditransfer ke penjaga dari seluruh data hasil filter.</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-6">
+            <div class="modern-card animate-fade-in" style="animation-delay: 0.1s;">
+                <div class="card-body">
+                    <p class="label mb-1">Fee Admin ke Sistem</p>
+                    <h3 class="mb-1">Rp {{ number_format($filteredSummary['admin_fee_to_system'] ?? 0, 0, ',', '.') }}</h3>
+                    <small style="color: #64748b;">Fee admin dari withdrawal selesai dicatat sebagai pendapatan sistem.</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-12">
+            <div class="modern-card animate-fade-in" style="animation-delay: 0.2s;">
+                <div class="card-body">
+                    <p class="label mb-1">Penjelasan</p>
+                    <div style="color: #475569;">
+                        Saat status request menjadi <strong>Completed</strong>, saldo penjaga berkurang sebesar
+                        <strong>jumlah request</strong>. Dana bersih masuk ke penjaga, dan fee admin masuk ke sistem.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Filters -->
     <div class="row g-4 mb-4">
         <div class="col-12">

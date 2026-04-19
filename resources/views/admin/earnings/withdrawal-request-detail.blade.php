@@ -1,296 +1,287 @@
 @extends('layouts.admin-modern')
 
 @section('main-content')
+    @php
+        $statusClasses = [
+            'pending' => 'warning',
+            'approved' => 'info',
+            'rejected' => 'danger',
+            'completed' => 'success',
+        ];
+        $badgeClass = $statusClasses[$withdrawalRequest->status] ?? 'secondary';
+    @endphp
+
     <div class="container-xxl flex-grow-1 container-p-y">
-        <!-- Header -->
-        <div class="row mb-4">
-            <div class="col-md-8">
-                <h4 class="fw-bold">Detail Request Penarikan Saldo</h4>
-                <p class="text-muted">Rincian lengkap request penarikan dari penjaga jalur</p>
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+            <div>
+                <h4 class="fw-bold mb-1">Detail Request Penarikan Saldo</h4>
+                <p class="text-muted mb-0">Rincian lengkap permintaan penarikan dari penjaga jalur.</p>
             </div>
-            <div class="col-md-4 text-end">
-                <a href="{{ route('admin.earnings.withdrawal-requests') }}" class="btn btn-secondary">
-                    <i class="bx bx-arrow-back"></i> Kembali
-                </a>
-            </div>
+            <a href="{{ route('admin.earnings.withdrawal-requests') }}" class="btn btn-outline-secondary">
+                <i class="bx bx-arrow-back me-1"></i> Kembali
+            </a>
         </div>
 
-        <!-- Alerts -->
         @if (session('success'))
             <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bx bx-check-circle me-2"></i> {{ session('success') }}
+                <i class="bx bx-check-circle me-2"></i>{{ session('success') }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         @endif
 
-        <div class="row">
-            <!-- Request Details Card -->
-            <div class="col-md-8 mb-4">
-                <div class="card">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Informasi Permintaan</h5>
-                    </div>
-                    <div class="card-body">
-                        <!-- Request ID and Status -->
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <h6 class="text-muted mb-2">Request ID</h6>
-                                <p class="fw-semibold">#{{ $withdrawalRequest->id }}</p>
+        @if (session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bx bx-error-circle me-2"></i>{{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        @if (isset($errors) && $errors->any())
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bx bx-error-circle me-2"></i>{{ $errors->first() }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        <div class="row g-4">
+            <div class="col-xl-8">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3 mb-4">
+                            <div>
+                                <p class="text-muted text-uppercase small mb-1">Request ID</p>
+                                <h5 class="mb-0">#{{ $withdrawalRequest->id }}</h5>
                             </div>
-                            <div class="col-md-6">
-                                <h6 class="text-muted mb-2">Status Saat Ini</h6>
-                                @php
-                                    $statusClasses = [
-                                        'pending' => 'warning',
-                                        'approved' => 'info',
-                                        'rejected' => 'danger',
-                                        'completed' => 'success',
-                                    ];
-                                    $badgeClass = $statusClasses[$withdrawalRequest->status] ?? 'secondary';
-                                @endphp
-                                <span class="badge bg-label-{{ $badgeClass }} fs-6 d-inline-block">
+                            <div class="text-md-end">
+                                <p class="text-muted text-uppercase small mb-1">Status Saat Ini</p>
+                                <span class="badge bg-label-{{ $badgeClass }} fs-6 px-3 py-2">
                                     @if ($withdrawalRequest->status === 'pending')
-                                        🔄 Pending
-                                    @elseif($withdrawalRequest->status === 'approved')
-                                        ✓ Disetujui
-                                    @elseif($withdrawalRequest->status === 'rejected')
-                                        ✗ Ditolak
+                                        Pending
+                                    @elseif ($withdrawalRequest->status === 'approved')
+                                        Disetujui
+                                    @elseif ($withdrawalRequest->status === 'rejected')
+                                        Ditolak
                                     @else
-                                        ✓ Selesai
+                                        Selesai
                                     @endif
                                 </span>
                             </div>
                         </div>
 
-                        @if ($withdrawalRequest->approved_at)
-                            <div class="row mb-4">
-                                <div class="col-md-6">
-                                    <h6 class="text-muted mb-2">Waktu Disetujui / Ditolak</h6>
-                                    <p class="fw-semibold">{{ $withdrawalRequest->approved_at->format('d M Y, H:i:s') }}</p>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <div class="border rounded-3 p-3 h-100">
+                                    <p class="text-muted small mb-1">Dibuat Pada</p>
+                                    <div class="fw-semibold">{{ $withdrawalRequest->created_at->format('d M Y, H:i:s') }}</div>
                                 </div>
-                                @if ($withdrawalRequest->completed_at)
-                                    <div class="col-md-6">
-                                        <h6 class="text-muted mb-2">Waktu Transfer Selesai</h6>
-                                        <p class="fw-semibold">
-                                            {{ $withdrawalRequest->completed_at->format('d M Y, H:i:s') }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="border rounded-3 p-3 h-100">
+                                    <p class="text-muted small mb-1">Diproses Pada</p>
+                                    <div class="fw-semibold">
+                                        {{ $withdrawalRequest->approved_at ? $withdrawalRequest->approved_at->format('d M Y, H:i:s') : '-' }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="border rounded-3 p-3 h-100">
+                                    <p class="text-muted small mb-1">Transfer Selesai</p>
+                                    <div class="fw-semibold">
+                                        {{ $withdrawalRequest->completed_at ? $withdrawalRequest->completed_at->format('d M Y, H:i:s') : '-' }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="border rounded-3 p-3 h-100">
+                                    <p class="text-muted small mb-1">Admin Pemroses</p>
+                                    <div class="fw-semibold">
+                                        {{ $withdrawalRequest->approvedByAdmin?->name ?? '-' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border rounded-3 p-3 p-lg-4 mb-4">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <div class="avatar avatar-lg">
+                                    <span class="avatar-initial rounded-circle bg-label-primary">
+                                        {{ strtoupper(substr($withdrawalRequest->user->name, 0, 2)) }}
+                                    </span>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">{{ $withdrawalRequest->user->name }}</h5>
+                                    <div class="text-muted">{{ $withdrawalRequest->user->email }}</div>
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <p class="text-muted small mb-1">No. Telepon</p>
+                                    <div class="fw-semibold">{{ $withdrawalRequest->user->phone ?? '-' }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="text-muted small mb-1">Metode Penarikan</p>
+                                    <div class="fw-semibold">{{ $withdrawalRequest->getWithdrawalMethodLabel() }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <div class="border rounded-3 p-3 h-100">
+                                    <p class="text-muted small mb-1">Jumlah Request</p>
+                                    <div class="fw-bold text-primary fs-5">
+                                        Rp {{ number_format($withdrawalRequest->amount, 0, ',', '.') }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="border rounded-3 p-3 h-100">
+                                    <p class="text-muted small mb-1">Biaya Admin</p>
+                                    <div class="fw-bold text-danger fs-5">
+                                        Rp {{ number_format($withdrawalRequest->admin_fee, 0, ',', '.') }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="bg-light rounded-3 p-3 h-100 border">
+                                    <p class="text-muted small mb-1">Jumlah Bersih</p>
+                                    <div class="fw-bold text-success fs-5">
+                                        Rp {{ number_format($withdrawalRequest->net_amount, 0, ',', '.') }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card bg-light border-0">
+                            <div class="card-body">
+                                <h6 class="mb-3">Detail Pencairan</h6>
+                                @if ($withdrawalRequest->withdrawal_method === 'bank_transfer')
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <div class="text-muted small mb-1">Bank</div>
+                                            <div class="fw-semibold">{{ $withdrawalRequest->bank_name }}</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="text-muted small mb-1">Nama Pemegang</div>
+                                            <div class="fw-semibold">{{ $withdrawalRequest->account_holder }}</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="text-muted small mb-1">Nomor Rekening</div>
+                                            <div class="fw-semibold">{{ $withdrawalRequest->account_number }}</div>
+                                        </div>
+                                    </div>
+                                @else
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="text-muted small mb-1">Tipe E-Wallet</div>
+                                            <div class="fw-semibold">{{ ucfirst($withdrawalRequest->e_wallet_type) }}</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="text-muted small mb-1">Nomor E-Wallet</div>
+                                            <div class="fw-semibold">{{ $withdrawalRequest->e_wallet_number }}</div>
+                                        </div>
                                     </div>
                                 @endif
-                            </div>
-                        @endif
-
-                        <!-- Penjaga Jalur Info -->
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <h6 class="text-muted mb-2">Penjaga Jalur</h6>
-                                <div class="d-flex align-items-center">
-                                    <div class="avatar avatar-lg me-3">
-                                        <span class="avatar-initial rounded-circle bg-label-primary">
-                                            {{ strtoupper(substr($withdrawalRequest->user->name, 0, 2)) }}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <p class="fw-semibold mb-0">{{ $withdrawalRequest->user->name }}</p>
-                                        <small class="text-muted">{{ $withdrawalRequest->user->email }}</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <h6 class="text-muted mb-2">No. Telepon</h6>
-                                <p class="fw-semibold">{{ $withdrawalRequest->user->phone ?? '-' }}</p>
-                            </div>
-                        </div>
-
-                        <hr />
-
-                        <!-- Amount Details -->
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <h6 class="text-muted mb-2">Jumlah Request</h6>
-                                <p class="fw-semibold fs-5 text-primary">
-                                    Rp {{ number_format($withdrawalRequest->amount, 0, ',', '.') }}
-                                </p>
-                            </div>
-                            <div class="col-md-6">
-                                <h6 class="text-muted mb-2">Biaya Admin</h6>
-                                <p class="fw-semibold fs-5 text-danger">
-                                    - Rp {{ number_format($withdrawalRequest->admin_fee, 0, ',', '.') }}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <div class="bg-light p-3 rounded">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h6 class="mb-0">Jumlah Bersih</h6>
-                                        <p class="fw-bold fs-5 text-success mb-0">
-                                            Rp {{ number_format($withdrawalRequest->net_amount, 0, ',', '.') }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <hr />
-
-                        <!-- Withdrawal Method -->
-                        <div class="row">
-                            <div class="col-12">
-                                <h6 class="text-muted mb-3">Metode Penarikan</h6>
-                                <div class="bg-light p-3 rounded">
-                                    @if ($withdrawalRequest->withdrawal_method === 'bank_transfer')
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <h6 class="mb-2"><i class="bx bx-building text-info me-2"></i> Bank
-                                                    Transfer</h6>
-                                                <dl class="row">
-                                                    <dt class="col-sm-5">Bank</dt>
-                                                    <dd class="col-sm-7">{{ $withdrawalRequest->bank_name }}</dd>
-                                                    <dt class="col-sm-5">Nama Pemegang</dt>
-                                                    <dd class="col-sm-7">{{ $withdrawalRequest->account_holder }}</dd>
-                                                    <dt class="col-sm-5">Nomor Rekening</dt>
-                                                    <dd class="col-sm-7">{{ $withdrawalRequest->account_number }}</dd>
-                                                </dl>
-                                            </div>
-                                        </div>
-                                    @else
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <h6 class="mb-2"><i class="bx bx-mobile text-warning me-2"></i> E-Wallet
-                                                </h6>
-                                                <dl class="row">
-                                                    <dt class="col-sm-5">Tipe E-Wallet</dt>
-                                                    <dd class="col-sm-7">{{ ucfirst($withdrawalRequest->e_wallet_type) }}
-                                                    </dd>
-                                                    <dt class="col-sm-5">Nomor</dt>
-                                                    <dd class="col-sm-7">{{ $withdrawalRequest->e_wallet_number }}</dd>
-                                                </dl>
-                                            </div>
-                                        </div>
-                                    @endif
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Timeline & Action Card -->
-            <div class="col-md-4 mb-4">
-                <!-- Timeline -->
-                <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Timeline</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="timeline">
-                            <!-- Requested -->
-                            <div class="timeline-event">
-                                <div class="timeline-marker bg-success"></div>
-                                <div class="timeline-content ms-3">
-                                    <h6 class="mb-1">Diminta</h6>
-                                    <small
-                                        class="text-muted d-block">{{ $withdrawalRequest->created_at->format('d M Y, H:i:s') }}</small>
-                                </div>
+            <div class="col-xl-4">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="mb-3">Aksi Admin</h5>
+                        @if ($withdrawalRequest->status === 'pending')
+                            <p class="text-muted small mb-3">Request ini masih menunggu keputusan admin.</p>
+                            <button type="button" class="btn btn-success w-100 mb-2" data-bs-toggle="modal"
+                                data-bs-target="#approveModal">
+                                <i class="bx bx-check me-1"></i> Setujui Request
+                            </button>
+                            <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal"
+                                data-bs-target="#rejectModal">
+                                <i class="bx bx-x me-1"></i> Tolak Request
+                            </button>
+                        @elseif ($withdrawalRequest->status === 'approved')
+                            <p class="text-muted small mb-3">Request sudah disetujui. Tandai selesai setelah transfer dilakukan.</p>
+                            <button type="button" class="btn btn-success w-100" data-bs-toggle="modal"
+                                data-bs-target="#completeModal">
+                                <i class="bx bx-check-circle me-1"></i> Tandai Selesai
+                            </button>
+                        @elseif ($withdrawalRequest->status === 'rejected')
+                            <div class="alert alert-danger mb-0">
+                                <div class="fw-semibold mb-1">Request sudah ditolak</div>
+                                <div class="small">{{ $withdrawalRequest->rejection_reason ?? 'Tidak ada alasan yang dicatat.' }}</div>
                             </div>
-
-                            <!-- Approved -->
-                            @if ($withdrawalRequest->approved_at)
-                                <div class="timeline-event">
-                                    <div
-                                        class="timeline-marker {{ $withdrawalRequest->status === 'approved' ? 'bg-info' : 'bg-success' }}">
-                                    </div>
-                                    <div class="timeline-content ms-3">
-                                        <h6 class="mb-1">
-                                            {{ $withdrawalRequest->status === 'rejected' ? 'Ditolak' : 'Disetujui' }}</h6>
-                                        <small
-                                            class="text-muted d-block">{{ $withdrawalRequest->approved_at->format('d M Y, H:i:s') }}</small>
-                                        @if ($withdrawalRequest->approvedByAdmin)
-                                            <small class="text-muted d-block">Oleh:
-                                                {{ $withdrawalRequest->approvedByAdmin->name }}</small>
-                                        @endif
-                                        @if ($withdrawalRequest->rejection_reason)
-                                            <div class="alert alert-danger alert-sm mt-2 mb-0">
-                                                <small><strong>Alasan:</strong>
-                                                    {{ $withdrawalRequest->rejection_reason }}</small>
-                                            </div>
-                                        @endif
-                                    </div>
-                                </div>
-                            @endif
-
-                            <!-- Completed -->
-                            @if ($withdrawalRequest->completed_at)
-                                <div class="timeline-event">
-                                    <div class="timeline-marker bg-success"></div>
-                                    <div class="timeline-content ms-3">
-                                        <h6 class="mb-1">Diselesaikan</h6>
-                                        <small
-                                            class="text-muted d-block">{{ $withdrawalRequest->completed_at->format('d M Y, H:i:s') }}</small>
-                                        @if ($withdrawalRequest->transfer_proof_path)
-                                            <a href="{{ asset('storage/' . $withdrawalRequest->transfer_proof_path) }}"
-                                                target="_blank" class="btn btn-sm btn-outline-success mt-2">
-                                                <i class="fas fa-file-download me-1"></i> Lihat Bukti Transfer
-                                            </a>
-                                        @endif
-                                    </div>
-                                </div>
-                            @endif
-                        </div>
+                        @else
+                            <div class="alert alert-success mb-0">
+                                <div class="fw-semibold mb-1">Request sudah selesai</div>
+                                <div class="small">Transfer telah ditandai selesai oleh admin.</div>
+                                @if ($withdrawalRequest->transfer_proof_path)
+                                    <a href="{{ asset('storage/' . $withdrawalRequest->transfer_proof_path) }}" target="_blank"
+                                        rel="noopener noreferrer" class="btn btn-sm btn-outline-success mt-3">
+                                        <i class="bx bx-link-external me-1"></i> Lihat Bukti Transfer
+                                    </a>
+                                @endif
+                            </div>
+                        @endif
                     </div>
                 </div>
 
-                <!-- Action Buttons -->
-                @if ($withdrawalRequest->status === 'pending')
-                    <div class="card">
-                        <div class="card-header bg-light">
-                            <h5 class="mb-0">Aksi</h5>
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="mb-3">Timeline</h5>
+                        <div class="d-flex gap-3 mb-3">
+                            <div class="rounded-circle bg-success flex-shrink-0" style="width: 12px; height: 12px; margin-top: 6px;"></div>
+                            <div>
+                                <div class="fw-semibold">Diminta</div>
+                                <div class="text-muted small">{{ $withdrawalRequest->created_at->format('d M Y, H:i:s') }}</div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <button class="btn btn-success w-100 mb-2" onclick="approveRequest()">
-                                <i class="bx bx-check me-1"></i> Setujui Request
-                            </button>
-                            <button class="btn btn-danger w-100" onclick="rejectRequest()">
-                                <i class="bx bx-x me-1"></i> Tolak Request
-                            </button>
-                        </div>
-                    </div>
-                @elseif($withdrawalRequest->status === 'approved')
-                    <div class="card">
-                        <div class="card-header bg-light">
-                            <h5 class="mb-0">Aksi</h5>
-                        </div>
-                        <div class="card-body">
-                            <button class="btn btn-success w-100" onclick="completeRequest()">
-                                <i class="bx bx-check-circle me-1"></i> Tandai Selesai
-                            </button>
-                        </div>
-                    </div>
-                @endif
 
-                <!-- Summary Card -->
-                <div class="card">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Ringkasan Saldo Penjaga</h5>
+                        @if ($withdrawalRequest->approved_at)
+                            <div class="d-flex gap-3 mb-3">
+                                <div
+                                    class="rounded-circle {{ $withdrawalRequest->status === 'rejected' ? 'bg-danger' : 'bg-info' }} flex-shrink-0"
+                                    style="width: 12px; height: 12px; margin-top: 6px;"></div>
+                                <div>
+                                    <div class="fw-semibold">
+                                        {{ $withdrawalRequest->status === 'rejected' ? 'Ditolak' : 'Disetujui' }}
+                                    </div>
+                                    <div class="text-muted small">{{ $withdrawalRequest->approved_at->format('d M Y, H:i:s') }}</div>
+                                    @if ($withdrawalRequest->approvedByAdmin)
+                                        <div class="text-muted small">Oleh {{ $withdrawalRequest->approvedByAdmin->name }}</div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
+
+                        @if ($withdrawalRequest->completed_at)
+                            <div class="d-flex gap-3">
+                                <div class="rounded-circle bg-success flex-shrink-0" style="width: 12px; height: 12px; margin-top: 6px;"></div>
+                                <div>
+                                    <div class="fw-semibold">Selesai</div>
+                                    <div class="text-muted small">{{ $withdrawalRequest->completed_at->format('d M Y, H:i:s') }}</div>
+                                </div>
+                            </div>
+                        @endif
                     </div>
-                    <div class="card-body">
+                </div>
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-4">
+                        <h5 class="mb-3">Ringkasan Saldo Penjaga</h5>
                         <div class="mb-3">
-                            <h6 class="text-muted mb-1">Total Pendapatan</h6>
-                            <p class="fw-semibold fs-6">
-                                Rp {{ number_format($withdrawalRequest->user->total_earnings ?? 0, 0, ',', '.') }}
-                            </p>
+                            <div class="text-muted small mb-1">Total Pendapatan</div>
+                            <div class="fw-semibold">Rp {{ number_format($withdrawalRequest->user->total_earnings ?? 0, 0, ',', '.') }}</div>
                         </div>
                         <div class="mb-3">
-                            <h6 class="text-muted mb-1">Sudah Dicairkan</h6>
-                            <p class="fw-semibold fs-6 text-success">
-                                Rp {{ number_format($withdrawalRequest->user->withdrawn_amount ?? 0, 0, ',', '.') }}
-                            </p>
+                            <div class="text-muted small mb-1">Sudah Dicairkan</div>
+                            <div class="fw-semibold text-success">Rp {{ number_format($withdrawalRequest->user->withdrawn_amount ?? 0, 0, ',', '.') }}</div>
                         </div>
-                        <div class="bg-light p-2 rounded">
-                            <h6 class="text-muted mb-1">Saldo Tersedia</h6>
-                            <p class="fw-semibold fs-6">
-                                Rp {{ number_format($withdrawalRequest->user->available_balance ?? 0, 0, ',', '.') }}
-                            </p>
+                        <div class="rounded-3 bg-light border p-3">
+                            <div class="text-muted small mb-1">Saldo Tersedia</div>
+                            <div class="fw-bold">Rp {{ number_format($withdrawalRequest->user->available_balance ?? 0, 0, ',', '.') }}</div>
                         </div>
                     </div>
                 </div>
@@ -298,38 +289,28 @@
         </div>
     </div>
 
-    <!-- Modals -->
-    <!-- Approve Modal -->
-    <div class="modal fade" id="approveModal" tabindex="-1">
+    <div class="modal fade" id="approveModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Setujui Request Penarikan</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form method="POST"
-                    action="{{ route('admin.earnings.withdrawal-request-approve', $withdrawalRequest->id) }}">
+                <form method="POST" action="{{ route('admin.earnings.withdrawal-request-approve', $withdrawalRequest->id) }}">
                     @csrf
                     <div class="modal-body">
-                        <p>Apakah Anda yakin ingin menyetujui request penarikan ini?</p>
-                        <div class="bg-light p-3 rounded">
-                            <h6 class="mb-2">Ringkasan:</h6>
-                            <ul class="list-unstyled mb-0">
-                                <li class="mb-2">
-                                    <strong>Penjaga Jalur:</strong> {{ $withdrawalRequest->user->name }}
-                                </li>
-                                <li class="mb-2">
-                                    <strong>Jumlah Bersih:</strong> <span class="text-success">Rp
-                                        {{ number_format($withdrawalRequest->net_amount, 0, ',', '.') }}</span>
-                                </li>
-                                <li>
-                                    <strong>Metode:</strong> {{ $withdrawalRequest->getWithdrawalMethodLabel() }}
-                                </li>
-                            </ul>
+                        <p class="mb-3">Apakah Anda yakin ingin menyetujui request penarikan ini?</p>
+                        <div class="rounded-3 bg-light border p-3">
+                            <div class="small text-muted mb-1">Penjaga Jalur</div>
+                            <div class="fw-semibold mb-3">{{ $withdrawalRequest->user->name }}</div>
+                            <div class="small text-muted mb-1">Jumlah Bersih</div>
+                            <div class="fw-semibold text-success mb-3">Rp {{ number_format($withdrawalRequest->net_amount, 0, ',', '.') }}</div>
+                            <div class="small text-muted mb-1">Metode</div>
+                            <div class="fw-semibold">{{ $withdrawalRequest->getWithdrawalMethodLabel() }}</div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                         <button type="submit" class="btn btn-success">Setujui</button>
                     </div>
                 </form>
@@ -337,88 +318,60 @@
         </div>
     </div>
 
-    <!-- Reject Modal -->
-    <div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Tolak Request Penarikan</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form method="POST"
-                    action="{{ route('admin.earnings.withdrawal-request-reject', $withdrawalRequest->id) }}">
+                <form method="POST" action="{{ route('admin.earnings.withdrawal-request-reject', $withdrawalRequest->id) }}">
                     @csrf
                     <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Alasan Penolakan <span class="text-danger">*</span></label>
-                            <textarea name="rejection_reason" class="form-control" rows="4" required
-                                placeholder="Jelaskan alasan penolakan..."></textarea>
-                            <small class="text-muted">Penjelasan ini akan diterima oleh penjaga jalur</small>
-                        </div>
+                        <label class="form-label">Alasan Penolakan <span class="text-danger">*</span></label>
+                        <textarea name="rejection_reason" class="form-control" rows="4" required
+                            placeholder="Jelaskan alasan penolakan...">{{ old('rejection_reason') }}</textarea>
+                        <small class="text-muted">Penjelasan ini akan diterima oleh penjaga jalur.</small>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-danger">Tolak</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-danger">Tolak Request</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Complete Modal -->
-    <div class="modal fade" id="completeModal" tabindex="-1">
+    <div class="modal fade" id="completeModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Tandai Request Selesai</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form method="POST"
-                    action="{{ route('admin.earnings.withdrawal-request-complete', $withdrawalRequest->id) }}"
+                <form method="POST" action="{{ route('admin.earnings.withdrawal-request-complete', $withdrawalRequest->id) }}"
                     enctype="multipart/form-data">
                     @csrf
                     <div class="modal-body">
-                        <p>Apakah Anda yakin bahwa transfer saldo telah selesai dilakukan?</p>
-                        <div class="bg-success bg-opacity-10 border border-success p-3 rounded">
-                            <h6 class="mb-2"><i class="bx bx-info-circle text-success me-2"></i>Informasi</h6>
-                            <ul class="list-unstyled mb-0 small">
-                                <li>✓ Saldo penjaga jalur akan dikurangi</li>
-                                <li>✓ Catatan akan disimpan sebagai riwayat penarikan</li>
-                                <li>✓ Penjaga jalur akan menerima notifikasi</li>
+                        <p class="mb-3">Konfirmasi bahwa transfer saldo sudah selesai dilakukan.</p>
+                        <div class="rounded-3 bg-success bg-opacity-10 border border-success p-3 mb-3">
+                            <div class="fw-semibold mb-2">Yang akan terjadi</div>
+                            <ul class="mb-0 ps-3 small">
+                                <li>Status request diubah menjadi selesai.</li>
+                                <li>Saldo tersedia penjaga akan dikurangi sesuai jumlah bersih.</li>
+                                <li>Riwayat transfer akan disimpan.</li>
                             </ul>
                         </div>
-
-                        <div class="mt-3">
-                            <label class="form-label">Bukti Transfer (Opsional)</label>
-                            <input type="file" name="transfer_proof" class="form-control"
-                                accept=".jpg,.jpeg,.png,.pdf">
-                            <small class="text-muted">Format: JPG, PNG, PDF. Maksimal 4MB.</small>
-                        </div>
+                        <label class="form-label">Bukti Transfer (Opsional)</label>
+                        <input type="file" name="transfer_proof" class="form-control" accept=".jpg,.jpeg,.png,.pdf">
+                        <small class="text-muted">Format JPG, PNG, PDF. Maksimal 4MB.</small>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                         <button type="submit" class="btn btn-success">Tandai Selesai</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-
-    <script>
-        const approveModal = new bootstrap.Modal(document.getElementById('approveModal'));
-        const rejectModal = new bootstrap.Modal(document.getElementById('rejectModal'));
-        const completeModal = new bootstrap.Modal(document.getElementById('completeModal'));
-
-        function approveRequest() {
-            approveModal.show();
-        }
-
-        function rejectRequest() {
-            rejectModal.show();
-        }
-
-        function completeRequest() {
-            completeModal.show();
-        }
-    </script>
 @endsection
