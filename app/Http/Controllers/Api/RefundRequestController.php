@@ -25,7 +25,7 @@ class RefundRequestController extends Controller
             ], 401);
         }
 
-        $order = Order::with('transaction')->findOrFail($orderId);
+        $order = Order::with(['transaction', 'trail:id,is_refund_allowed'])->findOrFail($orderId);
 
         if ((string) $order->id_user !== (string) $user->id) {
             return response()->json([
@@ -52,6 +52,13 @@ class RefundRequestController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Hanya pesanan yang sudah lunas yang dapat diajukan refund.',
+            ], 422);
+        }
+
+        if ($order->trail && !$order->trail->is_refund_allowed) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Refund tiket untuk basecamp ini saat ini tidak diizinkan oleh penjaga gunung.',
             ], 422);
         }
 
@@ -87,7 +94,7 @@ class RefundRequestController extends Controller
             'phone_number' => 'nullable|string|max:30',
         ]);
 
-        $order = Order::with('transaction')->findOrFail($validated['order_id']);
+        $order = Order::with(['transaction', 'trail:id,is_refund_allowed'])->findOrFail($validated['order_id']);
 
         if ((string) $order->id_user !== (string) $user->id) {
             return response()->json([
@@ -114,6 +121,13 @@ class RefundRequestController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Hanya pesanan yang sudah lunas yang dapat diajukan refund.',
+            ], 422);
+        }
+
+        if ($order->trail && !$order->trail->is_refund_allowed) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Refund tiket untuk basecamp ini saat ini tidak diizinkan oleh penjaga gunung.',
             ], 422);
         }
 

@@ -27,6 +27,7 @@ class Trail extends Model
         'map_basecamp',
         'biaya',
         'daily_hiker_limit',
+        'is_refund_allowed',
         'gambar_jalur',
         'latitude',
         'longitude',
@@ -37,6 +38,7 @@ class Trail extends Model
         'gambar' => 'array',
         'route_points' => 'array',
         'daily_hiker_limit' => 'integer',
+        'is_refund_allowed' => 'boolean',
     ];
 
     // Relasi dengan model Mountain

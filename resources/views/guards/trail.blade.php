@@ -65,6 +65,26 @@
                         </div>
 
                         <div class="mb-4">
+                            <label class="form-label-modern d-block mb-2">Kebijakan Refund Tiket</label>
+                            <input type="hidden" name="is_refund_allowed" value="0">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input @error('is_refund_allowed') is-invalid @enderror" type="checkbox"
+                                    role="switch" id="is_refund_allowed" name="is_refund_allowed" value="1"
+                                    {{ old('is_refund_allowed', $trail->is_refund_allowed ?? true) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="is_refund_allowed">
+                                    Izinkan pengajuan refund tiket untuk basecamp ini
+                                </label>
+                            </div>
+                            @error('is_refund_allowed')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                            <small class="text-muted mt-1 d-block">
+                                <i class="fas fa-rotate-left me-1"></i>
+                                Jika dimatikan, pendaki tidak bisa mengajukan refund untuk tiket di jalur/basecamp ini.
+                            </small>
+                        </div>
+
+                        <div class="mb-4">
                             <label class="form-label-modern">Upload GPX Jalur</label>
                             <input type="file" id="gpx_file_input" name="gpx_file"
                                 class="form-control form-modern @error('gpx_file') is-invalid @enderror" accept=".gpx,.xml">
