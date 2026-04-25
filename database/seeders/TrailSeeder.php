@@ -277,21 +277,66 @@ class TrailSeeder extends Seeder
 
         // Pastikan metrik rute konsisten untuk DSS (sesuai data acuan).
         $routeMetrics = [
-            1 => ['jarak' => 5.63, 'elevasi' => 1300, 'durasi' => 8, 'tingkat_kesulitan' => 'sedang'],
-            2 => ['jarak' => 6.43, 'elevasi' => 1400, 'durasi' => 10, 'tingkat_kesulitan' => 'sedang'],
-            3 => ['jarak' => 5.68, 'elevasi' => 1500, 'durasi' => 10, 'tingkat_kesulitan' => 'sulit'],
-            4 => ['jarak' => 6.10, 'elevasi' => 1400, 'durasi' => 9, 'tingkat_kesulitan' => 'sedang'],
-            5 => ['jarak' => 4.86, 'elevasi' => 1200, 'durasi' => 8, 'tingkat_kesulitan' => 'sedang'],
-            6 => ['jarak' => 10, 'elevasi' => 1500, 'durasi' => 9, 'tingkat_kesulitan' => 'sulit'],
-            7 => ['jarak' => 11, 'elevasi' => 1600, 'durasi' => 10, 'tingkat_kesulitan' => 'sulit'],
-            8 => ['jarak' => 9, 'elevasi' => 1400, 'durasi' => 8, 'tingkat_kesulitan' => 'sulit'],
-            9 => ['jarak' => 8, 'elevasi' => 1300, 'durasi' => 7, 'tingkat_kesulitan' => 'sedang'],
-            10 => ['jarak' => 12, 'elevasi' => 1700, 'durasi' => 11, 'tingkat_kesulitan' => 'sangat_sulit'],
-            11 => ['jarak' => 6.5, 'elevasi' => 1300, 'durasi' => 7, 'tingkat_kesulitan' => 'sedang'],
-            12 => ['jarak' => 8, 'elevasi' => 1500, 'durasi' => 9, 'tingkat_kesulitan' => 'sulit'],
-            13 => ['jarak' => 7.5, 'elevasi' => 1400, 'durasi' => 8, 'tingkat_kesulitan' => 'sulit'],
-            14 => ['jarak' => 7, 'elevasi' => 1400, 'durasi' => 8, 'tingkat_kesulitan' => 'sulit'],
-            15 => ['jarak' => 6, 'elevasi' => 1200, 'durasi' => 7, 'tingkat_kesulitan' => 'sedang'],
+            1 => [
+                'jarak' => 5.63, 'elevasi' => 1300, 'durasi' => 8, 'tingkat_kesulitan' => 'sedang',
+                'panorama_score' => 5, 'fasilitas_score' => 4, 'popularity_score' => 850, 'safety_score' => 4, 'crowd_level' => 3
+            ],
+            2 => [
+                'jarak' => 6.43, 'elevasi' => 1400, 'durasi' => 10, 'tingkat_kesulitan' => 'sedang',
+                'panorama_score' => 4, 'fasilitas_score' => 3, 'popularity_score' => 420, 'safety_score' => 4, 'crowd_level' => 2
+            ],
+            3 => [
+                'jarak' => 5.68, 'elevasi' => 1500, 'durasi' => 10, 'tingkat_kesulitan' => 'sulit',
+                'panorama_score' => 5, 'fasilitas_score' => 2, 'popularity_score' => 310, 'safety_score' => 3, 'crowd_level' => 2
+            ],
+            4 => [
+                'jarak' => 6.10, 'elevasi' => 1400, 'durasi' => 9, 'tingkat_kesulitan' => 'sedang',
+                'panorama_score' => 4, 'fasilitas_score' => 3, 'popularity_score' => 250, 'safety_score' => 4, 'crowd_level' => 1
+            ],
+            5 => [
+                'jarak' => 4.86, 'elevasi' => 1200, 'durasi' => 8, 'tingkat_kesulitan' => 'sedang',
+                'panorama_score' => 3, 'fasilitas_score' => 3, 'popularity_score' => 180, 'safety_score' => 5, 'crowd_level' => 1
+            ],
+            6 => [
+                'jarak' => 10, 'elevasi' => 1500, 'durasi' => 9, 'tingkat_kesulitan' => 'sulit',
+                'panorama_score' => 5, 'fasilitas_score' => 5, 'popularity_score' => 950, 'safety_score' => 3, 'crowd_level' => 5
+            ],
+            7 => [
+                'jarak' => 11, 'elevasi' => 1600, 'durasi' => 10, 'tingkat_kesulitan' => 'sulit',
+                'panorama_score' => 4, 'fasilitas_score' => 3, 'popularity_score' => 380, 'safety_score' => 3, 'crowd_level' => 2
+            ],
+            8 => [
+                'jarak' => 9, 'elevasi' => 1400, 'durasi' => 8, 'tingkat_kesulitan' => 'sulit',
+                'panorama_score' => 4, 'fasilitas_score' => 4, 'popularity_score' => 560, 'safety_score' => 4, 'crowd_level' => 3
+            ],
+            9 => [
+                'jarak' => 8, 'elevasi' => 1300, 'durasi' => 7, 'tingkat_kesulitan' => 'sedang',
+                'panorama_score' => 3, 'fasilitas_score' => 3, 'popularity_score' => 290, 'safety_score' => 4, 'crowd_level' => 2
+            ],
+            10 => [
+                'jarak' => 12, 'elevasi' => 1700, 'durasi' => 11, 'tingkat_kesulitan' => 'sangat_sulit',
+                'panorama_score' => 5, 'fasilitas_score' => 4, 'popularity_score' => 410, 'safety_score' => 2, 'crowd_level' => 4
+            ],
+            11 => [
+                'jarak' => 6.5, 'elevasi' => 1300, 'durasi' => 7, 'tingkat_kesulitan' => 'sedang',
+                'panorama_score' => 4, 'fasilitas_score' => 4, 'popularity_score' => 620, 'safety_score' => 5, 'crowd_level' => 3
+            ],
+            12 => [
+                'jarak' => 8, 'elevasi' => 1500, 'durasi' => 9, 'tingkat_kesulitan' => 'sulit',
+                'panorama_score' => 5, 'fasilitas_score' => 2, 'popularity_score' => 150, 'safety_score' => 3, 'crowd_level' => 1
+            ],
+            13 => [
+                'jarak' => 7.5, 'elevasi' => 1400, 'durasi' => 8, 'tingkat_kesulitan' => 'sulit',
+                'panorama_score' => 4, 'fasilitas_score' => 2, 'popularity_score' => 120, 'safety_score' => 4, 'crowd_level' => 1
+            ],
+            14 => [
+                'jarak' => 7, 'elevasi' => 1400, 'durasi' => 8, 'tingkat_kesulitan' => 'sulit',
+                'panorama_score' => 4, 'fasilitas_score' => 3, 'popularity_score' => 200, 'safety_score' => 4, 'crowd_level' => 2
+            ],
+            15 => [
+                'jarak' => 6, 'elevasi' => 1200, 'durasi' => 7, 'tingkat_kesulitan' => 'sedang',
+                'panorama_score' => 3, 'fasilitas_score' => 5, 'popularity_score' => 780, 'safety_score' => 5, 'crowd_level' => 4
+            ],
         ];
 
         foreach ($routeMetrics as $routeId => $metrics) {

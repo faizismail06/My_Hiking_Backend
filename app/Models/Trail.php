@@ -33,12 +33,25 @@ class Trail extends Model
         'longitude',
         'route_points',
         'route_source',
+        // DSS score columns
+        'panorama_score',
+        'fasilitas_score',
+        'popularity_score',
+        'safety_score',
+        'crowd_level',
     ];
+
     protected $casts = [
-        'gambar' => 'array',
-        'route_points' => 'array',
+        'gambar'            => 'array',
+        'route_points'      => 'array',
         'daily_hiker_limit' => 'integer',
         'is_refund_allowed' => 'boolean',
+        // DSS numeric scores
+        'panorama_score'    => 'float',
+        'fasilitas_score'   => 'float',
+        'popularity_score'  => 'float',
+        'safety_score'      => 'float',
+        'crowd_level'       => 'float',
     ];
 
     // Relasi dengan model Mountain

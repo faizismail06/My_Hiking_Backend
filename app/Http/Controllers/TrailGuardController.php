@@ -104,51 +104,97 @@ class TrailGuardController extends Controller
     // Update trail info
     public function updateTrail(Request $request, GpxRouteService $gpxRouteService)
     {
-        $user = Auth::user();
+        $user  = Auth::user();
         $trail = TrailWeb::where('user_id', $user->id)->first();
 
         if (!$trail) {
             return redirect()->back()->with('error', 'You do not have access to update this trail.');
         }
 
+        // ── Validation ──────────────────────────────────────────────────────
         $request->validate([
-            'deskripsi' => 'nullable|string|max:1000',
-            'map_basecamp' => 'nullable|string|max:255',
-            'latitude' => 'nullable|numeric|between:-90,90',
-            'longitude' => 'nullable|numeric|between:-180,180',
-            'daily_hiker_limit' => 'nullable|integer|min:1|max:100000',
-            'is_refund_allowed' => 'required|boolean',
-            'gambar_jalur' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'gpx_file' => 'nullable|file|mimes:gpx,xml|max:10240',
-            'route_source' => 'nullable|string|max:50',
-            'route_points_json' => 'nullable|string',
-            'trail_posts_json' => 'nullable|string',
+            // Existing fields
+            'deskripsi'          => 'nullable|string|max:1000',
+            'map_basecamp'       => 'nullable|string|max:255',
+            'latitude'           => 'nullable|numeric|between:-90,90',
+            'longitude'          => 'nullable|numeric|between:-180,180',
+            'daily_hiker_limit'  => 'nullable|integer|min:1|max:100000',
+            'is_refund_allowed'  => 'required|boolean',
+            'gambar_jalur'       => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'gpx_file'           => 'nullable|file|mimes:gpx,xml|max:10240',
+            'route_source'       => 'nullable|string|max:50',
+            'route_points_json'  => 'nullable|string',
+            'trail_posts_json'   => 'nullable|string',
+
+            // ── DSS Criteria ─────────────────────────────────────────────
+            // Score fields: integer 1–5, required when submitted
+            'panorama_score'     => 'required|integer|min:1|max:5',
+            'fasilitas_score'    => 'required|integer|min:1|max:5',
+            'safety_score'       => 'required|integer|min:1|max:5',
+            'crowd_level'        => 'required|integer|min:1|max:5',
+            // popularity_score is optional (guard may not know it yet)
+            'popularity_score'   => 'nullable|numeric|min:0',
+        ], [
+            // Custom user-friendly messages
+            'panorama_score.required'  => 'Skor panorama wajib diisi.',
+            'panorama_score.integer'   => 'Skor panorama harus berupa bilangan bulat.',
+            'panorama_score.min'       => 'Skor panorama minimal 1.',
+            'panorama_score.max'       => 'Skor panorama maksimal 5.',
+
+            'fasilitas_score.required' => 'Skor fasilitas wajib diisi.',
+            'fasilitas_score.integer'  => 'Skor fasilitas harus berupa bilangan bulat.',
+            'fasilitas_score.min'      => 'Skor fasilitas minimal 1.',
+            'fasilitas_score.max'      => 'Skor fasilitas maksimal 5.',
+
+            'safety_score.required'    => 'Skor keamanan wajib diisi.',
+            'safety_score.integer'     => 'Skor keamanan harus berupa bilangan bulat.',
+            'safety_score.min'         => 'Skor keamanan minimal 1.',
+            'safety_score.max'         => 'Skor keamanan maksimal 5.',
+
+            'crowd_level.required'     => 'Level keramaian wajib diisi.',
+            'crowd_level.integer'      => 'Level keramaian harus berupa bilangan bulat.',
+            'crowd_level.min'          => 'Level keramaian minimal 1.',
+            'crowd_level.max'          => 'Level keramaian maksimal 5.',
+
+            'popularity_score.numeric' => 'Skor popularitas harus berupa angka.',
+            'popularity_score.min'     => 'Skor popularitas tidak boleh negatif.',
         ]);
 
+        // ── Build data array ─────────────────────────────────────────────
         $data = [
-            'deskripsi' => $request->deskripsi,
-            'map_basecamp' => $request->map_basecamp,
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
-            'daily_hiker_limit' => $request->filled('daily_hiker_limit') ? (int) $request->daily_hiker_limit : null,
-            'is_refund_allowed' => $request->boolean('is_refund_allowed'),
+            'deskripsi'          => $request->deskripsi,
+            'map_basecamp'       => $request->map_basecamp,
+            'latitude'           => $request->latitude,
+            'longitude'          => $request->longitude,
+            'daily_hiker_limit'  => $request->filled('daily_hiker_limit') ? (int) $request->daily_hiker_limit : null,
+            'is_refund_allowed'  => $request->boolean('is_refund_allowed'),
+
+            // DSS criteria — cast to int/float for clean storage
+            'panorama_score'     => (int) $request->panorama_score,
+            'fasilitas_score'    => (int) $request->fasilitas_score,
+            'safety_score'       => (int) $request->safety_score,
+            'crowd_level'        => (int) $request->crowd_level,
+            // nullable: use submitted value or keep existing (handled by default fallback below)
+            'popularity_score'   => $request->filled('popularity_score')
+                ? (float) $request->popularity_score
+                : $trail->popularity_score,
         ];
 
+        // ── Image upload ─────────────────────────────────────────────────
         if ($request->hasFile('gambar_jalur')) {
-            // Delete old image if exists
             if ($trail->gambar_jalur) {
                 Storage::disk('public')->delete('images/' . $trail->gambar_jalur);
             }
-
-            $file = $request->file('gambar_jalur');
+            $file      = $request->file('gambar_jalur');
             $imageName = time() . '_' . $file->getClientOriginalName();
             $file->storeAs('images', $imageName, 'public');
             $data['gambar_jalur'] = $imageName;
         }
 
+        // ── GPX file ─────────────────────────────────────────────────────
         if ($request->hasFile('gpx_file')) {
             try {
-                $parsedRoute = $gpxRouteService->parseFromUploadedFile($request->file('gpx_file'), 1500);
+                $parsedRoute       = $gpxRouteService->parseFromUploadedFile($request->file('gpx_file'), 1500);
                 $data['route_points'] = $parsedRoute['points'];
                 $data['route_source'] = $request->input('route_source', 'manual');
             } catch (\Throwable $e) {
@@ -156,6 +202,7 @@ class TrailGuardController extends Controller
             }
         }
 
+        // ── Manual route points ───────────────────────────────────────────
         if ($request->filled('route_points_json') && !$request->hasFile('gpx_file')) {
             try {
                 $data['route_points'] = $this->parseRoutePointsJson($request->input('route_points_json'));
@@ -165,8 +212,15 @@ class TrailGuardController extends Controller
             }
         }
 
-        $trail->update($data);
+        // ── Persist ───────────────────────────────────────────────────────
+        $trail->fill($data);
 
+        // Apply DSS defaults for any fields still NULL after merge
+        // (guards existing rows that were never given a score)
+        $trail->applyDssDefaults();
+        $trail->save();
+
+        // ── Trail posts ───────────────────────────────────────────────────
         if ($request->has('trail_posts_json')) {
             try {
                 $this->syncTrailPosts($trail, $request->input('trail_posts_json'));
@@ -175,8 +229,14 @@ class TrailGuardController extends Controller
             }
         }
 
-        return redirect()->route('guards.trail')->with('success', 'Trail information updated successfully!');
+        // ── Data consistency guard (Task 5) ───────────────────────────────
+        // Runs asynchronously via a simple after-response check.
+        // Logs a warning if any criterion column is now degenerate.
+        TrailWeb::checkDssConsistency();
+
+        return redirect()->route('guards.trail')->with('success', 'Informasi jalur dan kriteria DSS berhasil diperbarui!');
     }
+
 
     // Visitor history
     public function visitorHistory(Request $request)

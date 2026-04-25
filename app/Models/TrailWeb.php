@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 
 class TrailWeb extends Model
 {
@@ -33,12 +34,24 @@ class TrailWeb extends Model
         'longitude',
         'route_points',
         'route_source',
+        // ── DSS Criteria (TOPSIS) ────────────────────────────────────────
+        'panorama_score',
+        'fasilitas_score',
+        'safety_score',
+        'crowd_level',
+        'popularity_score',
     ];
 
     protected $casts = [
-        'route_points' => 'array',
-        'daily_hiker_limit' => 'integer',
-        'is_refund_allowed' => 'boolean',
+        'route_points'     => 'array',
+        'daily_hiker_limit'=> 'integer',
+        'is_refund_allowed'=> 'boolean',
+        // DSS criteria stored as float so upstream services always get numeric values
+        'panorama_score'   => 'float',
+        'fasilitas_score'  => 'float',
+        'safety_score'     => 'float',
+        'crowd_level'      => 'float',
+        'popularity_score' => 'float',
     ];
 
     // Relasi dengan model Mountain
@@ -96,5 +109,74 @@ class TrailWeb extends Model
     public function pesanan()
     {
         return $this->orders();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // DSS Helpers
+    // ─────────────────────────────────────────────────────────────────────
+
+    /**
+     * Ensure no DSS criterion is NULL before saving.
+     *
+     * Defaults:
+     *   panorama_score   → 3   (neutral)
+     *   fasilitas_score  → 3   (neutral)
+     *   safety_score     → 3   (neutral)
+     *   crowd_level      → 3   (neutral)
+     *   popularity_score → 0   (no data yet)
+     *
+     * Call this before trail->save() / trail->update().
+     */
+    public function applyDssDefaults(): void
+    {
+        $defaults = [
+            'panorama_score'   => 3.0,
+            'fasilitas_score'  => 3.0,
+            'safety_score'     => 3.0,
+            'crowd_level'      => 3.0,
+            'popularity_score' => 0.0,
+        ];
+
+        foreach ($defaults as $field => $default) {
+            if (is_null($this->{$field})) {
+                $this->{$field} = $default;
+            }
+        }
+    }
+
+    /**
+     * Detect degenerate DSS columns (all trails have the same value).
+     *
+     * When a column is degenerate, the TOPSIS normalisation produces
+     * a zero-variance vector which is already handled server-side, but
+     * it means the data quality is poor and an admin should be notified.
+     *
+     * Logs a warning per offending criterion.
+     * Safe to call after every bulk update.
+     */
+    public static function checkDssConsistency(): void
+    {
+        $criteria = [
+            'panorama_score',
+            'fasilitas_score',
+            'safety_score',
+            'crowd_level',
+            'popularity_score',
+        ];
+
+        foreach ($criteria as $column) {
+            $distinct = self::query()
+                ->distinct()
+                ->whereNotNull($column)
+                ->pluck($column);
+
+            if ($distinct->count() <= 1) {
+                Log::warning(
+                    "[DSS Consistency] Column '{$column}' is degenerate: " .
+                    "all trails share the same value ({$distinct->first()}). " .
+                    "TOPSIS will zero-out this criterion."
+                );
+            }
+        }
     }
 }

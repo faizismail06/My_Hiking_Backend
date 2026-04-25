@@ -207,6 +207,145 @@
                             @endif
                         </div>
 
+                        {{-- ═══════════════════════════════════════════════════════════ --}}
+                        {{-- DSS CRITERIA SECTION                                        --}}
+                        {{-- ═══════════════════════════════════════════════════════════ --}}
+                        <div class="mb-4 p-4 rounded-3" style="background: #f0fdf4; border: 1.5px solid #bbf7d0;">
+                            <h6 class="fw-bold mb-1" style="color: #166534;">
+                                <i class="fas fa-chart-bar me-2"></i>Kriteria DSS – Sistem Rekomendasi TOPSIS
+                            </h6>
+                            <p class="text-muted small mb-3">
+                                Isi nilai berikut sesuai kondisi jalur Anda. Data ini digunakan oleh sistem untuk
+                                memberikan rekomendasi kepada pendaki.
+                            </p>
+
+                            <div class="row g-3">
+
+                                {{-- Panorama Score --}}
+                                <div class="col-md-6">
+                                    <label class="form-label-modern d-flex align-items-center gap-2">
+                                        <i class="fas fa-mountain text-success"></i> Skor Panorama
+                                        <span class="badge bg-danger ms-1" style="font-size:10px;">Wajib</span>
+                                    </label>
+                                    <select name="panorama_score"
+                                        class="form-select form-modern @error('panorama_score') is-invalid @enderror">
+                                        @foreach(config('dss_labels.panorama_score') as $val => $label)
+                                            <option value="{{ $val }}"
+                                                {{ old('panorama_score', $trail->panorama_score ?? 3) == $val ? 'selected' : '' }}>
+                                                {{ $val }} – {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('panorama_score')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted mt-1 d-block">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Seberapa bagus pemandangan sepanjang jalur dan di puncak.
+                                    </small>
+                                </div>
+
+                                {{-- Fasilitas Score --}}
+                                <div class="col-md-6">
+                                    <label class="form-label-modern d-flex align-items-center gap-2">
+                                        <i class="fas fa-campground text-success"></i> Skor Fasilitas
+                                        <span class="badge bg-danger ms-1" style="font-size:10px;">Wajib</span>
+                                    </label>
+                                    <select name="fasilitas_score"
+                                        class="form-select form-modern @error('fasilitas_score') is-invalid @enderror">
+                                        @foreach(config('dss_labels.fasilitas_score') as $val => $label)
+                                            <option value="{{ $val }}"
+                                                {{ old('fasilitas_score', $trail->fasilitas_score ?? 3) == $val ? 'selected' : '' }}>
+                                                {{ $val }} – {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('fasilitas_score')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted mt-1 d-block">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Toilet, shelter, warung, sumber air, dll.
+                                    </small>
+                                </div>
+
+                                {{-- Safety Score --}}
+                                <div class="col-md-6">
+                                    <label class="form-label-modern d-flex align-items-center gap-2">
+                                        <i class="fas fa-shield-alt text-success"></i> Skor Keamanan
+                                        <span class="badge bg-danger ms-1" style="font-size:10px;">Wajib</span>
+                                    </label>
+                                    <select name="safety_score"
+                                        class="form-select form-modern @error('safety_score') is-invalid @enderror">
+                                        @foreach(config('dss_labels.safety_score') as $val => $label)
+                                            <option value="{{ $val }}"
+                                                {{ old('safety_score', $trail->safety_score ?? 3) == $val ? 'selected' : '' }}>
+                                                {{ $val }} – {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('safety_score')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted mt-1 d-block">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Tingkat keamanan jalur: kondisi medan, petugas SAR, papan petunjuk.
+                                    </small>
+                                </div>
+
+                                {{-- Crowd Level --}}
+                                <div class="col-md-6">
+                                    <label class="form-label-modern d-flex align-items-center gap-2">
+                                        <i class="fas fa-users text-success"></i> Level Keramaian
+                                        <span class="badge bg-danger ms-1" style="font-size:10px;">Wajib</span>
+                                    </label>
+                                    <select name="crowd_level"
+                                        class="form-select form-modern @error('crowd_level') is-invalid @enderror">
+                                        @foreach(config('dss_labels.crowd_level') as $val => $label)
+                                            <option value="{{ $val }}"
+                                                {{ old('crowd_level', $trail->crowd_level ?? 3) == $val ? 'selected' : '' }}>
+                                                {{ $val }} – {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('crowd_level')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted mt-1 d-block">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Semakin tinggi = semakin ramai (kriteria biaya: nilai tinggi dipenalti TOPSIS).
+                                    </small>
+                                </div>
+
+                                {{-- Popularity Score --}}
+                                <div class="col-12">
+                                    <label class="form-label-modern d-flex align-items-center gap-2">
+                                        <i class="fas fa-star text-warning"></i> Skor Popularitas
+                                        <span class="badge bg-secondary ms-1" style="font-size:10px;">Opsional</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" name="popularity_score"
+                                            class="form-control form-modern @error('popularity_score') is-invalid @enderror"
+                                            min="0" step="1"
+                                            value="{{ old('popularity_score', $trail->popularity_score ?? '') }}"
+                                            placeholder="Contoh: 1200 (jumlah pengunjung / penilaian numerik)">
+                                        <span class="input-group-text" style="border-radius: 0 10px 10px 0; border: 1px solid #e2e8f0;">
+                                            <i class="fas fa-users text-muted"></i>
+                                        </span>
+                                        @error('popularity_score')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <small class="text-muted mt-1 d-block">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Jumlah kunjungan, rating, atau skor numerik lain. Diolah dengan log-transform oleh DSS.
+                                        Kosongkan jika belum tersedia (akan menggunakan nilai sebelumnya atau 0).
+                                    </small>
+                                </div>
+
+                            </div>{{-- /row --}}
+                        </div>{{-- /DSS section --}}
+
                         <div class="d-flex gap-3">
                             <button type="submit" class="btn btn-modern btn-primary-modern">
                                 <i class="fas fa-save"></i> Simpan Perubahan
@@ -219,6 +358,7 @@
                 </div>
             </div>
         </div>
+
 
         <!-- Detail Sidebar -->
         <div class="col-lg-4">
