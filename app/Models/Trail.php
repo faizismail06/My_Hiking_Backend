@@ -39,6 +39,7 @@ class Trail extends Model
         'popularity_score',
         'safety_score',
         'crowd_level',
+        'dss_status',
     ];
 
     protected $casts = [
@@ -52,6 +53,7 @@ class Trail extends Model
         'popularity_score'  => 'float',
         'safety_score'      => 'float',
         'crowd_level'       => 'float',
+        'dss_status'        => 'string',
     ];
 
     // Relasi dengan model Mountain

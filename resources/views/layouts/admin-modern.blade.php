@@ -678,6 +678,7 @@
         <nav class="sidebar-menu">
             @php
                 $pendingRefundCount = \App\Models\RefundRequest::where('refund_status', 'pending')->count();
+                $pendingDssCount = \App\Models\DssPendingSubmission::where('status', 'pending')->count();
             @endphp
 
             <div class="menu-label">Menu Utama</div>
@@ -728,6 +729,15 @@
                 class="menu-item {{ request()->routeIs('admin.earnings.*') ? 'active' : '' }}">
                 <i class="fas fa-wallet"></i>
                 <span>Earnings & Withdrawal</span>
+            </a>
+
+            <a href="{{ route('admin.dss-verifications.index') }}"
+                class="menu-item {{ request()->routeIs('admin.dss-verifications.*') ? 'active' : '' }}">
+                <i class="fas fa-clipboard-check"></i>
+                <span>Verifikasi DSS</span>
+                @if ($pendingDssCount > 0)
+                    <span class="ms-auto badge bg-danger rounded-pill">{{ $pendingDssCount }}</span>
+                @endif
             </a>
 
             <a href="{{ route('history.index') }}"

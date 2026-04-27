@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\ExperienceOnboardingController;
 use App\Http\Controllers\Api\WeatherController;
 use App\Http\Controllers\Api\AiGatewayController;
 use App\Http\Controllers\Api\RefundRequestController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\RecommendationController;
 
 /*
@@ -109,6 +110,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/reject', [RefundRequestController::class, 'reject']);
         Route::post('/{id}/refunded', [RefundRequestController::class, 'markRefunded']);
     });
+
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
 });
 Route::get('/user-data/{id?}', [AuthController::class, 'getUserData']);
 Route::post('users/{id}', [AuthController::class, 'update']);

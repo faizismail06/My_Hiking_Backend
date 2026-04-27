@@ -14,6 +14,7 @@ use App\Http\Controllers\RuleController;
 use App\Http\Controllers\TrailGuardController;
 use App\Http\Controllers\RefundWebController;
 use App\Http\Controllers\AdminEarningsController;
+use App\Http\Controllers\DssVerificationController;
 use App\Http\Controllers\TrailGuardWithdrawalController;
 
 
@@ -54,6 +55,12 @@ Route::middleware(['auth', 'level3'])->group(function () {
         Route::post('/withdrawal/{id}/complete', [AdminEarningsController::class, 'completeWithdrawalRequest'])->name('withdrawal-request-complete');
         Route::get('/admin-fee-settings', [AdminEarningsController::class, 'adminFeeSettings'])->name('admin-fee-settings');
         Route::put('/admin-fee-settings', [AdminEarningsController::class, 'updateAdminFeeSettings'])->name('admin-fee-settings-update');
+    });
+
+    Route::prefix('admin/dss-verifications')->name('admin.dss-verifications.')->group(function () {
+        Route::get('/', [DssVerificationController::class, 'index'])->name('index');
+        Route::post('/{id}/approve', [DssVerificationController::class, 'approve'])->name('approve');
+        Route::post('/{id}/reject', [DssVerificationController::class, 'reject'])->name('reject');
     });
 });
 

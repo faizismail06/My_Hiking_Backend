@@ -16,9 +16,9 @@ return new class extends Migration
                   ->constrained('routes')
                   ->onDelete('cascade');
 
-            $table->foreignId('submitted_by')
-                  ->constrained('users')
-                  ->onDelete('cascade');
+                  $table->foreignId('submitted_by')
+                        ->constrained('users')
+                        ->onDelete('cascade');
 
             // Data DSS yang menunggu verifikasi
             $table->tinyInteger('panorama_score_pending')->unsigned();
@@ -33,10 +33,10 @@ return new class extends Migration
             $table->text('rejection_reason')->nullable()
                   ->comment('Diisi admin jika rejected');
 
-            $table->foreignId('reviewed_by')
-                  ->nullable()
-                  ->constrained('users')
-                  ->onDelete('set null');
+                  $table->foreignId('reviewed_by')
+                        ->nullable()
+                        ->constrained('users')
+                        ->onDelete('set null');
 
             $table->timestamp('reviewed_at')->nullable();
 
