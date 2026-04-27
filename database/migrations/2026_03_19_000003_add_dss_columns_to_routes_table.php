@@ -25,26 +25,6 @@ return new class extends Migration
                     ->nullable()
                     ->after('durasi');
             }
-
-            if (!Schema::hasColumn('routes', 'panorama_score')) {
-                $table->tinyInteger('panorama_score')->unsigned()->nullable()->after('tingkat_kesulitan');
-            }
-
-            if (!Schema::hasColumn('routes', 'fasilitas_score')) {
-                $table->tinyInteger('fasilitas_score')->unsigned()->nullable()->after('panorama_score');
-            }
-
-            if (!Schema::hasColumn('routes', 'popularity_score')) {
-                $table->unsignedInteger('popularity_score')->nullable()->after('fasilitas_score');
-            }
-
-            if (!Schema::hasColumn('routes', 'safety_score')) {
-                $table->tinyInteger('safety_score')->unsigned()->nullable()->after('popularity_score');
-            }
-
-            if (!Schema::hasColumn('routes', 'crowd_level')) {
-                $table->tinyInteger('crowd_level')->unsigned()->nullable()->after('safety_score');
-            }
         });
     }
 
@@ -58,26 +38,6 @@ return new class extends Migration
 
             if (Schema::hasColumn('routes', 'tingkat_kesulitan')) {
                 $dropColumns[] = 'tingkat_kesulitan';
-            }
-
-            if (Schema::hasColumn('routes', 'crowd_level')) {
-                $dropColumns[] = 'crowd_level';
-            }
-
-            if (Schema::hasColumn('routes', 'safety_score')) {
-                $dropColumns[] = 'safety_score';
-            }
-
-            if (Schema::hasColumn('routes', 'popularity_score')) {
-                $dropColumns[] = 'popularity_score';
-            }
-
-            if (Schema::hasColumn('routes', 'fasilitas_score')) {
-                $dropColumns[] = 'fasilitas_score';
-            }
-
-            if (Schema::hasColumn('routes', 'panorama_score')) {
-                $dropColumns[] = 'panorama_score';
             }
 
             if (Schema::hasColumn('routes', 'durasi')) {
