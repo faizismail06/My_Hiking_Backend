@@ -31,12 +31,22 @@ class OrderController extends Controller
     /**
      * Display a listing of orders.
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $orders = Order::with("mountain", "trail", "booker", "transaction")
-                ->orderBy('id')
-                ->get()
+            $perPage = max(1, min((int) $request->query('per_page', 20), 50));
+
+            $query = Order::with("mountain", "trail", "booker", "transaction")
+                ->orderByDesc('id');
+
+            if ($request->filled('user_id')) {
+                $query->where('id_user', (int) $request->query('user_id'));
+            }
+
+            $paginator = $query->paginate($perPage)
+                ->appends($request->only(['user_id', 'per_page']));
+
+            $orders = collect($paginator->items())
                 ->map(function ($item) {
                     $transaction = $item->transaction;
 
@@ -66,16 +76,23 @@ class OrderController extends Controller
                         "order_status" => $item->status,
                         "transaction_status" => $transactionStatus,
                         "is_paid" => $isPaid,
-                        "gunung" => $item->mountain->nama,
-                        "jalur" => $item->trail->nama,
-                        "user" => $item->booker->name,
+                        "gunung" => $item->mountain->nama ?? null,
+                        "jalur" => $item->trail->nama ?? null,
+                        "user" => $item->booker->name ?? null,
                     ];
                 });
 
             return response()->json([
                 'success' => true,
                 'message' => 'Successfully get data on orders',
-                'data' => $orders,
+                'data' => $orders->values(),
+                'pagination' => [
+                    'current_page' => $paginator->currentPage(),
+                    'per_page' => $paginator->perPage(),
+                    'last_page' => $paginator->lastPage(),
+                    'total' => $paginator->total(),
+                    'has_more_pages' => $paginator->hasMorePages(),
+                ],
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

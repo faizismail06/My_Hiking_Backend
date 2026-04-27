@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Friend;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class FriendController extends Controller
 {
@@ -17,6 +16,7 @@ class FriendController extends Controller
     {
         try {
             $userId = $request->query('user_id');
+            $perPage = max(1, min((int) $request->query('per_page', 20), 50));
             
             if (!$userId) {
                 return response()->json([
@@ -32,19 +32,22 @@ class FriendController extends Controller
                 })
                 ->where('status', 'accepted')
                 ->with(['user:id,name,email,phone,profile_picture', 'friend:id,name,email,phone,profile_picture'])
-                ->get()
-                ->map(function ($friendship) use ($userId) {
+                ->orderByDesc('id')
+                ->paginate($perPage)
+                ->appends($request->only(['user_id', 'per_page']));
+
+            $friendItems = collect($friends->items())->map(function ($friendship) use ($userId) {
                     // Return the other user (not the current user)
                     $friendUser = $friendship->user_id == $userId 
                         ? $friendship->friend 
                         : $friendship->user;
                     
                     return [
-                        'id' => $friendUser->id,
-                        'name' => $friendUser->name,
-                        'email' => $friendUser->email,
-                        'phone' => $friendUser->phone,
-                        'profile_picture' => $friendUser->profile_picture,
+                        'id' => $friendUser->id ?? null,
+                        'name' => $friendUser->name ?? null,
+                        'email' => $friendUser->email ?? null,
+                        'phone' => $friendUser->phone ?? null,
+                        'profile_picture' => $friendUser->profile_picture ?? null,
                         'friendship_id' => $friendship->id,
                     ];
                 });
@@ -52,7 +55,14 @@ class FriendController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Friends fetched successfully',
-                'data' => $friends,
+                'data' => $friendItems->values(),
+                'pagination' => [
+                    'current_page' => $friends->currentPage(),
+                    'per_page' => $friends->perPage(),
+                    'last_page' => $friends->lastPage(),
+                    'total' => $friends->total(),
+                    'has_more_pages' => $friends->hasMorePages(),
+                ],
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -70,6 +80,7 @@ class FriendController extends Controller
     {
         try {
             $userId = $request->query('user_id');
+            $perPage = max(1, min((int) $request->query('per_page', 20), 50));
             
             if (!$userId) {
                 return response()->json([
@@ -82,8 +93,11 @@ class FriendController extends Controller
             $pendingRequests = Friend::where('friend_id', $userId)
                 ->where('status', 'pending')
                 ->with(['user:id,name,email,phone,profile_picture'])
-                ->get()
-                ->map(function ($friendship) {
+                ->orderByDesc('id')
+                ->paginate($perPage)
+                ->appends($request->only(['user_id', 'per_page']));
+
+            $pendingItems = collect($pendingRequests->items())->map(function ($friendship) {
                     return [
                         'friendship_id' => $friendship->id,
                         'user' => [
@@ -100,7 +114,14 @@ class FriendController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Pending requests fetched successfully',
-                'data' => $pendingRequests,
+                'data' => $pendingItems->values(),
+                'pagination' => [
+                    'current_page' => $pendingRequests->currentPage(),
+                    'per_page' => $pendingRequests->perPage(),
+                    'last_page' => $pendingRequests->lastPage(),
+                    'total' => $pendingRequests->total(),
+                    'has_more_pages' => $pendingRequests->hasMorePages(),
+                ],
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -139,25 +160,32 @@ class FriendController extends Controller
                 ->limit(20)
                 ->get();
 
-            // Check friendship status for each user
-            $users = $users->map(function ($user) use ($currentUserId) {
-                $friendshipStatus = null;
-                
-                if ($currentUserId) {
-                    $friendship = Friend::where(function ($q) use ($currentUserId, $user) {
-                            $q->where('user_id', $currentUserId)
-                              ->where('friend_id', $user->id);
-                        })
-                        ->orWhere(function ($q) use ($currentUserId, $user) {
-                            $q->where('user_id', $user->id)
-                              ->where('friend_id', $currentUserId);
-                        })
-                        ->first();
-                    
-                    if ($friendship) {
-                        $friendshipStatus = $friendship->status;
-                    }
+            $friendshipStatusByUser = [];
+
+            if ($currentUserId && $users->isNotEmpty()) {
+                $ownerId = (int) $currentUserId;
+                $candidateIds = $users->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+                $friendships = Friend::where(function ($q) use ($ownerId, $candidateIds) {
+                        $q->where('user_id', $ownerId)
+                          ->whereIn('friend_id', $candidateIds);
+                    })
+                    ->orWhere(function ($q) use ($ownerId, $candidateIds) {
+                        $q->whereIn('user_id', $candidateIds)
+                          ->where('friend_id', $ownerId);
+                    })
+                    ->get(['user_id', 'friend_id', 'status']);
+
+                foreach ($friendships as $friendship) {
+                    $otherId = (int) ($friendship->user_id == $ownerId
+                        ? $friendship->friend_id
+                        : $friendship->user_id);
+                    $friendshipStatusByUser[$otherId] = $friendship->status;
                 }
+            }
+
+            $users = $users->map(function ($user) use ($friendshipStatusByUser) {
+                $friendshipStatus = $friendshipStatusByUser[(int) $user->id] ?? null;
 
                 return [
                     'id' => $user->id,
