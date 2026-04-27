@@ -110,9 +110,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/reject', [RefundRequestController::class, 'reject']);
         Route::post('/{id}/refunded', [RefundRequestController::class, 'markRefunded']);
     });
-
-    Route::get('/notifications', [NotificationController::class, 'index']);
-    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
 });
 Route::get('/user-data/{id?}', [AuthController::class, 'getUserData']);
 Route::post('users/{id}', [AuthController::class, 'update']);
