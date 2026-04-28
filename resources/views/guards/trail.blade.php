@@ -219,6 +219,36 @@
                                 memberikan rekomendasi kepada pendaki.
                             </p>
 
+                            @php
+                                $latestRejectedNotification = auth()->user()?->notifications()
+                                    ->where('type', \App\Notifications\DssRejectedNotification::class)
+                                    ->latest()
+                                    ->first();
+                            @endphp
+
+                            <div class="mb-3 p-3 rounded-3" style="background: #ecfeff; border: 1px solid #a5f3fc;">
+                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                    <span class="fw-semibold">Status Verifikasi DSS:</span>
+                                    @if (($trail->dss_status ?? 'approved') === 'pending')
+                                        <span class="badge bg-warning text-dark">Pending Verifikasi Admin</span>
+                                    @else
+                                        <span class="badge bg-success">Approved</span>
+                                    @endif
+                                </div>
+                                @if (($trail->dss_status ?? 'approved') === 'pending' && $trail->activeDssPendingSubmission)
+                                    <small class="text-muted d-block mt-1">
+                                        Pengajuan terakhir: {{ optional($trail->activeDssPendingSubmission->updated_at)->timezone('Asia/Jakarta')->format('d M Y H:i') }} WIB.
+                                        Data aktif di rekomendasi belum berubah sampai admin menyetujui.
+                                    </small>
+                                @endif
+                                @if ($latestRejectedNotification)
+                                    <small class="text-danger d-block mt-1">
+                                        Status terakhir: <span class="fw-semibold">Rejected</span>.
+                                        Alasan: {{ data_get($latestRejectedNotification->data, 'reason', '-') }}
+                                    </small>
+                                @endif
+                            </div>
+
                             <div class="row g-3">
 
                                 {{-- Panorama Score --}}

@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\ExperienceOnboardingController;
 use App\Http\Controllers\Api\WeatherController;
 use App\Http\Controllers\Api\AiGatewayController;
 use App\Http\Controllers\Api\RefundRequestController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\RecommendationController;
 
 /*

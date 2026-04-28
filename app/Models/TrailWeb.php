@@ -40,6 +40,7 @@ class TrailWeb extends Model
         'safety_score',
         'crowd_level',
         'popularity_score',
+        'dss_status',
     ];
 
     protected $casts = [
@@ -52,6 +53,7 @@ class TrailWeb extends Model
         'safety_score'     => 'float',
         'crowd_level'      => 'float',
         'popularity_score' => 'float',
+        'dss_status'       => 'string',
     ];
 
     // Relasi dengan model Mountain
@@ -103,6 +105,16 @@ class TrailWeb extends Model
     public function posts()
     {
         return $this->hasMany(TrailPost::class, 'trail_id')->orderBy('sequence');
+    }
+
+    public function dssPendingSubmissions()
+    {
+        return $this->hasMany(DssPendingSubmission::class, 'route_id');
+    }
+
+    public function activeDssPendingSubmission()
+    {
+        return $this->hasOne(DssPendingSubmission::class, 'route_id')->where('status', 'pending');
     }
 
     // Alias for backward compatibility

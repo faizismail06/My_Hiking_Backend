@@ -13,35 +13,35 @@ return [
     */
 
     'panorama_score' => [
-        1 => 'Sangat Buruk – hampir tidak ada pemandangan',
-        2 => 'Buruk – pemandangan terbatas',
-        3 => 'Cukup – pemandangan rata-rata',
-        4 => 'Baik – pemandangan indah',
-        5 => 'Sangat Indah – pemandangan luar biasa / summit view',
+        1 => 'Hampir tidak ada pemandangan',
+        2 => 'Pemandangan terbatas',
+        3 => 'Pemandangan rata-rata',
+        4 => 'Pemandangan indah',
+        5 => 'Pemandangan luar biasa / summit view',
     ],
 
     'fasilitas_score' => [
-        1 => 'Sangat Minim – tidak ada fasilitas',
-        2 => 'Minim – hanya jalur dasar',
-        3 => 'Cukup – toilet / warung tersedia',
-        4 => 'Lengkap – toilet, shelter, warung, dll.',
-        5 => 'Sangat Lengkap – fasilitas modern tersedia',
+        1 => 'Tidak ada fasilitas',
+        2 => 'Hanya jalur dasar',
+        3 => 'Toilet / warung tersedia',
+        4 => 'Toilet, shelter, warung, dll.',
+        5 => 'Fasilitas modern tersedia',
     ],
 
     'safety_score' => [
-        1 => 'Sangat Berisiko – banyak bahaya / medan ekstrem',
-        2 => 'Berisiko – ada titik berbahaya',
-        3 => 'Cukup Aman – risiko normal',
-        4 => 'Aman – jalur terkelola dengan baik',
-        5 => 'Sangat Aman – jalur terpantau & berstandar',
+        1 => 'Banyak bahaya / medan ekstrem',
+        2 => 'Ada titik berbahaya',
+        3 => 'Risiko normal',
+        4 => 'Jalur terkelola dengan baik',
+        5 => 'Jalur terpantau & berstandar',
     ],
 
     'crowd_level' => [
-        1 => 'Sangat Sepi – hampir tidak ada pengunjung',
-        2 => 'Sepi – jumlah pengunjung sedikit',
-        3 => 'Sedang – cukup ramai di akhir pekan',
-        4 => 'Ramai – selalu banyak pengunjung',
-        5 => 'Sangat Padat – overloaded saat peak season',
+        1 => 'Hampir tidak ada pengunjung',
+        2 => 'Jumlah pengunjung sedikit',
+        3 => 'Cukup ramai di akhir pekan',
+        4 => 'Selalu banyak pengunjung',
+        5 => 'Overloaded saat peak season',
     ],
 
 ];

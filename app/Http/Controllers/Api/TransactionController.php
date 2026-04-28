@@ -19,13 +19,25 @@ class TransactionController extends Controller
         $this->midtransService = $midtransService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         try {
-            // Get all transaction data with related relationships
-            $transactions = Transaction::with("order.mountain", "order.trail", "order.members:id", "order.booker")
-                ->orderBy('id')
-                ->get()
+            $perPage = max(1, min((int) $request->query('per_page', 20), 50));
+
+            $query = Transaction::with("order.mountain", "order.trail", "order.members:id", "order.booker")
+                ->orderByDesc('id');
+
+            if ($request->filled('user_id')) {
+                $userId = (int) $request->query('user_id');
+                $query->whereHas('order', function ($orderQuery) use ($userId) {
+                    $orderQuery->where('id_user', $userId);
+                });
+            }
+
+            $paginator = $query->paginate($perPage)
+                ->appends($request->only(['user_id', 'per_page']));
+
+            $transactions = collect($paginator->items())
                 ->map(function ($item) {
                 $this->syncTransactionStatusFromMidtrans($item);
                 $item->refresh();
@@ -40,10 +52,10 @@ class TransactionController extends Controller
                     "status" => $item->status_pesanan,
                     "waktu_pembayaran" => $item->waktu_pembayaran,
                     "bukti" => $item->bukti,
-                    "gunung" => $item->order->mountain->nama ?? null,
-                    "jalur" => $item->order->trail->nama ?? null,
-                    "pemesan" => $item->order->booker->id ?? null,
-                    "anggota" => $item->order->members ?? []
+                    "gunung" => $item->order?->mountain?->nama,
+                    "jalur" => $item->order?->trail?->nama,
+                    "pemesan" => $item->order?->booker?->id,
+                    "anggota" => $item->order?->members ?? []
                 ];
             });
 
@@ -52,7 +64,14 @@ class TransactionController extends Controller
     
                 'success' => true,
                 'message' => 'Successfully get data on transactions',
-                'data' => $transactions,
+                'data' => $transactions->values(),
+                'pagination' => [
+                    'current_page' => $paginator->currentPage(),
+                    'per_page' => $paginator->perPage(),
+                    'last_page' => $paginator->lastPage(),
+                    'total' => $paginator->total(),
+                    'has_more_pages' => $paginator->hasMorePages(),
+                ],
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

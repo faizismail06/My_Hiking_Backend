@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DssPendingSubmission;
 use App\Models\TrailWeb;
 use App\Models\OrderWeb;
 use App\Models\TransactionWeb;
@@ -90,7 +91,7 @@ class TrailGuardController extends Controller
     public function trailManagement()
     {
         $user = Auth::user();
-        $trail = TrailWeb::with(['mountain', 'province', 'regency', 'district', 'village', 'posts'])
+        $trail = TrailWeb::with(['mountain', 'province', 'regency', 'district', 'village', 'posts', 'activeDssPendingSubmission'])
             ->where('user_id', $user->id)
             ->first();
 
@@ -160,7 +161,7 @@ class TrailGuardController extends Controller
             'popularity_score.min'     => 'Skor popularitas tidak boleh negatif.',
         ]);
 
-        // ── Build data array ─────────────────────────────────────────────
+        // ── Build data array (non-DSS fields) ───────────────────────────
         $data = [
             'deskripsi'          => $request->deskripsi,
             'map_basecamp'       => $request->map_basecamp,
@@ -168,16 +169,6 @@ class TrailGuardController extends Controller
             'longitude'          => $request->longitude,
             'daily_hiker_limit'  => $request->filled('daily_hiker_limit') ? (int) $request->daily_hiker_limit : null,
             'is_refund_allowed'  => $request->boolean('is_refund_allowed'),
-
-            // DSS criteria — cast to int/float for clean storage
-            'panorama_score'     => (int) $request->panorama_score,
-            'fasilitas_score'    => (int) $request->fasilitas_score,
-            'safety_score'       => (int) $request->safety_score,
-            'crowd_level'        => (int) $request->crowd_level,
-            // nullable: use submitted value or keep existing (handled by default fallback below)
-            'popularity_score'   => $request->filled('popularity_score')
-                ? (float) $request->popularity_score
-                : $trail->popularity_score,
         ];
 
         // ── Image upload ─────────────────────────────────────────────────
@@ -212,29 +203,46 @@ class TrailGuardController extends Controller
             }
         }
 
-        // ── Persist ───────────────────────────────────────────────────────
-        $trail->fill($data);
+        // ── Persist route update + DSS pending submission ─────────────────
+        try {
+            DB::transaction(function () use ($trail, $data, $request, $user) {
+                $trail->fill($data);
+                $trail->save();
 
-        // Apply DSS defaults for any fields still NULL after merge
-        // (guards existing rows that were never given a score)
-        $trail->applyDssDefaults();
-        $trail->save();
+                // Keep one active pending submission per route.
+                DssPendingSubmission::updateOrCreate(
+                    [
+                        'route_id' => $trail->id,
+                        'status' => 'pending',
+                    ],
+                    [
+                        'submitted_by' => (int) $user->id,
+                        'panorama_score_pending' => (int) $request->panorama_score,
+                        'fasilitas_score_pending' => (int) $request->fasilitas_score,
+                        'safety_score_pending' => (int) $request->safety_score,
+                        'crowd_level_pending' => (int) $request->crowd_level,
+                        'popularity_score_pending' => $request->filled('popularity_score')
+                            ? (int) $request->popularity_score
+                            : (int) ($trail->popularity_score ?? 0),
+                        'reviewed_by' => null,
+                        'reviewed_at' => null,
+                        'rejection_reason' => null,
+                    ]
+                );
 
-        // ── Trail posts ───────────────────────────────────────────────────
-        if ($request->has('trail_posts_json')) {
-            try {
-                $this->syncTrailPosts($trail, $request->input('trail_posts_json'));
-            } catch (ValidationException $e) {
-                return redirect()->back()->withErrors($e->errors())->withInput();
-            }
+                $trail->dss_status = 'pending';
+                $trail->save();
+
+                // ── Trail posts ───────────────────────────────────────────
+                if ($request->has('trail_posts_json')) {
+                    $this->syncTrailPosts($trail, $request->input('trail_posts_json'));
+                }
+            });
+        } catch (ValidationException $e) {
+            return redirect()->back()->withErrors($e->errors())->withInput();
         }
 
-        // ── Data consistency guard (Task 5) ───────────────────────────────
-        // Runs asynchronously via a simple after-response check.
-        // Logs a warning if any criterion column is now degenerate.
-        TrailWeb::checkDssConsistency();
-
-        return redirect()->route('guards.trail')->with('success', 'Informasi jalur dan kriteria DSS berhasil diperbarui!');
+        return redirect()->route('guards.trail')->with('success', 'Informasi jalur diperbarui. Data DSS dikirim ke admin untuk verifikasi.');
     }
 
 

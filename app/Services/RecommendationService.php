@@ -51,7 +51,9 @@ class RecommendationService
         ?float $maxBudget   = null
     ): array {
         // ── Step 1: Fetch all routes ────────────────────────────────────────
-        $routes = Trail::with('mountain')->get();
+        $routes = Trail::with('mountain')
+            ->where('dss_status', 'approved')
+            ->get();
 
         if ($routes->isEmpty()) {
             return [];
