@@ -146,7 +146,9 @@ class TopsisService
         foreach ($normMatrix as $normRow) {
             $wRow = [];
             foreach ($criterionKeys as $key) {
-                $wRow[$key] = $normWeights[$key] * $normRow[$key];
+                // If criterion wasn't provided by user, weight = 0 (excluded from ranking)
+                $w = isset($normWeights[$key]) ? $normWeights[$key] : 0.0;
+                $wRow[$key] = $w * $normRow[$key];
             }
             $weighted[] = $wRow;
         }
@@ -235,35 +237,39 @@ class TopsisService
     /**
      * Normalise a user-supplied weight map.
      *
-     * Missing keys default to 1.0 / count(criteria) (equal weight).
-     * The result always sums to 1.0.
+     * Only normalises weights that were explicitly provided by the user.
+     * Missing keys are not given any default weight — they are excluded entirely.
+     * The result always sums to 1.0 (for the provided weights only).
      *
-     * @param  array<string, float> $weights
-     * @param  string[]             $keys
-     * @return array<string, float>
+     * This design supports partial preferences:
+     *   - User provides {cost: 5, distance: 3} → only these are ranked
+     *   - Other criteria are set to weight 0 implicitly
+     *   - This makes the semantics clear and predictable
+     *
+     * @param  array<string, float> $weights    User-supplied weights (may be a subset)
+     * @param  string[]             $keys       All criterion keys (unused, for compatibility)
+     * @return array<string, float>            Normalised weights (only keys from input)
      */
     public function normaliseWeights(array $weights, array $keys): array
     {
-        $n       = count($keys);
-        $default = $n > 0 ? 1.0 / $n : 0.0;
-
-        $raw = [];
-        foreach ($keys as $key) {
-            $raw[$key] = isset($weights[$key]) && $weights[$key] >= 0
-                ? (float) $weights[$key]
-                : $default;
+        // Edge case: no weights provided → return empty (backend caller will handle)
+        if (empty($weights)) {
+            return [];
         }
 
-        $total = array_sum($raw);
+        $total = array_sum($weights);
 
         if ($total <= 0.0) {
-            // Fallback: equal weights
-            return array_fill_keys($keys, $default);
+            // All weights were <= 0 → invalid, return empty
+            return [];
         }
 
+        // Normalize ONLY the weights that were provided
         $normalised = [];
-        foreach ($keys as $key) {
-            $normalised[$key] = $raw[$key] / $total;
+        foreach ($weights as $key => $value) {
+            if ($value > 0) {
+                $normalised[$key] = $value / $total;
+            }
         }
 
         return $normalised;

@@ -11,11 +11,12 @@ use App\Models\User;
  * Flow:
  *  1. Fetch ALL routes (no tier / difficulty filtering).
  *  2. Apply optional basic constraints (budget).
- *  3. Apply soft-tier weight modifier (adjusts weights; no filtering).
- *  4. Send ALL candidates to TopsisService with final weights.
+ *  3. Map user-supplied priority weights to TOPSIS criterion keys.
+ *  4. Send ALL candidates to TopsisService with user weights (tier does NOT modify weights).
  *  5. Sort by TOPSIS closeness coefficient (descending).
  *  6. Generate explanation + key_factor from contribution data (TopsisExplainerService).
  *  7. Call DSSService per route for risk annotation (risk_level, warning).
+ *     Tier is ONLY used here — for informational risk assessment, not ranking.
  *  8. Return enriched, clean API response.
  */
 class RecommendationService
@@ -79,10 +80,9 @@ class RecommendationService
         // Map client-supplied weight keys → TOPSIS criterion keys
         $topsisWeights = $this->mapUserWeights($userWeights);
 
-        // ── Step 3b: Soft-tier weight modifier ─────────────────────────────
-        // Adjusts the DIFFICULTY weight based on user tier.
-        // Does NOT add or remove any alternative from the pool.
-        $topsisWeights = $this->softTierWeightModifier($topsisWeights, $user);
+        // NOTE: Tier is intentionally NOT used here.
+        // TOPSIS ranking reflects user preferences only.
+        // Tier info is used exclusively for risk_level assessment (DSSService).
 
         // ── Step 4: TOPSIS ranking ─────────────────────────────────────────
         $ranked = $this->topsisService->rank($alternatives, $topsisWeights);
