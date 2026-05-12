@@ -3,7 +3,7 @@
 namespace App\Services;
 
 /**
- * TopsisService – clean TOPSIS implementation.
+ * TopsisService – clean TOPSIS implementation with Min-Max Normalization.
  *
  * COST criteria  (lower is better):
  *   distance, elevation, duration, cost, difficulty, crowd_level
@@ -11,8 +11,20 @@ namespace App\Services;
  * BENEFIT criteria (higher is better):
  *   panorama_score, fasilitas_score, popularity_score, safety_score
  *
- * Pre-processing pipeline (applied inside rank() before the decision matrix):
- *   scaleCriteria() – handles scale imbalance and outliers per criterion.
+ * Normalization method: MIN-MAX NORMALIZATION
+ * ─────────────────────────────────────────────
+ * Mengapa Min-Max dan BUKAN Vector Normalization?
+ *
+ * Vector normalization (r_ij = x_ij / √(Σx²)) memiliki kelemahan fundamental:
+ * kriteria dengan range mentah yang besar (misal cost: 15.000–1.000.000)
+ * tetap mendominasi jarak Euclidean meskipun bobotnya kecil, karena
+ * magnitude kolom setelah normalisasi TIDAK seragam.
+ *
+ * Min-Max normalization memetakan SEMUA kriteria ke [0, 1]:
+ *   r_ij = (x_ij − min_j) / (max_j − min_j)
+ *
+ * Ini menjamin setiap kriteria memiliki kontribusi proporsional
+ * terhadap bobot yang diberikan user, sesuai prinsip TOPSIS standar.
  *
  * Weights are supplied by the caller (already normalised to sum = 1.0).
  * If no weights are supplied, equal weights are used.
@@ -40,7 +52,7 @@ class TopsisService
     ];
 
     /**
-     * Rank alternatives using TOPSIS.
+     * Rank alternatives using TOPSIS with Min-Max Normalization.
      *
      * Each alternative must contain:
      *   'route_id'      => int
@@ -82,61 +94,49 @@ class TopsisService
         $normWeights   = $this->normaliseWeights($weights, $criterionKeys);
 
         // ── Step 1: Build raw decision matrix ──────────────────────────────
-        //
-        // FIX – Scale imbalance: apply per-criterion pre-scaling BEFORE the
-        // matrix is built so that criteria with wildly different value ranges
-        // (e.g. popularity_score 10-10000 vs panorama_score 1-5) do not
-        // dominate the vector-normalisation step.
         $matrix = [];
         foreach ($alternatives as $alt) {
             $row = [];
             foreach ($criterionKeys as $key) {
-                $raw         = (float) ($alt['criteria'][$key] ?? 0.0);
-                $row[$key]   = $this->scaleCriterion($key, $raw);
+                $row[$key] = (float) ($alt['criteria'][$key] ?? 0.0);
             }
             $matrix[] = $row;
         }
 
-        // ── Step 2: Vector normalisation  r_ij = x_ij / sqrt(sum x_ij²) ──
+        // ── Step 2: Min-Max Normalization ──────────────────────────────────
         //
-        // FIX – Zero-variance bug: when every alternative shares the same
-        // value for a criterion, sumSq > 0 but all normalised values would be
-        // identical non-zero numbers.  They contribute a constant offset to
-        // EVERY distance calculation – a phantom bias that cannot change any
-        // relative ranking but still adds noise and misleads weight tuning.
-        // The correct treatment: mark the column degenerate and set all
-        // normalised values to 0.0, removing its influence entirely.
-        $divisors    = [];   // sqrt(sum x_ij²) per criterion
-        $degenerate  = [];   // true when all alternatives are identical
+        // r_ij = (x_ij − min_j) / (max_j − min_j)
+        //
+        // Semua nilai dinormalisasi ke range [0, 1].
+        // Jika semua alternatif memiliki nilai sama (degenerate),
+        // kolom tersebut di-set 0.0 karena tidak memberikan diskriminasi.
+        $colMin     = [];
+        $colMax     = [];
+        $degenerate = [];
 
         foreach ($criterionKeys as $key) {
-            $col    = array_column($matrix, $key);
-            $sumSq  = array_sum(array_map(fn (float $v) => $v ** 2, $col));
-
-            // Zero-variance check: variance == 0 ⟺ all values are equal.
-            // We detect it by checking min == max (cheaper than computing
-            // variance and avoids floating-point equality pitfalls).
+            $col = array_column($matrix, $key);
             $min = min($col);
             $max = max($col);
 
-            if ($min === $max) {
-                // All alternatives identical on this criterion → degenerate.
-                $degenerate[$key] = true;
-                $divisors[$key]   = 1.0;   // avoid division by zero below
-            } else {
-                $degenerate[$key] = false;
-                $divisors[$key]   = $sumSq > 0.0 ? sqrt($sumSq) : 1.0;
-            }
+            $colMin[$key] = $min;
+            $colMax[$key] = $max;
+
+            // Zero-variance check: semua nilai identik → degenerate
+            $degenerate[$key] = (abs($max - $min) < 1e-9);
         }
 
         $normMatrix = [];
         foreach ($matrix as $row) {
             $normRow = [];
             foreach ($criterionKeys as $key) {
-                // Degenerate criterion → contribute 0 to all distances.
-                $normRow[$key] = $degenerate[$key]
-                    ? 0.0
-                    : ($row[$key] / $divisors[$key]);
+                if ($degenerate[$key]) {
+                    // Degenerate: semua alternatif identik → kontribusi 0
+                    $normRow[$key] = 0.0;
+                } else {
+                    $range = $colMax[$key] - $colMin[$key];
+                    $normRow[$key] = ($row[$key] - $colMin[$key]) / $range;
+                }
             }
             $normMatrix[] = $normRow;
         }
@@ -154,11 +154,18 @@ class TopsisService
         }
 
         // ── Step 4 & 5: Positive (A+) and Negative (A−) ideal solutions ───
+        //
+        // Untuk Min-Max normalization:
+        //   BENEFIT: A+ = max(v_ij) = w_j * 1.0 = w_j,  A- = min(v_ij) = w_j * 0.0 = 0
+        //   COST:    A+ = min(v_ij) = w_j * 0.0 = 0,     A- = max(v_ij) = w_j * 1.0 = w_j
+        //
+        // Namun kita tetap menghitung dari data aktual agar degenerate
+        // dan edge case tertangani dengan benar.
         $idealPos = [];
         $idealNeg = [];
 
         foreach ($criterionKeys as $key) {
-            $col      = array_column($weighted, $key);
+            $col       = array_column($weighted, $key);
             $isBenefit = self::CRITERIA_TYPES[$key] === 'benefit';
 
             $idealPos[$key] = $isBenefit ? max($col) : min($col);
@@ -195,28 +202,15 @@ class TopsisService
             //   gapToNeg = (v_ij - A-_j)²  →  how far from ideal negative
             //
             // contribution = gapToNeg - gapToPos
-            //   > 0  → closer to A- than to A+  (pushes CC up  = good)
-            //   < 0  → closer to A+ than to A-  (already near ideal)
-            //
-            // The magnitude tells the explainer which criterion matters most
-            // for this specific alternative relative to the whole field.
+            //   > 0  → closer to A+ than to A-  (strength)
+            //   < 0  → closer to A- than to A+  (weakness)
             $contributions = [];
             $wRow          = $weighted[$idx];
             foreach ($criterionKeys as $key) {
                 $gapToPos = ($wRow[$key] - $idealPos[$key]) ** 2;
                 $gapToNeg = ($wRow[$key] - $idealNeg[$key]) ** 2;
                 // Signed: positive means criterion is a STRENGTH (far from neg ideal).
-                // We flip cost criteria so the sign convention is always
-                // "positive = good for this route".
-                $isBenefit = self::CRITERIA_TYPES[$key] === 'benefit';
-                if ($isBenefit) {
-                    // High value is good: being far from A- (low) is a strength.
-                    $contributions[$key] = round($gapToNeg - $gapToPos, 6);
-                } else {
-                    // Low value is good: being far from A- (high) means
-                    // the route has a LOW cost/difficulty → strength.
-                    $contributions[$key] = round($gapToNeg - $gapToPos, 6);
-                }
+                $contributions[$key] = round($gapToNeg - $gapToPos, 6);
             }
 
             $scored[] = [
@@ -273,64 +267,5 @@ class TopsisService
         }
 
         return $normalised;
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Pre-scaling helpers
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Apply per-criterion scaling to a single raw value.
-     *
-     * Why per-criterion instead of a global transform?
-     * Each criterion has a different semantic range and distribution.  A global
-     * transform would be imprecise and harder to reason about.
-     *
-     * Strategies used:
-     *
-     *  popularity_score  – log1p transform
-     *    Range can be 10–10 000 (visitor counts, ratings×count, etc.).
-     *    Without scaling, vector-normalisation heavily favours high-traffic
-     *    routes simply because their raw numbers dwarf all others.
-     *    log(x + 1) compresses the range to ~2.4–9.2 while preserving order.
-     *
-     *  cost (biaya)  – log1p transform
-     *    Prices in Rupiah span 0–500 000+.  A route costing 250 000 IDR would
-     *    otherwise dominate the cost column vs. 5 000 IDR routes even after
-     *    normalisation, making cost effectively the master criterion.
-     *
-     *  elevation  – IQR-style ceiling clamp at 3 500 m
-     *    Indonesian hikes rarely exceed Rinjani (3 726 m).  An erroneous GPS
-     *    value of, say, 8 000 m would distort the entire column.  Clamping to
-     *    a realistic ceiling neutralises data-entry outliers without losing
-     *    useful discrimination between 500 m and 3 500 m routes.
-     *
-     *  All other criteria – pass through unchanged.
-     *    distance (km), duration (hours), difficulty (1-4), crowd_level,
-     *    panorama_score, fasilitas_score, safety_score are already on
-     *    comparable, bounded scales; no transformation needed.
-     *
-     * @param  string $key  Criterion name (must be a key of CRITERIA_TYPES).
-     * @param  float  $raw  Raw value read from the database.
-     * @return float        Scaled value ready for the decision matrix.
-     */
-    private function scaleCriterion(string $key, float $raw): float
-    {
-        return match ($key) {
-            // ── Log1p: compresses 10–10 000 → ~2.4–9.2 ───────────────────
-            'popularity_score' => log($raw + 1.0),
-
-            // ── Log1p: compresses 0–500 000 → 0–13.1 ─────────────────────
-            // Preserves the zero-cost case (log(0+1) = 0).
-            'cost'             => log($raw + 1.0),
-
-            // ── Clamp at 3 500 m to neutralise GPS outliers ───────────────
-            // Indonesian peaks top out at ~3 726 m (Rinjani).
-            // Any value above that is almost certainly a data error.
-            'elevation'        => min($raw, 3500.0),
-
-            // ── All other criteria pass through unchanged ─────────────────
-            default            => $raw,
-        };
     }
 }

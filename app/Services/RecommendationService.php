@@ -211,7 +211,7 @@ class RecommendationService
      *   distance (km)    – normalised against 20 km  (hard upper bound for
      *                       a single Indonesian day-hike).
      *   elevation (m)    – normalised against 3 500 m (realistic ceiling;
-     *                       the same clamp used in TopsisService::scaleCriterion).
+     *                       realistic ceiling for Indonesian peaks).
      *   duration (hours) – normalised against 14 h   (a very long day-hike).
      *
      * Weights reflect rough domain consensus:

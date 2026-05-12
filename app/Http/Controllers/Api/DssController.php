@@ -10,9 +10,32 @@ class DssController extends Controller
 {
     public function getPreferences(Request $request)
     {
-        $preferences = UserDssPreference::where('user_id', $request->user()->id)
+        $savedPrefs = UserDssPreference::where('user_id', $request->user()->id)
             ->pluck('weight_value', 'weight_key')
             ->toArray();
+
+        // Semua weight keys yang digunakan oleh DSS preference screen.
+        // Jika user belum pernah menyimpan (pertama kali login / fresh user),
+        // kembalikan default 3.0 agar frontend memiliki data lengkap.
+        $defaultKeys = [
+            'priority_cost',
+            'priority_distance',
+            'priority_duration',
+            'priority_difficulty',
+            'priority_elevation',
+            'priority_panorama',
+            'priority_fasilitas',
+            'priority_crowd_level',
+            'priority_popularity',
+            'priority_safety',
+        ];
+
+        $preferences = [];
+        foreach ($defaultKeys as $key) {
+            $preferences[$key] = isset($savedPrefs[$key])
+                ? (float) $savedPrefs[$key]
+                : 3.0;
+        }
 
         return response()->json([
             'success' => true,
