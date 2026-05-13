@@ -265,6 +265,79 @@
 
                 <hr class="my-4">
 
+                <h6 class="text-muted mb-3"><i class="fas fa-chart-bar me-2"></i>Kriteria DSS – Sistem Rekomendasi TOPSIS</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Skor Panorama <span class="text-danger">*</span></label>
+                        <select name="panorama_score" class="form-select @error('panorama_score') is-invalid @enderror">
+                            @foreach(config('dss_labels.panorama_score') as $val => $label)
+                                <option value="{{ $val }}" {{ old('panorama_score', 3) == $val ? 'selected' : '' }}>
+                                    {{ $val }} – {{ $label }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('panorama_score')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Skor Fasilitas <span class="text-danger">*</span></label>
+                        <select name="fasilitas_score" class="form-select @error('fasilitas_score') is-invalid @enderror">
+                            @foreach(config('dss_labels.fasilitas_score') as $val => $label)
+                                <option value="{{ $val }}" {{ old('fasilitas_score', 3) == $val ? 'selected' : '' }}>
+                                    {{ $val }} – {{ $label }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('fasilitas_score')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Skor Keamanan <span class="text-danger">*</span></label>
+                        <select name="safety_score" class="form-select @error('safety_score') is-invalid @enderror">
+                            @foreach(config('dss_labels.safety_score') as $val => $label)
+                                <option value="{{ $val }}" {{ old('safety_score', 3) == $val ? 'selected' : '' }}>
+                                    {{ $val }} – {{ $label }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('safety_score')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Level Keramaian <span class="text-danger">*</span></label>
+                        <select name="crowd_level" class="form-select @error('crowd_level') is-invalid @enderror">
+                            @foreach(config('dss_labels.crowd_level') as $val => $label)
+                                <option value="{{ $val }}" {{ old('crowd_level', 3) == $val ? 'selected' : '' }}>
+                                    {{ $val }} – {{ $label }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('crowd_level')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Skor Popularitas (Opsional)</label>
+                        <input type="number" name="popularity_score"
+                            class="form-control @error('popularity_score') is-invalid @enderror"
+                            min="0" step="1"
+                            value="{{ old('popularity_score', '') }}"
+                            placeholder="Contoh: 1200 (jumlah pengunjung / penilaian numerik)">
+                        @error('popularity_score')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
                 <h6 class="text-muted mb-3"><i class="fas fa-user-shield me-2"></i>Data Penjaga Jalur</h6>
                 <div class="alert alert-info mb-3">
                     <i class="fas fa-info-circle me-2"></i>

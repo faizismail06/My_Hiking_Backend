@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DssPendingSubmission;
+
 use App\Models\TrailWeb;
 use App\Models\OrderWeb;
 use App\Models\TransactionWeb;
@@ -91,7 +91,7 @@ class TrailGuardController extends Controller
     public function trailManagement()
     {
         $user = Auth::user();
-        $trail = TrailWeb::with(['mountain', 'province', 'regency', 'district', 'village', 'posts', 'activeDssPendingSubmission'])
+        $trail = TrailWeb::with(['mountain', 'province', 'regency', 'district', 'village', 'posts'])
             ->where('user_id', $user->id)
             ->first();
 
@@ -127,38 +127,6 @@ class TrailGuardController extends Controller
             'route_points_json'  => 'nullable|string',
             'trail_posts_json'   => 'nullable|string',
 
-            // ── DSS Criteria ─────────────────────────────────────────────
-            // Score fields: integer 1–5, required when submitted
-            'panorama_score'     => 'required|integer|min:1|max:5',
-            'fasilitas_score'    => 'required|integer|min:1|max:5',
-            'safety_score'       => 'required|integer|min:1|max:5',
-            'crowd_level'        => 'required|integer|min:1|max:5',
-            // popularity_score is optional (guard may not know it yet)
-            'popularity_score'   => 'nullable|numeric|min:0',
-        ], [
-            // Custom user-friendly messages
-            'panorama_score.required'  => 'Skor panorama wajib diisi.',
-            'panorama_score.integer'   => 'Skor panorama harus berupa bilangan bulat.',
-            'panorama_score.min'       => 'Skor panorama minimal 1.',
-            'panorama_score.max'       => 'Skor panorama maksimal 5.',
-
-            'fasilitas_score.required' => 'Skor fasilitas wajib diisi.',
-            'fasilitas_score.integer'  => 'Skor fasilitas harus berupa bilangan bulat.',
-            'fasilitas_score.min'      => 'Skor fasilitas minimal 1.',
-            'fasilitas_score.max'      => 'Skor fasilitas maksimal 5.',
-
-            'safety_score.required'    => 'Skor keamanan wajib diisi.',
-            'safety_score.integer'     => 'Skor keamanan harus berupa bilangan bulat.',
-            'safety_score.min'         => 'Skor keamanan minimal 1.',
-            'safety_score.max'         => 'Skor keamanan maksimal 5.',
-
-            'crowd_level.required'     => 'Level keramaian wajib diisi.',
-            'crowd_level.integer'      => 'Level keramaian harus berupa bilangan bulat.',
-            'crowd_level.min'          => 'Level keramaian minimal 1.',
-            'crowd_level.max'          => 'Level keramaian maksimal 5.',
-
-            'popularity_score.numeric' => 'Skor popularitas harus berupa angka.',
-            'popularity_score.min'     => 'Skor popularitas tidak boleh negatif.',
         ]);
 
         // ── Build data array (non-DSS fields) ───────────────────────────
@@ -209,29 +177,7 @@ class TrailGuardController extends Controller
                 $trail->fill($data);
                 $trail->save();
 
-                // Keep one active pending submission per route.
-                DssPendingSubmission::updateOrCreate(
-                    [
-                        'route_id' => $trail->id,
-                        'status' => 'pending',
-                    ],
-                    [
-                        'submitted_by' => (int) $user->id,
-                        'panorama_score_pending' => (int) $request->panorama_score,
-                        'fasilitas_score_pending' => (int) $request->fasilitas_score,
-                        'safety_score_pending' => (int) $request->safety_score,
-                        'crowd_level_pending' => (int) $request->crowd_level,
-                        'popularity_score_pending' => $request->filled('popularity_score')
-                            ? (int) $request->popularity_score
-                            : (int) ($trail->popularity_score ?? 0),
-                        'reviewed_by' => null,
-                        'reviewed_at' => null,
-                        'rejection_reason' => null,
-                    ]
-                );
 
-                $trail->dss_status = 'pending';
-                $trail->save();
 
                 // ── Trail posts ───────────────────────────────────────────
                 if ($request->has('trail_posts_json')) {
@@ -242,7 +188,7 @@ class TrailGuardController extends Controller
             return redirect()->back()->withErrors($e->errors())->withInput();
         }
 
-        return redirect()->route('guards.trail')->with('success', 'Informasi jalur diperbarui. Data DSS dikirim ke admin untuk verifikasi.');
+        return redirect()->route('guards.trail')->with('success', 'Informasi jalur diperbarui.');
     }
 
 

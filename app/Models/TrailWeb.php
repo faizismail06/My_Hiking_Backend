@@ -107,15 +107,7 @@ class TrailWeb extends Model
         return $this->hasMany(TrailPost::class, 'trail_id')->orderBy('sequence');
     }
 
-    public function dssPendingSubmissions()
-    {
-        return $this->hasMany(DssPendingSubmission::class, 'route_id');
-    }
 
-    public function activeDssPendingSubmission()
-    {
-        return $this->hasOne(DssPendingSubmission::class, 'route_id')->where('status', 'pending');
-    }
 
     // Alias for backward compatibility
     public function pesanan()

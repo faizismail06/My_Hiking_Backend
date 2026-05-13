@@ -57,7 +57,7 @@ class RecommendationController extends Controller
             return response()->json([
                 'success' => false,
                 'code'    => 'HIKER_ONLY',
-                'message' => 'Rekomendasi DSS hanya tersedia untuk user pendaki (level 1).',
+                'message' => 'DSS hanya tersedia untuk user pendaki (level 1).',
             ], 403);
         }
 

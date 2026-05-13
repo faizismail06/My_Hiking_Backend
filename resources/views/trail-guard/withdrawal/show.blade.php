@@ -1,6 +1,6 @@
-@extends('layouts.admin-modern')
+@extends('layouts.guards')
 
-@section('main-content')
+@section('content')
     <div class="container-xxl flex-grow-1 container-p-y">
         <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
             <div>
