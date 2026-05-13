@@ -98,6 +98,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/onboarding/experience/status', [ExperienceOnboardingController::class, 'status']);
     Route::post('/onboarding/experience', [ExperienceOnboardingController::class, 'store']);
 
+    // DSS Preference routes
+    Route::get('/dss-preferences', [\App\Http\Controllers\Api\DssController::class, 'getPreferences']);
+    Route::post('/dss-preferences', [\App\Http\Controllers\Api\DssController::class, 'savePreferences']);
+
     // Refund routes (user)
     Route::get('/refund-preview/{orderId}', [RefundRequestController::class, 'preview']);
     Route::post('/refund-requests', [RefundRequestController::class, 'store']);

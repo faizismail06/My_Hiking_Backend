@@ -82,8 +82,10 @@ class AuthController extends Controller
 
     public function loginWithGoogle(Request $request)
     {
+        // Support both id_token (Android) dan access_token (Web)
         $validator = Validator::make($request->all(), [
-            'id_token' => 'required|string',
+            'id_token' => 'nullable|string',
+            'access_token' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -94,14 +96,34 @@ class AuthController extends Controller
             ], 422);
         }
 
+        // Ensure at least one token is provided
+        if (empty($request->id_token) && empty($request->access_token)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'id_token or access_token is required',
+            ], 422);
+        }
+
         try {
-            $googleResponse = Http::timeout(15)->get('https://oauth2.googleapis.com/tokeninfo', [
-                'id_token' => $request->id_token,
-            ]);
+            $googleData = null;
+            $isIdToken = !empty($request->id_token);
+
+            if ($isIdToken) {
+                // Android: verify id_token via tokeninfo endpoint
+                $googleResponse = Http::timeout(15)->get('https://oauth2.googleapis.com/tokeninfo', [
+                    'id_token' => $request->id_token,
+                ]);
+            } else {
+                // Web: verify access_token via userinfo endpoint
+                // Use withHeaders for compatibility with older Laravel versions
+                $googleResponse = Http::timeout(15)->withHeaders([
+                    'Authorization' => 'Bearer ' . $request->access_token,
+                ])->get('https://www.googleapis.com/oauth2/v1/userinfo?alt=json');
+            }
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unable to validate Google token',
+                'message' => 'Unable to validate Google token: ' . $e->getMessage(),
             ], 503);
         }
 
@@ -114,7 +136,8 @@ class AuthController extends Controller
 
         $googleData = $googleResponse->json();
         $email = strtolower($googleData['email'] ?? '');
-        $isEmailVerified = ($googleData['email_verified'] ?? 'false') === 'true';
+        $isEmailVerified = ($googleData['verified_email'] ?? $googleData['email_verified'] ?? 'false') === true 
+                           || ($googleData['verified_email'] ?? $googleData['email_verified'] ?? 'false') === 'true';
 
         if (empty($email) || !$isEmailVerified) {
             return response()->json([
@@ -123,12 +146,16 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $expectedAudience = env('GOOGLE_CLIENT_ID');
-        if (!empty($expectedAudience) && ($googleData['aud'] ?? null) !== $expectedAudience) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Google token audience mismatch',
-            ], 401);
+        // Only check audience for id_token (Android)
+        // access_token doesn't have aud field
+        if ($isIdToken) {
+            $expectedAudience = env('GOOGLE_CLIENT_ID');
+            if (!empty($expectedAudience) && ($googleData['aud'] ?? null) !== $expectedAudience) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Google token audience mismatch',
+                ], 401);
+            }
         }
 
         $user = User::where('email', $email)->first();
