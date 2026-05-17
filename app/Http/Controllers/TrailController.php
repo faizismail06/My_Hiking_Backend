@@ -65,6 +65,11 @@ class TrailController extends Controller
             'biaya' => 'required|numeric|min:0',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
+            'panorama_score' => 'required|integer|min:1|max:5',
+            'fasilitas_score' => 'required|integer|min:1|max:5',
+            'safety_score' => 'required|integer|min:1|max:5',
+            'crowd_level' => 'required|integer|min:1|max:5',
+            'popularity_score' => 'nullable|numeric|min:0',
             // Validation for trail guard data
             'penjaga_name' => 'required|string|max:255',
             'penjaga_email' => 'required|email|unique:users,email',
@@ -136,6 +141,12 @@ class TrailController extends Controller
             'biaya' => $request->biaya,
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
+            'panorama_score' => $request->panorama_score,
+            'fasilitas_score' => $request->fasilitas_score,
+            'safety_score' => $request->safety_score,
+            'crowd_level' => $request->crowd_level,
+            'popularity_score' => $request->filled('popularity_score') ? $request->popularity_score : 0,
+            'dss_status' => 'approved',
             'route_points' => $routePoints,
             'route_source' => $routeSource,
         ]);
@@ -176,6 +187,11 @@ class TrailController extends Controller
             'biaya' => 'required|numeric|min:0',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
+            'panorama_score' => 'required|integer|min:1|max:5',
+            'fasilitas_score' => 'required|integer|min:1|max:5',
+            'safety_score' => 'required|integer|min:1|max:5',
+            'crowd_level' => 'required|integer|min:1|max:5',
+            'popularity_score' => 'nullable|numeric|min:0',
             // Validation for trail guard data (optional when editing)
             'penjaga_name' => 'nullable|string|max:255|required_with:penjaga_email,penjaga_phone',
             'penjaga_email' => [
@@ -231,6 +247,12 @@ class TrailController extends Controller
             'biaya' => $request->biaya,
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
+            'panorama_score' => $request->panorama_score,
+            'fasilitas_score' => $request->fasilitas_score,
+            'safety_score' => $request->safety_score,
+            'crowd_level' => $request->crowd_level,
+            'popularity_score' => $request->filled('popularity_score') ? $request->popularity_score : 0,
+            'dss_status' => 'approved',
         ];
 
         if ($request->hasFile('gpx_file')) {

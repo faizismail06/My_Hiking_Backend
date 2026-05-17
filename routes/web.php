@@ -14,7 +14,7 @@ use App\Http\Controllers\RuleController;
 use App\Http\Controllers\TrailGuardController;
 use App\Http\Controllers\RefundWebController;
 use App\Http\Controllers\AdminEarningsController;
-use App\Http\Controllers\DssVerificationController;
+
 use App\Http\Controllers\TrailGuardWithdrawalController;
 
 
@@ -57,15 +57,8 @@ Route::middleware(['auth', 'level3'])->group(function () {
         Route::put('/admin-fee-settings', [AdminEarningsController::class, 'updateAdminFeeSettings'])->name('admin-fee-settings-update');
     });
 
-    Route::prefix('admin/dss-verifications')->name('admin.dss-verifications.')->group(function () {
-        Route::get('/', [DssVerificationController::class, 'index'])->name('index');
-        Route::post('/{id}/approve', [DssVerificationController::class, 'approve'])->name('approve');
-        Route::post('/{id}/reject', [DssVerificationController::class, 'reject'])->name('reject');
-    });
-});
-
-Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
-Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 Route::get('/about', function () {
     return view('about');
 })->name('about');
@@ -96,12 +89,10 @@ Route::get('mountains/{id}/edit', [MountainController::class, 'edit'])->name('mo
 Route::post('mountains/{id}', [MountainController::class, 'update'])->name('mountains.update');
 
 // Transaction routes
-Route::middleware(['auth'])->group(function () {
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
     Route::get('/transactions/{id}', [TransactionController::class, 'show'])->name('transactions.show');
     Route::post('/transactions/{id}/verify', [TransactionController::class, 'verify'])->name('transactions.verify');
     Route::post('/transactions/{id}/unverify', [TransactionController::class, 'unverify'])->name('transactions.unverify');
-});
 
 Route::get('/users', [UserController::class, 'index'])->name('users.index');
 Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
@@ -112,19 +103,12 @@ Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update
 Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
 
 // History routes
-Route::middleware('auth')->group(function () {
     Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
     Route::get('/history/{id}', [HistoryController::class, 'show'])->name('history.show');
+    Route::post('/history/scan', [HistoryController::class, 'scan'])->name('history.scan');
     Route::put('/history/{id}/update-status', [HistoryController::class, 'updateStatus'])->name('history.updateStatus');
-    Route::patch('/transactions/{id}/verify', [TransactionController::class, 'verify'])->name('transactions.verify');
-    Route::post('/transactions/{id}/unverify', [TransactionController::class, 'unverify'])->name('transactions.unverify');
-});
 
-
-Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
-Route::get('/history/{id}', [HistoryController::class, 'show'])->name('history.show');
-Route::post('/history/scan', [HistoryController::class, 'scan'])->name('history.scan');
-Route::post('/history/{id}/update-status', [HistoryController::class, 'updateStatus'])->name('history.updateStatus');
+}); // <-- End of level3 middleware group
 
 // Trail Guard Routes (Level 2)
 Route::middleware(['penjaga'])->prefix('guards')->name('guards.')->group(function () {
@@ -156,7 +140,7 @@ Route::middleware(['penjaga'])->prefix('guards')->name('guards.')->group(functio
 });
 
 // Trail Guard Withdrawal Routes
-Route::middleware(['auth'])->prefix('trail-guard/withdrawal')->name('trail-guard.withdrawal.')->group(function () {
+Route::middleware(['penjaga'])->prefix('trail-guard/withdrawal')->name('trail-guard.withdrawal.')->group(function () {
     Route::get('/', [TrailGuardWithdrawalController::class, 'index'])->name('index');
     Route::get('/create', [TrailGuardWithdrawalController::class, 'create'])->name('create');
     Route::post('/', [TrailGuardWithdrawalController::class, 'store'])->name('store');
