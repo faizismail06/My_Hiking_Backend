@@ -130,6 +130,7 @@ Route::middleware(['penjaga'])->prefix('guards')->name('guards.')->group(functio
 
     // SAR Dashboard (Emergency Panic Requests)
     Route::get('/sar-dashboard', [\App\Http\Controllers\SarDashboardController::class, 'index'])->name('sar.index');
+    Route::get('/sar-dashboard/check-new-panics', [\App\Http\Controllers\SarDashboardController::class, 'checkNewPanics'])->name('sar.check-new-panics');
     Route::get('/sar-dashboard/{id}', [\App\Http\Controllers\SarDashboardController::class, 'show'])->name('sar.show');
     Route::post('/sar-dashboard/{id}/respond', [\App\Http\Controllers\SarDashboardController::class, 'respond'])->name('sar.respond');
     Route::post('/sar-dashboard/{id}/resolve', [\App\Http\Controllers\SarDashboardController::class, 'resolve'])->name('sar.resolve');
