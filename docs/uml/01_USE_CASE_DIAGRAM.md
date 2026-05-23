@@ -2,168 +2,118 @@
 
 ## Aktor Sistem
 
-| Aktor | Peran |
-| --- | --- |
-| Pendaki | Menggunakan mobile app untuk mencari gunung/jalur, rekomendasi DSS, booking, pembayaran, panic button, refund, dan tracking. |
-| Admin | Mengelola data master, pengguna, transaksi, refund, withdrawal, dan laporan melalui web admin. |
-| Penjaga Basecamp / Penjaga Jalur | Mengelola jalur, scan QR, check-in/check-out, memantau SAR/panic, laporan pendapatan, dan withdrawal. |
-| Flask Chatbot Service | Boundary eksternal internal yang menerima chat, membangun konteks RAG, dan memanggil Gemini/function tools. |
-| Midtrans Payment Gateway | Memproses pembayaran, direct charge/Snap, status, callback notifikasi, QRIS. |
-| Gemini API | Model LLM untuk chatbot RAG dan function calling. |
-| Google OAuth | Autentikasi login Google melalui endpoint Laravel. |
-| OpenWeather API | Sumber cuaca untuk risk assessment DSS dan endpoint weather. |
-| MySQL Database | Penyimpanan data aplikasi dan retrieval untuk RAG. |
+- **Pendaki**: pengguna mobile app yang melakukan pencarian jalur, booking, pembayaran, chatbot, panic button, tracking, dan refund.
+- **Penjaga Basecamp / Penjaga Jalur**: pengguna web penjaga yang mengelola jalur, melakukan scan QR, check-in/check-out, dan memantau panic request.
+- **Admin**: pengguna web admin yang mengelola data master, transaksi, refund, withdrawal, dan laporan.
+- **Layanan Eksternal**: Midtrans, Gemini API, Google OAuth, dan OpenWeather API.
 
-## Use Case Pendaki
+## Use Case Utama
 
-- Registrasi dan login.
-- Login dengan Google OAuth.
-- Melengkapi profil dan onboarding pengalaman.
-- Melihat gunung, jalur, detail jalur, preview jalur, dan aturan.
-- Menyimpan preferensi DSS.
-- Melihat rekomendasi jalur TOPSIS.
-- Membuat booking tiket pendakian.
-- Menambah anggota pesanan.
-- Membayar melalui Midtrans.
-- Mengecek status pembayaran.
-- Menggunakan chatbot informasi.
-- Membuat booking lewat chatbot.
-- Mengirim panic request.
-- Membatalkan panic request.
-- Sinkronisasi track offline/GPX.
-- Mengajukan refund.
+- Pendaki: registrasi/login, lihat gunung dan jalur, rekomendasi DSS, booking tiket, pembayaran, chatbot, panic button, offline tracking, dan refund.
+- Penjaga: login, kelola jalur, scan QR, check-in/check-out, pantau SAR, laporan pendapatan, dan withdrawal.
+- Admin: login, kelola master data, kelola user, proses refund, kelola withdrawal, dan chatbot admin.
+- Layanan eksternal: autentikasi Google, pembayaran Midtrans, respons Gemini, dan data cuaca OpenWeather.
 
-## Use Case Admin
+## Diagram Use Case Sederhana
 
-- Login web admin.
-- Mengelola data gunung.
-- Mengelola data jalur.
-- Mengelola tata tertib.
-- Mengelola pengguna.
-- Memverifikasi transaksi manual.
-- Memproses refund.
-- Mengelola withdrawal request penjaga.
-- Mengatur biaya admin.
-- Menggunakan chatbot admin untuk ringkasan/ekspor/CRUD.
-
-## Use Case Penjaga Basecamp / Penjaga Jalur
-
-- Login web penjaga.
-- Melihat dashboard penjaga.
-- Mengelola informasi jalur, GPX, pos jalur, kuota harian, dan izin refund.
-- Scan QR/manual search pesanan.
-- Check-in dan check-out pendaki.
-- Melihat riwayat pengunjung.
-- Melihat laporan pendapatan.
-- Memantau panic/SAR dashboard.
-- Merespons dan menyelesaikan panic request.
-- Mengajukan withdrawal.
-- Menggunakan chatbot penjaga untuk SAR dan ekspor.
-
-## Use Case Layanan Eksternal
-
-- Midtrans membuat instruksi pembayaran/Snap/direct charge.
-- Midtrans mengirim notification callback.
-- Gemini API menerima prompt dengan konteks database dan mengembalikan respons/function call.
-- Google OAuth memvalidasi login Google.
-- OpenWeather API menyediakan data cuaca terkini/forecast untuk DSS dan weather endpoint.
-
-## Diagram Use Case
-
-Mermaid tidak memiliki notasi use case UML native yang ideal. Diagram berikut memakai `flowchart` dengan aktor dan use case sebagai node.
+Mermaid tidak menyediakan notasi use case UML murni. Diagram berikut memakai `flowchart` dengan node berbentuk oval/stadium agar mendekati bentuk use case diagram konvensional.
 
 ```mermaid
 flowchart LR
-    Pendaki([Pendaki])
-    Admin([Admin])
-    Penjaga([Penjaga Basecamp / Penjaga Jalur])
-    Chatbot([Flask Chatbot Service])
-    Midtrans([Midtrans Payment Gateway])
-    Gemini([Gemini API])
-    Google([Google OAuth])
-    Weather([OpenWeather API])
-    DB[(MySQL Database)]
+    Pendaki[Pendaki]
+    Penjaga[Penjaga Basecamp / Penjaga Jalur]
+    Admin[Admin]
+    Midtrans[Midtrans]
+    Gemini[Gemini API]
+    Google[Google OAuth]
+    Weather[OpenWeather API]
 
-    subgraph MobileUseCase["Use Case Pendaki"]
-        UCLogin[Login dan Registrasi]
-        UCGoogle[Login Google]
-        UCProfile[Melengkapi Profil dan Pengalaman]
-        UCBrowse[Lihat Gunung dan Jalur]
-        UCDss[Rekomendasi DSS TOPSIS]
-        UCBooking[Booking Tiket]
-        UCPayment[Pembayaran Midtrans]
-        UCChatInfo[Chatbot RAG Informasi]
-        UCChatBooking[Chatbot Booking]
-        UCPanic[Panic Button]
-        UCOffline[Offline Tracking dan Sync GPX]
-        UCRefund[Ajukan Refund]
+    subgraph Sistem["Sistem Pendakian Terintegrasi My Hiking"]
+        UCRegister([Registrasi])
+        UCLogin([Login])
+        UCGoogle([Login Google])
+        UCBrowse([Lihat Gunung dan Jalur])
+        UCDSS([Rekomendasi DSS])
+        UCBooking([Booking Tiket])
+        UCPayment([Pembayaran])
+        UCChatInfo([Chatbot RAG Informasi])
+        UCChatBooking([Chatbot Booking])
+        UCPanic([Panic Button])
+        UCTracking([Offline Tracking dan Sync GPX])
+        UCRefund([Refund])
+
+        UCKelolaMaster([Kelola Master Data])
+        UCKelolaUser([Kelola User])
+        UCProsesRefund([Proses Refund])
+        UCWithdrawalAdmin([Kelola Withdrawal])
+        UCChatAdmin([Chatbot CRUD Admin])
+
+        UCKelolaJalur([Kelola Jalur])
+        UCScanQR([Scan QR Tiket])
+        UCCheckInOut([Check-in dan Check-out])
+        UCSAR([Pantau SAR / Panic Request])
+        UCLaporan([Laporan Pendapatan])
+        UCWithdrawalGuard([Ajukan Withdrawal])
+
+        UCValidasiData([Validasi Data])
+        UCDSSRisk([Validasi Risiko DSS])
+        UCMidtransStatus([Cek Status Pembayaran])
+        UCGeminiContext([Retrieval Data dan Context Injection])
+        UCCuaca([Ambil Data Cuaca])
     end
 
-    subgraph AdminUseCase["Use Case Admin"]
-        UCAdminLogin[Login Web Admin]
-        UCMountain[CRUD Gunung]
-        UCTrail[CRUD Jalur]
-        UCRule[CRUD Tata Tertib]
-        UCUser[Kelola User]
-        UCRefundAdmin[Proses Refund]
-        UCWithdrawal[Kelola Withdrawal]
-        UCChatAdmin[Chatbot CRUD dan Ekspor]
-    end
-
-    subgraph GuardUseCase["Use Case Penjaga"]
-        UCGuardLogin[Login Web Penjaga]
-        UCGuardTrail[Kelola Jalur dan Pos]
-        UCQR[QR Scan Check-in/Check-out]
-        UCHistory[Riwayat Pengunjung]
-        UCRevenue[Laporan Pendapatan]
-        UCSar[SAR Dashboard]
-        UCWithdraw[Ajukan Withdrawal]
-        UCChatGuard[Chatbot SAR dan Ekspor]
-    end
-
+    Pendaki --> UCRegister
     Pendaki --> UCLogin
     Pendaki --> UCGoogle
-    Pendaki --> UCProfile
     Pendaki --> UCBrowse
-    Pendaki --> UCDss
+    Pendaki --> UCDSS
     Pendaki --> UCBooking
     Pendaki --> UCPayment
     Pendaki --> UCChatInfo
     Pendaki --> UCChatBooking
     Pendaki --> UCPanic
-    Pendaki --> UCOffline
+    Pendaki --> UCTracking
     Pendaki --> UCRefund
 
-    Admin --> UCAdminLogin
-    Admin --> UCMountain
-    Admin --> UCTrail
-    Admin --> UCRule
-    Admin --> UCUser
-    Admin --> UCRefundAdmin
-    Admin --> UCWithdrawal
+    Admin --> UCLogin
+    Admin --> UCKelolaMaster
+    Admin --> UCKelolaUser
+    Admin --> UCProsesRefund
+    Admin --> UCWithdrawalAdmin
     Admin --> UCChatAdmin
 
-    Penjaga --> UCGuardLogin
-    Penjaga --> UCGuardTrail
-    Penjaga --> UCQR
-    Penjaga --> UCHistory
-    Penjaga --> UCRevenue
-    Penjaga --> UCSar
-    Penjaga --> UCWithdraw
-    Penjaga --> UCChatGuard
+    Penjaga --> UCLogin
+    Penjaga --> UCKelolaJalur
+    Penjaga --> UCScanQR
+    Penjaga --> UCCheckInOut
+    Penjaga --> UCSAR
+    Penjaga --> UCLaporan
+    Penjaga --> UCWithdrawalGuard
 
-    UCGoogle --> Google
+    UCRegister -. "<<include>>" .-> UCValidasiData
+    UCLogin -. "<<include>>" .-> UCValidasiData
+    UCGoogle -. "<<include>>" .-> Google
+    UCBooking -. "<<include>>" .-> UCDSSRisk
+    UCBooking -. "<<include>>" .-> UCValidasiData
+    UCDSS -. "<<include>>" .-> UCCuaca
+    UCDSSRisk -. "<<include>>" .-> UCCuaca
+    UCPayment -. "<<include>>" .-> UCMidtransStatus
+    UCCheckInOut -. "<<extend>>" .-> UCScanQR
+    UCChatBooking -. "<<include>>" .-> UCBooking
+    UCChatInfo -. "<<include>>" .-> UCGeminiContext
+    UCChatAdmin -. "<<include>>" .-> UCGeminiContext
+
     UCPayment --> Midtrans
-    UCDss --> Weather
-    UCChatInfo --> Chatbot
-    UCChatBooking --> Chatbot
-    UCChatAdmin --> Chatbot
-    UCChatGuard --> Chatbot
-    Chatbot --> Gemini
-    Chatbot --> DB
-    UCBooking --> DB
-    UCQR --> DB
-    UCPanic --> DB
-    UCRefund --> DB
+    UCMidtransStatus --> Midtrans
+    UCChatInfo --> Gemini
+    UCChatBooking --> Gemini
+    UCChatAdmin --> Gemini
+    UCCuaca --> Weather
 ```
+
+## Catatan
+
+- Diagram dibuat ringkas agar mudah ditempatkan pada BAB III.
+- Detail skenario setiap fitur tetap dijelaskan pada `02_USE_CASE_SCENARIOS.md`.
+- CRUD chatbot admin untuk mutasi `/api/mountains`, `/api/routes`, dan alias `/api/trails` tetap **perlu verifikasi** sesuai catatan validasi karena endpoint API mutasi tidak ditemukan pada `routes/api.php`.
 
