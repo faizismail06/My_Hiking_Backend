@@ -34,7 +34,7 @@ class TrailController extends Controller
                         'district' => $trail->district ? $trail->district->name : null,
                         'regency' => $trail->regency ? $trail->regency->name : null,
                         'province' => $trail->province->name ?: null,
-                        'jarak' => $trail->jarak,
+                        'jarak' => (float) $trail->jarak,
                         'elevasi' => $trail->elevasi,
                         'durasi' => $trail->durasi,
                         'tingkat_kesulitan' => $trail->tingkat_kesulitan,

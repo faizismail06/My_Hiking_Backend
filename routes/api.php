@@ -16,6 +16,8 @@ use App\Http\Controllers\Api\WeatherController;
 use App\Http\Controllers\Api\AiGatewayController;
 use App\Http\Controllers\Api\RefundRequestController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\ChatbotMountainController;
+use App\Http\Controllers\Api\ChatbotTrailController;
 use App\Http\Controllers\RecommendationController;
 
 /*
@@ -51,6 +53,21 @@ Route::get('/mountains/{id_gunung}', [TrailController::class, 'index']);
 Route::get('/mountains/{id_gunung}/trails/{id_jalur}', [MountainTrailDetailController::class, 'index']);
 Route::get('/mountains/{id_gunung}/trails/{id_jalur}/preview', [MountainTrailDetailController::class, 'preview']);
 Route::get('/mountains/{id_gunung}/trails/{id_jalur}/booking', [MountainTrailDetailController::class, 'trailBooking']);
+
+// Chatbot admin CRUD endpoints (dipanggil My_Hiking_Python/tools.py)
+// Diproteksi header X-Chatbot-Secret. Set CHATBOT_SECRET di .env.
+Route::middleware('chatbot.secret')->group(function () {
+    // CRUD gunung: POST /api/mountains, PUT /api/mountains/{id}, DELETE /api/mountains/{id}
+    Route::post('/mountains', [ChatbotMountainController::class, 'store']);
+    Route::put('/mountains/{id}', [ChatbotMountainController::class, 'update']);
+    Route::delete('/mountains/{id}', [ChatbotMountainController::class, 'destroy']);
+
+    // CRUD jalur: POST /api/routes, PUT /api/routes/{id}, DELETE /api/routes/{id}
+    Route::post('/routes', [ChatbotTrailController::class, 'store']);
+    Route::put('/routes/{id}', [ChatbotTrailController::class, 'update']);
+    Route::delete('/routes/{id}', [ChatbotTrailController::class, 'destroy']);
+});
+
 Route::get('/weather/current', [WeatherController::class, 'current']);
 Route::get('/weather/forecast', [WeatherController::class, 'forecast']);
 Route::get('/recommendations', [RecommendationController::class, 'index'])->middleware('auth:sanctum');
@@ -162,3 +179,4 @@ Route::get('/images/{path}', function ($path) {
         'Access-Control-Allow-Origin' => '*',
     ]);
 })->where('path', '.*');
+

@@ -78,12 +78,23 @@ class TrailGuardController extends Controller
             ->limit(5)
             ->get();
 
+        // Overdue orders: status 'Sedang Mendaki' dan tanggal_turun sudah lewat
+        $overdueOrders = OrderWeb::where('id_jalur', $trail->id)
+            ->where('status', 'Sedang Mendaki')
+            ->whereDate('tanggal_turun', '<', Carbon::today())
+            ->with(['user'])
+            ->orderBy('tanggal_turun', 'asc')
+            ->get();
+        $overdueCount = $overdueOrders->count();
+
         return view('guards.dashboard', compact(
             'trail',
             'visitorsToday',
             'visitorsThisMonth',
             'revenueThisMonth',
-            'recentOrders'
+            'recentOrders',
+            'overdueOrders',
+            'overdueCount'
         ));
     }
 
@@ -224,7 +235,13 @@ class TrailGuardController extends Controller
 
         $orders = $query->orderBy('created_at', 'desc')->paginate(15);
 
-        return view('guards.history', compact('orders', 'trail'));
+        // Hitung total overdue (tanpa filter halaman) untuk banner peringatan
+        $overdueCount = OrderWeb::where('id_jalur', $trail->id)
+            ->where('status', 'Sedang Mendaki')
+            ->whereDate('tanggal_turun', '<', Carbon::today())
+            ->count();
+
+        return view('guards.history', compact('orders', 'trail', 'overdueCount'));
     }
 
     // Revenue report

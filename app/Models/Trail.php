@@ -45,6 +45,7 @@ class Trail extends Model
     protected $casts = [
         'gambar'            => 'array',
         'route_points'      => 'array',
+        'jarak'             => 'float',
         'daily_hiker_limit' => 'integer',
         'is_refund_allowed' => 'boolean',
         // DSS numeric scores
