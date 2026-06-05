@@ -45,6 +45,7 @@ class TrailWeb extends Model
 
     protected $casts = [
         'route_points'     => 'array',
+        'jarak'            => 'float',
         'daily_hiker_limit'=> 'integer',
         'is_refund_allowed'=> 'boolean',
         // DSS criteria stored as float so upstream services always get numeric values

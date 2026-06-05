@@ -37,7 +37,41 @@
         </div>
     </div>
 
-    <!-- Results Table -->
+    {{-- ⚠️ Banner Overdue --}}
+    @if($overdueCount > 0)
+    <div class="animate-fade-in" style="animation-delay: 0.05s; margin-bottom: 1.2rem;">
+        <div style="
+            background: linear-gradient(135deg, #fff1f2 0%, #fee2e2 100%);
+            border: 1.5px solid #fca5a5;
+            border-left: 5px solid #dc2626;
+            border-radius: 14px;
+            padding: 1rem 1.3rem;
+            box-shadow: 0 4px 18px rgba(220,38,38,0.08);
+        ">
+            <div class="d-flex align-items-center gap-3">
+                <div style="
+                    background: #dc2626;
+                    border-radius: 10px;
+                    width: 40px; height: 40px;
+                    display: flex; align-items: center; justify-content: center;
+                    flex-shrink: 0;
+                ">
+                    <i class="fas fa-exclamation-triangle" style="color:#fff; font-size:1rem;"></i>
+                </div>
+                <div>
+                    <h6 style="color:#991b1b; font-weight:700; margin-bottom:2px;">
+                        ⚠️ {{ $overdueCount }} Pendaki Belum Turun & Melebihi Batas Waktu
+                    </h6>
+                    <p style="color:#b91c1c; font-size:0.83rem; margin-bottom:0;">
+                        Tandai dengan warna merah di tabel di bawah. Segera hubungi atau lakukan check-out manual.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- Results Table --}}
     <div class="modern-card animate-fade-in" style="animation-delay: 0.1s">
         <div class="card-header">
             <h5><i class="fas fa-users"></i> Daftar Pengunjung</h5>
@@ -58,7 +92,14 @@
                     </thead>
                     <tbody>
                         @forelse($orders as $p)
-                            <tr>
+                            @php
+                                $isOverdue = $p->status == 'Sedang Mendaki'
+                                    && \Carbon\Carbon::parse($p->tanggal_turun)->startOfDay()->lt(\Carbon\Carbon::today());
+                                $overdueDays = $isOverdue
+                                    ? \Carbon\Carbon::today()->diffInDays(\Carbon\Carbon::parse($p->tanggal_turun))
+                                    : 0;
+                            @endphp
+                            <tr style="{{ $isOverdue ? 'background:#fff5f5;' : '' }}">
                                 <td class="text-center">
                                     <span class="badge bg-secondary rounded-pill">#{{ $p->id }}</span>
                                 </td>
@@ -94,6 +135,9 @@
                                         <span class="badge-modern badge-verified">{{ $p->status }}</span>
                                     @elseif($p->status == 'Sedang Mendaki')
                                         <span class="badge-modern badge-hiking">{{ $p->status }}</span>
+                                        @if($isOverdue)
+                                            <br><span style="display:inline-block;margin-top:4px;background:#dc2626;color:#fff;border-radius:20px;padding:2px 10px;font-size:0.72rem;font-weight:700;">⚠ Overdue +{{ $overdueDays }}h</span>
+                                        @endif
                                     @elseif($p->status == 'Selesai')
                                         <span class="badge-modern badge-done">{{ $p->status }}</span>
                                     @else

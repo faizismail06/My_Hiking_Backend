@@ -31,12 +31,6 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    'openweather' => [
-        'base_url' => env('OPENWEATHER_BASE_URL', 'https://api.openweathermap.org/data/2.5'),
-        'api_key' => env('OPENWEATHER_API_KEY'),
-        'units' => env('OPENWEATHER_UNITS', 'metric'),
-    ],
-
     'python_ai' => [
         'base_url' => env('PYTHON_AI_BASE_URL', 'http://127.0.0.1:8001'),
         'token' => env('PYTHON_AI_TOKEN'),

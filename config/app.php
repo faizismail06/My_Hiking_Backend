@@ -128,6 +128,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Chatbot Secret Key
+    |--------------------------------------------------------------------------
+    |
+    | Kunci rahasia yang digunakan untuk memvalidasi request dari service chatbot
+    | My_Hiking_Python. Nilai ini dibaca dari environment variable CHATBOT_SECRET.
+    | Tambahkan CHATBOT_SECRET=<nilai> yang sama ke file .env Laravel dan
+    | ke file .env My_Hiking_Python.
+    |
+    */
+
+    'chatbot_secret' => env('CHATBOT_SECRET', ''),
+
+    /*
+    |--------------------------------------------------------------------------
     | Maintenance Mode Driver
     |--------------------------------------------------------------------------
     |

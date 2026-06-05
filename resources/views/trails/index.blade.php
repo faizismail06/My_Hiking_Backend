@@ -53,7 +53,7 @@
                             <div class="small text-muted">{{ $j->district->name ?? '-' }}, {{ $j->village->name ?? '-' }}</div>
                         </td>
                         <td class="text-center">
-                            <span class="modern-badge badge-info">{{ $j->jarak }} km</span>
+                            <span class="modern-badge badge-info">{{ rtrim(rtrim(number_format($j->jarak, 2, '.', ''), '0'), '.') }} km</span>
                         </td>
                         <td class="text-center">
                             <span class="modern-badge badge-warning">Rp {{ number_format($j->biaya, 0, ',', '.') }}</span>

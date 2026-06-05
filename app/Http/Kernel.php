@@ -71,5 +71,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'penjaga' => \App\Http\Middleware\CheckPenjagaJalur::class,
         'hiker.ready' => \App\Http\Middleware\EnsureHikerActionReadiness::class,
+        'chatbot.secret' => \App\Http\Middleware\ChatbotSecretMiddleware::class,
     ];
 }

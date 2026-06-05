@@ -258,7 +258,7 @@
                             <label class="text-muted small mb-1 d-block">Jarak</label>
                             <p class="mb-0 fw-semibold">
                                 <i class="fas fa-route text-info me-1"></i>
-                                {{ $trail->jarak }} km
+                                {{ rtrim(rtrim(number_format($trail->jarak, 2, '.', ''), '0'), '.') }} km
                             </p>
                         </div>
                         <div class="col-6">

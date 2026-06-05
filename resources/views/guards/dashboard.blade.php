@@ -27,7 +27,7 @@
             </div>
             <div class="info-item">
                 <label>Jarak Pendakian</label>
-                <value>{{ $trail->jarak }} km</value>
+                <value>{{ rtrim(rtrim(number_format($trail->jarak, 2, '.', ''), '0'), '.') }} km</value>
             </div>
             <div class="info-item">
                 <label>Biaya Pendakian</label>
@@ -81,7 +81,78 @@
         </div>
     </div>
 
-    <!-- Quick Actions -->
+    {{-- ⚠️ Banner Overdue Pendaki --}}
+    @if($overdueCount > 0)
+    <div class="animate-fade-in" style="animation-delay: 0.35s; margin-bottom: 1.5rem;">
+        <div style="
+            background: linear-gradient(135deg, #fff1f2 0%, #fee2e2 100%);
+            border: 1.5px solid #fca5a5;
+            border-left: 5px solid #dc2626;
+            border-radius: 14px;
+            padding: 1.1rem 1.4rem;
+            box-shadow: 0 4px 18px rgba(220,38,38,0.08);
+        ">
+            <div class="d-flex align-items-start gap-3">
+                <div style="
+                    background: #dc2626;
+                    border-radius: 10px;
+                    width: 42px; height: 42px;
+                    display: flex; align-items: center; justify-content: center;
+                    flex-shrink: 0;
+                ">
+                    <i class="fas fa-exclamation-triangle" style="color:#fff; font-size:1.1rem;"></i>
+                </div>
+                <div style="flex:1;">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div>
+                            <h6 style="color:#991b1b; font-weight:700; margin-bottom:2px;">
+                                ⚠️ {{ $overdueCount }} Pendaki Melewati Batas Turun!
+                            </h6>
+                            <p style="color:#b91c1c; font-size:0.85rem; margin-bottom:0.6rem;">
+                                Pendaki berikut sudah melewati tanggal turun namun belum melakukan check-out:
+                            </p>
+                        </div>
+                        <a href="{{ route('guards.history') }}" style="
+                            background: #dc2626; color: #fff;
+                            padding: 6px 14px; border-radius: 8px;
+                            font-size: 0.8rem; font-weight: 600;
+                            text-decoration: none; white-space: nowrap;
+                        ">
+                            <i class="fas fa-list me-1"></i> Lihat Riwayat
+                        </a>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach($overdueOrders as $ov)
+                            @php
+                                $overdueDays = \Carbon\Carbon::today()->diffInDays(\Carbon\Carbon::parse($ov->tanggal_turun));
+                            @endphp
+                            <span style="
+                                background: #fef2f2;
+                                border: 1px solid #fca5a5;
+                                border-radius: 20px;
+                                padding: 4px 12px;
+                                font-size: 0.8rem;
+                                color: #991b1b;
+                                font-weight: 600;
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 6px;
+                            ">
+                                <i class="fas fa-user" style="font-size:0.7rem;"></i>
+                                {{ $ov->user ? $ov->user->name : 'Pendaki #'.$ov->id }}
+                                <span style="background:#dc2626;color:#fff;border-radius:10px;padding:1px 7px;font-size:0.7rem;">
+                                    +{{ $overdueDays }} hari
+                                </span>
+                            </span>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- Quick Actions --}}
     <div class="row g-4 mb-4">
         <div class="col-md-6 col-lg-3 animate-fade-in" style="animation-delay: 0.4s">
             <a href="{{ route('guards.scanner') }}" class="quick-action">
@@ -144,7 +215,11 @@
                     </thead>
                     <tbody>
                         @forelse($recentOrders as $order)
-                            <tr>
+                            @php
+                                $rowOverdue = $order->status == 'Sedang Mendaki'
+                                    && \Carbon\Carbon::parse($order->tanggal_turun)->startOfDay()->lt(\Carbon\Carbon::today());
+                            @endphp
+                            <tr style="{{ $rowOverdue ? 'background: #fff5f5;' : '' }}">
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
                                         <i class="fas fa-calendar text-muted"></i>
@@ -162,12 +237,19 @@
                                 <td><span class="fw-semibold">{{ $order->orderMembers->count() }}</span> orang</td>
                                 <td>{{ \Carbon\Carbon::parse($order->tanggal_naik)->format('d M Y') }}</td>
                                 <td>
+                                    @php
+                                        $isOverdue = $order->status == 'Sedang Mendaki'
+                                            && \Carbon\Carbon::parse($order->tanggal_turun)->startOfDay()->lt(\Carbon\Carbon::today());
+                                    @endphp
                                     @if ($order->status == 'Menunggu Konfirmasi')
                                         <span class="badge-modern badge-pending">{{ $order->status }}</span>
                                     @elseif($order->status == 'Dikonfirmasi')
                                         <span class="badge-modern badge-verified">{{ $order->status }}</span>
                                     @elseif($order->status == 'Sedang Mendaki')
                                         <span class="badge-modern badge-hiking">{{ $order->status }}</span>
+                                        @if($isOverdue)
+                                            <br><span style="display:inline-block;margin-top:4px;background:#dc2626;color:#fff;border-radius:20px;padding:2px 10px;font-size:0.72rem;font-weight:700;">⚠ Overdue</span>
+                                        @endif
                                     @elseif($order->status == 'Selesai')
                                         <span class="badge-modern badge-done">{{ $order->status }}</span>
                                     @else
