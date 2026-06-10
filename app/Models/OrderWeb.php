@@ -119,4 +119,20 @@ class OrderWeb extends Model
     {
         return $this->transaction();
     }
+
+    /**
+     * Relasi ke model OfflineTrackSync
+     */
+    public function offlineTrackSyncs()
+    {
+        return $this->hasMany(OfflineTrackSync::class, 'order_id');
+    }
+
+    /**
+     * Relasi ke model PanicRequest
+     */
+    public function panicRequests()
+    {
+        return $this->hasMany(PanicRequest::class, 'order_id');
+    }
 }

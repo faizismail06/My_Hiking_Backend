@@ -790,4 +790,172 @@ class TrailGuardController extends Controller
         // Cek apakah waktu sekarang sudah melewati waktu ekspirasi
         return now()->isAfter($expiryTime);
     }
+
+    /**
+     * Show monitoring map view.
+     */
+    public function monitoring()
+    {
+        $user = Auth::user();
+        $trail = TrailWeb::where('user_id', $user->id)->first();
+
+        if (!$trail) {
+            return view('guards.no-trail', ['user' => $user]);
+        }
+
+        return view('guards.monitoring', compact('trail'));
+    }
+
+    /**
+     * Get real-time climbers coordinates and active panic requests.
+     */
+    public function monitoringData()
+    {
+        $user = Auth::user();
+        $trail = TrailWeb::where('user_id', $user->id)->first();
+
+        if (!$trail) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Jalur tidak ditemukan untuk penjaga ini.'
+            ], 404);
+        }
+
+        // Ambil semua order dengan status "Sedang Mendaki" di jalur ini
+        $orders = OrderWeb::where('id_jalur', $trail->id)
+            ->where('status', 'Sedang Mendaki')
+            ->with(['user', 'orderMembers.user'])
+            ->get();
+
+        $climbers = [];
+        $orderIds = $orders->pluck('id')->all();
+
+        foreach ($orders as $order) {
+            // Ambil record sync offline track terakhir
+            $latestSync = \App\Models\OfflineTrackSync::where('order_id', $order->id)
+                ->orderBy('id', 'desc')
+                ->first();
+
+            if ($latestSync) {
+                // Parse koordinat terakhir dari GPX XML
+                $lat = null;
+                $lng = null;
+                try {
+                    $xml = @simplexml_load_string($latestSync->gpx_content);
+                    if ($xml) {
+                        $trkpts = $xml->xpath('//*[local-name()="trkpt"]');
+                        if (!empty($trkpts)) {
+                            $lastNode = end($trkpts);
+                            $lat = (float) $lastNode['lat'];
+                            $lng = (float) $lastNode['lon'];
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error("Gagal parsing GPX order #{$order->id}: " . $e->getMessage());
+                }
+
+                // Jika koordinat berhasil didapatkan
+                if ($lat !== null && $lng !== null) {
+                    $tanggalTurun = Carbon::parse($order->tanggal_turun)->startOfDay();
+                    $today = Carbon::today();
+                    $isOverdue = $today->gt($tanggalTurun);
+
+                    // Pengecekan 5 menit untuk kehilangan sinyal (Offline)
+                    $isLostSignal = Carbon::parse($latestSync->synced_at)->diffInMinutes(now()) > 5;
+
+                    $status = 'active'; // Hijau
+                    if ($isOverdue) {
+                        $status = 'overdue'; // Merah
+                    } elseif ($isLostSignal) {
+                        $status = 'lost_signal'; // Abu-abu
+                    }
+
+                    $climbers[] = [
+                        'order_id' => $order->id,
+                        'user_name' => $order->user->name ?? 'Unknown Hiker',
+                        'email' => $order->user->email ?? '-',
+                        'tanggal_naik' => Carbon::parse($order->tanggal_naik)->format('d/m/Y'),
+                        'tanggal_turun' => Carbon::parse($order->tanggal_turun)->format('d/m/Y'),
+                        'latitude' => $lat,
+                        'longitude' => $lng,
+                        'distance_meters' => $latestSync->distance_meters,
+                        'duration_seconds' => $latestSync->duration_seconds,
+                        'synced_at' => Carbon::parse($latestSync->synced_at)->timezone('Asia/Jakarta')->format('d/m/Y H:i:s'),
+                        'status' => $status,
+                        'total_members' => $order->orderMembers->count() + 1
+                    ];
+                }
+            }
+            // Jika tidak ada sync, lewatkan (tidak ditampilkan di basecamp agar tidak menumpuk)
+        }
+
+        // Ambil panic request aktif (status pending atau responding) untuk order di jalur ini
+        $sosRequests = [];
+        if (!empty($orderIds)) {
+            $sosRequests = \App\Models\PanicRequest::whereIn('order_id', $orderIds)
+                ->whereIn('status', ['pending', 'responding'])
+                ->with('user')
+                ->get()
+                ->map(function ($panic) {
+                    return [
+                        'id' => $panic->id,
+                        'order_id' => $panic->order_id,
+                        'user_name' => $panic->user->name ?? 'Unknown Hiker',
+                        'latitude' => (float) $panic->latitude,
+                        'longitude' => (float) $panic->longitude,
+                        'emergency_type' => $panic->emergency_type,
+                        'description' => $panic->description,
+                        'status' => $panic->status,
+                        'created_at' => $panic->created_at->timezone('Asia/Jakarta')->format('d/m/Y H:i:s'),
+                    ];
+                });
+        }
+
+        return response()->json([
+            'success' => true,
+            'trail' => [
+                'id' => $trail->id,
+                'name' => $trail->nama,
+                'latitude' => (float) $trail->latitude,
+                'longitude' => (float) $trail->longitude,
+                'route_points' => $trail->route_points ?? []
+            ],
+            'climbers' => $climbers,
+            'sos_requests' => $sosRequests
+        ]);
+    }
+
+    /**
+     * Get path details (coordinates) for drawing hiker traversed polyline.
+     */
+    public function monitoringPath($orderId)
+    {
+        $latestSync = \App\Models\OfflineTrackSync::where('order_id', $orderId)
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $points = [];
+        if ($latestSync) {
+            try {
+                $xml = @simplexml_load_string($latestSync->gpx_content);
+                if ($xml) {
+                    $trkpts = $xml->xpath('//*[local-name()="trkpt"]');
+                    foreach ($trkpts as $pt) {
+                        $points[] = [
+                            'lat' => (float) $pt['lat'],
+                            'lng' => (float) $pt['lon']
+                        ];
+                    }
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error("Gagal parsing path GPX order #{$orderId}: " . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'order_id' => $orderId,
+            'points' => $points
+        ]);
+    }
 }

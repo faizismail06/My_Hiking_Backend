@@ -692,6 +692,143 @@
                 height: min(560px, calc(100vh - 96px));
             }
         }
+
+        /* ===== SOS MODAL STYLES ===== */
+        #sosModal .modal-dialog {
+            max-width: 640px;
+        }
+        #sosModal .modal-content {
+            background: #1a0000;
+            border: 3px solid #ff0000;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        #sosModal .sos-header {
+            background: linear-gradient(135deg, #c0392b, #8b0000);
+            padding: 28px 32px 20px;
+            text-align: center;
+            position: relative;
+        }
+        #sosModal .sos-header .sos-icon-ring {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 14px;
+            animation: sosPulse 1s ease-in-out infinite;
+        }
+        #sosModal .sos-header h2 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: 1px;
+            margin: 0;
+            text-shadow: 0 0 20px rgba(255,100,100,0.8);
+        }
+        #sosModal .sos-body {
+            padding: 28px 32px;
+        }
+        #sosModal .sos-info-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 14px 16px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 12px;
+        }
+        #sosModal .sos-info-row .sos-info-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            background: rgba(231,76,60,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ff6b6b;
+            flex-shrink: 0;
+        }
+        #sosModal .sos-info-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #aaa;
+            margin-bottom: 2px;
+        }
+        #sosModal .sos-info-value {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        #sosModal .sos-emergency-badge {
+            display: inline-block;
+            background: rgba(231,76,60,0.3);
+            border: 1px solid #e74c3c;
+            color: #ff8080;
+            border-radius: 6px;
+            padding: 2px 10px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-bottom: 18px;
+        }
+        #btnTerimaCall {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.3rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border: none;
+            color: #fff;
+            box-shadow: 0 0 30px rgba(231,76,60,0.7), 0 6px 20px rgba(0,0,0,0.4);
+            transition: transform 0.15s, box-shadow 0.15s;
+            animation: btnPulse 1.8s ease-in-out infinite;
+        }
+        #btnTerimaCall:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 50px rgba(231,76,60,0.9), 0 8px 25px rgba(0,0,0,0.5);
+        }
+        #btnTerimaCall:active { transform: scale(0.98); }
+
+        @keyframes sosPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,80,80,0.7), 0 0 0 10px rgba(255,80,80,0.3); }
+            50%       { box-shadow: 0 0 0 18px rgba(255,80,80,0), 0 0 0 30px rgba(255,80,80,0); }
+        }
+        @keyframes btnPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(231,76,60,0.6), 0 6px 20px rgba(0,0,0,0.4); }
+            50%       { box-shadow: 0 0 45px rgba(231,76,60,1),   0 6px 25px rgba(0,0,0,0.5); }
+        }
+        @keyframes shakeModal {
+            0%, 100% { transform: translateX(0); }
+            20%       { transform: translateX(-6px); }
+            40%       { transform: translateX(6px); }
+            60%       { transform: translateX(-4px); }
+            80%       { transform: translateX(4px); }
+        }
+        .sos-shake { animation: shakeModal 0.5s ease-in-out; }
+
+        /* Striped alert bar at top of modal */
+        .sos-stripe-bar {
+            height: 8px;
+            background: repeating-linear-gradient(
+                45deg,
+                #e74c3c,
+                #e74c3c 10px,
+                #ff0 10px,
+                #ff0 20px
+            );
+            animation: stripeScroll 1s linear infinite;
+            background-size: 200% 100%;
+        }
+        @keyframes stripeScroll {
+            0%   { background-position: 0 0; }
+            100% { background-position: 40px 0; }
+        }
     </style>
 
     @stack('styles')
@@ -727,6 +864,13 @@
                 class="menu-item {{ request()->routeIs('guards.sar*') ? 'active' : '' }}">
                 <i class="fas fa-exclamation-triangle"></i>
                 <span>SAR Dashboard</span>
+                <span class="badge bg-danger ms-auto d-none" id="sar-badge">0</span>
+            </a>
+
+            <a href="{{ route('guards.monitoring') }}"
+                class="menu-item {{ request()->routeIs('guards.monitoring*') ? 'active' : '' }}">
+                <i class="fas fa-map-marked-alt"></i>
+                <span>Pemantauan Jalur</span>
             </a>
 
             <a href="{{ route('guards.history') }}"
@@ -843,11 +987,370 @@
         </form>
     </div>
 
+{{-- ===== SOS FORCED MODAL ===== --}}
+<div class="modal fade" id="sosModal" tabindex="-1"
+     data-bs-backdrop="static" data-bs-keyboard="false"
+     aria-labelledby="sosModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            {{-- Stripe bar --}}
+            <div class="sos-stripe-bar"></div>
+
+            {{-- Header --}}
+            <div class="sos-header">
+                <div class="sos-info-row mb-3 justify-content-center" style="background:transparent;border:none;">
+                    <div class="sos-icon-ring">
+                        <i class="fas fa-exclamation-triangle fa-3x text-white"></i>
+                    </div>
+                </div>
+                <h2 id="sosModalLabel">🚨 PERMINTAAN DARURAT MASUK!</h2>
+                <p class="text-white-50 mt-2 mb-0" style="font-size:0.9rem;">
+                    Segera tangani permintaan SOS ini
+                </p>
+            </div>
+
+            {{-- Body --}}
+            <div class="sos-body">
+                <div class="text-center mb-3">
+                    <span class="sos-emergency-badge" id="sosEmergencyType">—</span>
+                </div>
+
+                <div class="sos-info-row">
+                    <div class="sos-info-icon"><i class="fas fa-user fa-lg"></i></div>
+                    <div>
+                        <div class="sos-info-label">Nama Pendaki</div>
+                        <div class="sos-info-value" id="sosHikerName">—</div>
+                    </div>
+                </div>
+
+                <div class="sos-info-row">
+                    <div class="sos-info-icon"><i class="fas fa-route fa-lg"></i></div>
+                    <div>
+                        <div class="sos-info-label">Jalur / Gunung</div>
+                        <div class="sos-info-value" id="sosTrailName">—</div>
+                    </div>
+                </div>
+
+                <div class="sos-info-row">
+                    <div class="sos-info-icon"><i class="fas fa-clock fa-lg"></i></div>
+                    <div>
+                        <div class="sos-info-label">Waktu SOS</div>
+                        <div class="sos-info-value" id="sosTime">—</div>
+                    </div>
+                </div>
+
+                <div class="sos-info-row" id="sosDescRow" style="display:none;">
+                    <div class="sos-info-icon"><i class="fas fa-notes-medical fa-lg"></i></div>
+                    <div>
+                        <div class="sos-info-label">Keterangan</div>
+                        <div class="sos-info-value" id="sosDesc" style="font-size:0.92rem;font-weight:500;">—</div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button id="btnTerimaCall" type="button">
+                        <i class="fas fa-phone-alt me-2"></i>TERIMA PANGGILAN
+                    </button>
+                </div>
+
+                <p class="text-center text-muted mt-3 mb-0" style="font-size:0.78rem;">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Anda akan diarahkan ke halaman detail setelah menerima panggilan
+                </p>
+            </div>
+
+            <div class="sos-stripe-bar"></div>
+        </div>
+    </div>
+</div>
+
     <!-- Modals from child views -->
     @stack('modals')
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        /* ------------------------------------------------------------------ */
+        /*  CONFIG                                                              */
+        /* ------------------------------------------------------------------ */
+        const POLL_INTERVAL_MS  = 5000;          // 5 seconds
+        const API_URL           = '{{ route("guards.sar.check-new-panics") }}';
+        const ALARM_FREQ        = 850;           // Hz
+        const ALARM_VOLUME      = 0.5;
+        const ALARM_BEEP_ON_MS  = 800;           // beep on duration
+        const ALARM_BEEP_OFF_MS = 400;           // silence between beeps
+        const ALARM_CYCLE_MS    = 3000;          // full SOS pattern repeats every 3s
+
+        /* ------------------------------------------------------------------ */
+        /*  STATE                                                               */
+        /* ------------------------------------------------------------------ */
+        let lastSeenId      = 0;      // tracks highest panic id already alerted
+        let currentPanicId  = null;   // id shown in the modal right now
+        let currentDetailUrl = null;  // redirect URL for "TERIMA PANGGILAN"
+        let alarmCtx        = null;   // Web Audio API context
+        let alarmNodes      = [];     // active oscillator/gain nodes
+        let alarmTimer      = null;   // setInterval handle for looping
+        let pollTimer       = null;   // setInterval handle for polling
+        let modalInstance   = null;   // Bootstrap modal instance
+
+        /* ------------------------------------------------------------------ */
+        /*  ALARM — Web Audio API                                               */
+        /* ------------------------------------------------------------------ */
+        function startAlarm() {
+            stopAlarm(); // never double-play
+
+            try {
+                alarmCtx = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
+                console.warn('Web Audio API not supported:', e);
+                return;
+            }
+
+            function playBeep(startTime, durationSec) {
+                const osc  = alarmCtx.createOscillator();
+                const gain = alarmCtx.createGain();
+
+                osc.type      = 'square';
+                osc.frequency.setValueAtTime(ALARM_FREQ, startTime);
+
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(ALARM_VOLUME, startTime + 0.01);
+                gain.gain.setValueAtTime(ALARM_VOLUME, startTime + durationSec - 0.02);
+                gain.gain.linearRampToValueAtTime(0, startTime + durationSec);
+
+                osc.connect(gain);
+                gain.connect(alarmCtx.destination);
+
+                osc.start(startTime);
+                osc.stop(startTime + durationSec);
+
+                alarmNodes.push({ osc, gain });
+            }
+
+            function scheduleSOSPattern() {
+                if (!alarmCtx) return;
+                const now = alarmCtx.currentTime;
+
+                // SOS: · · · — — — · · ·  (simplified: 3 short + pause)
+                const shortSec  = ALARM_BEEP_ON_MS  / 1000;
+                const pauseSec  = ALARM_BEEP_OFF_MS / 1000;
+
+                let t = now;
+                for (let i = 0; i < 3; i++) {
+                    playBeep(t, shortSec);
+                    t += shortSec + pauseSec;
+                }
+            }
+
+            scheduleSOSPattern();
+            alarmTimer = setInterval(scheduleSOSPattern, ALARM_CYCLE_MS);
+        }
+
+        function stopAlarm() {
+            clearInterval(alarmTimer);
+            alarmTimer = null;
+
+            alarmNodes.forEach(function (n) {
+                try { n.osc.stop();  } catch (_) {}
+                try { n.osc.disconnect();  } catch (_) {}
+                try { n.gain.disconnect(); } catch (_) {}
+            });
+            alarmNodes = [];
+
+            if (alarmCtx) {
+                try { alarmCtx.close(); } catch (_) {}
+                alarmCtx = null;
+            }
+        }
+
+        /* ------------------------------------------------------------------ */
+        /*  MODAL                                                               */
+        /* ------------------------------------------------------------------ */
+        function getModal() {
+            if (!modalInstance) {
+                const el = document.getElementById('sosModal');
+                if (el) {
+                    modalInstance = new bootstrap.Modal(el, {
+                        backdrop: 'static',
+                        keyboard: false
+                    });
+                }
+            }
+            return modalInstance;
+        }
+
+        function populateModal(panic) {
+            const typeEl = document.getElementById('sosEmergencyType');
+            const hikerEl = document.getElementById('sosHikerName');
+            const trailEl = document.getElementById('sosTrailName');
+            const timeEl = document.getElementById('sosTime');
+            const descEl = document.getElementById('sosDesc');
+            const descRow = document.getElementById('sosDescRow');
+
+            if (typeEl) typeEl.textContent = panic.emergency_type || 'DARURAT';
+            if (hikerEl) hikerEl.textContent     = panic.hiker_name;
+            if (trailEl) {
+                trailEl.textContent     =
+                    panic.mountain_name !== 'N/A'
+                        ? panic.trail_name + ' — ' + panic.mountain_name
+                        : panic.trail_name;
+            }
+            if (timeEl) timeEl.textContent          = panic.created_at;
+
+            if (descEl && descRow) {
+                if (panic.description) {
+                    descEl.textContent = panic.description;
+                    descRow.style.display = 'flex';
+                } else {
+                    descRow.style.display = 'none';
+                }
+            }
+
+            currentDetailUrl = panic.detail_url;
+            currentPanicId   = panic.id;
+        }
+
+        function showSOSModal(panic) {
+            populateModal(panic);
+            startAlarm();
+
+            const modal = getModal();
+            if (modal) {
+                modal.show();
+            }
+
+            // Shake the modal dialog for extra drama after it's shown
+            const dialogEl = document.querySelector('#sosModal .modal-dialog');
+            if (dialogEl) {
+                setTimeout(function () {
+                    dialogEl.classList.add('sos-shake');
+                    setTimeout(function () { dialogEl.classList.remove('sos-shake'); }, 600);
+                }, 400);
+
+                // Shake again every 8 seconds while modal is open
+                const shakeLoop = setInterval(function () {
+                    const m = document.getElementById('sosModal');
+                    if (!m || !m.classList.contains('show')) {
+                        clearInterval(shakeLoop);
+                        return;
+                    }
+                    dialogEl.classList.add('sos-shake');
+                    setTimeout(function () { dialogEl.classList.remove('sos-shake'); }, 600);
+                }, 8000);
+            }
+        }
+
+        function closeSOSModal() {
+            stopAlarm();
+            const modal = getModal();
+            if (modal) {
+                modal.hide();
+            }
+            currentPanicId  = null;
+            currentDetailUrl = null;
+        }
+
+        /* ------------------------------------------------------------------ */
+        /*  ACCEPT BUTTON                                                       */
+        /* ------------------------------------------------------------------ */
+        const acceptBtn = document.getElementById('btnTerimaCall');
+        if (acceptBtn) {
+            acceptBtn.addEventListener('click', function () {
+                const url = currentDetailUrl;
+                closeSOSModal();
+                if (url) {
+                    window.location.href = url;
+                }
+            });
+        }
+
+        /* ------------------------------------------------------------------ */
+        /*  UPDATE SIDEBAR BADGE                                                */
+        /* ------------------------------------------------------------------ */
+        function updateSidebarBadge(totalPending) {
+            const badgeEl = document.getElementById('sar-badge');
+            if (badgeEl) {
+                if (totalPending > 0) {
+                    badgeEl.textContent = totalPending;
+                    badgeEl.classList.remove('d-none');
+                } else {
+                    badgeEl.classList.add('d-none');
+                }
+            }
+        }
+
+        /* ------------------------------------------------------------------ */
+        /*  POLLING                                                             */
+        /* ------------------------------------------------------------------ */
+        function checkNewPanics() {
+            // If a modal is already open, don't overlap — just update badge and keep polling
+            const modalEl = document.getElementById('sosModal');
+            const isModalOpen = modalEl && modalEl.classList.contains('show');
+
+            fetch(API_URL + '?last_seen_id=' + lastSeenId, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function (res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+            })
+            .then(function (data) {
+                updateSidebarBadge(data.total_pending);
+
+                if (!isModalOpen && data.panics && data.panics.length > 0) {
+                    // Show alert for the first/latest unread panic
+                    const latest = data.panics[data.panics.length - 1];
+
+                    // Advance the cursor so we don't re-alert
+                    lastSeenId = latest.id;
+
+                    showSOSModal(latest);
+                }
+            })
+            .catch(function (err) {
+                console.warn('[SOS Polling] Error:', err);
+            });
+        }
+
+        /* ------------------------------------------------------------------ */
+        /*  INIT                                                                */
+        /* ------------------------------------------------------------------ */
+        // Initialise lastSeenId from the highest id already on-page
+        // so a guard loading the dashboard doesn't get alerted for old panics
+        (function seedLastSeenId() {
+            fetch(API_URL + '?last_seen_id=0', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                updateSidebarBadge(d.total_pending);
+
+                if (d.panics && d.panics.length > 0) {
+                    // On first load: just seed the cursor — don't alarm for existing panics
+                    lastSeenId = d.panics[d.panics.length - 1].id;
+                }
+                // Start polling AFTER seeding
+                pollTimer = setInterval(checkNewPanics, POLL_INTERVAL_MS);
+            })
+            .catch(function () {
+                // Still start polling even if seed fails
+                pollTimer = setInterval(checkNewPanics, POLL_INTERVAL_MS);
+            });
+        })();
+
+        // Cleanup on page leave
+        window.addEventListener('beforeunload', function () {
+            clearInterval(pollTimer);
+            stopAlarm();
+        });
+
+    })();
+    </script>
 
     <script>
         function toggleSidebar() {

@@ -21,15 +21,15 @@ class SarDashboardController extends Controller
 
         $user = auth()->user();
 
-        // Get the trail(s) managed by this guard
-        $managedTrails = TrailWeb::where('user_id', $user->id)->pluck('id');
+        // Get the mountain(s) of the trail(s) managed by this guard
+        $managedMountains = TrailWeb::where('user_id', $user->id)->pluck('id_gunung')->unique();
 
         $filter = $request->get('filter', 'all');
 
-        // Get panic requests for trails managed by this guard
+        // Get panic requests for mountains managed by this guard
         $panicQuery = PanicRequest::with(['user', 'order.trail', 'order.mountain', 'responder'])
-            ->whereHas('order', function ($query) use ($managedTrails) {
-                $query->whereIn('id_jalur', $managedTrails);
+            ->whereHas('order', function ($query) use ($managedMountains) {
+                $query->whereIn('id_gunung', $managedMountains);
             });
 
         // Apply status filter
@@ -44,16 +44,16 @@ class SarDashboardController extends Controller
         $panicRequests = $panicQuery->orderBy('created_at', 'desc')->get();
 
         // Count by status
-        $countPending = PanicRequest::whereHas('order', function ($q) use ($managedTrails) {
-            $q->whereIn('id_jalur', $managedTrails);
+        $countPending = PanicRequest::whereHas('order', function ($q) use ($managedMountains) {
+            $q->whereIn('id_gunung', $managedMountains);
         })->where('status', 'pending')->count();
 
-        $countResponding = PanicRequest::whereHas('order', function ($q) use ($managedTrails) {
-            $q->whereIn('id_jalur', $managedTrails);
+        $countResponding = PanicRequest::whereHas('order', function ($q) use ($managedMountains) {
+            $q->whereIn('id_gunung', $managedMountains);
         })->where('status', 'responding')->count();
 
-        $countResolved = PanicRequest::whereHas('order', function ($q) use ($managedTrails) {
-            $q->whereIn('id_jalur', $managedTrails);
+        $countResolved = PanicRequest::whereHas('order', function ($q) use ($managedMountains) {
+            $q->whereIn('id_gunung', $managedMountains);
         })->where('status', 'resolved')->count();
 
         return view('sar-dashboard.index', compact(
@@ -141,11 +141,11 @@ class SarDashboardController extends Controller
 
         $user = auth()->user();
 
-        // Get the trail(s) managed by this guard only
-        $managedTrails = TrailWeb::where('user_id', $user->id)->pluck('id');
+        // Get the mountain(s) managed by this guard only
+        $managedMountains = TrailWeb::where('user_id', $user->id)->pluck('id_gunung')->unique();
 
-        if ($managedTrails->isEmpty()) {
-            return response()->json(['panics' => [], 'count' => 0]);
+        if ($managedMountains->isEmpty()) {
+            return response()->json(['panics' => [], 'count' => 0, 'total_pending' => 0]);
         }
 
         // The client sends the last panic id it has already seen/alerted.
@@ -153,8 +153,8 @@ class SarDashboardController extends Controller
         $lastSeenId = (int) $request->get('last_seen_id', 0);
 
         $newPanics = PanicRequest::with(['user', 'order.trail', 'order.mountain'])
-            ->whereHas('order', function ($query) use ($managedTrails) {
-                $query->whereIn('id_jalur', $managedTrails);
+            ->whereHas('order', function ($query) use ($managedMountains) {
+                $query->whereIn('id_gunung', $managedMountains);
             })
             ->where('status', 'pending')
             ->where('id', '>', $lastSeenId)
@@ -174,9 +174,14 @@ class SarDashboardController extends Controller
                 ];
             });
 
+        $totalPending = PanicRequest::whereHas('order', function ($q) use ($managedMountains) {
+            $q->whereIn('id_gunung', $managedMountains);
+        })->where('status', 'pending')->count();
+
         return response()->json([
             'panics' => $newPanics,
             'count'  => $newPanics->count(),
+            'total_pending' => $totalPending,
         ]);
     }
 }

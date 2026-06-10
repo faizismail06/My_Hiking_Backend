@@ -138,6 +138,11 @@ Route::middleware(['penjaga'])->prefix('guards')->name('guards.')->group(functio
     // Guard Profile
     Route::get('/profile', [TrailGuardController::class, 'profile'])->name('profile');
     Route::put('/profile', [TrailGuardController::class, 'updateProfile'])->name('profile.update');
+
+    // Climber Monitoring routes
+    Route::get('/monitoring', [TrailGuardController::class, 'monitoring'])->name('monitoring');
+    Route::get('/monitoring/data', [TrailGuardController::class, 'monitoringData'])->name('monitoring.data');
+    Route::get('/monitoring/path/{orderId}', [TrailGuardController::class, 'monitoringPath'])->name('monitoring.path');
 });
 
 // Trail Guard Withdrawal Routes
