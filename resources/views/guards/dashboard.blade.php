@@ -298,3 +298,55 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let lastClimbersCount = null;
+    let lastSosCount = null;
+    let lastSyncTimes = {};
+
+    async function checkDashboardUpdates() {
+        try {
+            const response = await fetch("{{ route('guards.monitoring.data') }}");
+            const res = await response.json();
+            if (res.success) {
+                const climbers = res.climbers || [];
+                const sosRequests = res.sos_requests || [];
+                
+                const currentClimbersCount = climbers.length;
+                const currentSosCount = sosRequests.length;
+                
+                let syncTimesChanged = false;
+                const currentSyncTimes = {};
+                climbers.forEach(c => {
+                    currentSyncTimes[c.order_id] = c.synced_at;
+                    if (lastClimbersCount !== null && lastSyncTimes[c.order_id] !== c.synced_at) {
+                        syncTimesChanged = true;
+                    }
+                });
+
+                if (lastClimbersCount !== null) {
+                    if (currentClimbersCount !== lastClimbersCount || 
+                        currentSosCount !== lastSosCount || 
+                        syncTimesChanged) {
+                        console.log("Detecting database tracking updates. Reloading dashboard...");
+                        window.location.reload();
+                    }
+                }
+
+                lastClimbersCount = currentClimbersCount;
+                lastSosCount = currentSosCount;
+                lastSyncTimes = currentSyncTimes;
+            }
+        } catch (error) {
+            console.error("Dashboard update check failed:", error);
+        }
+    }
+
+    // Check every 10 seconds
+    setInterval(checkDashboardUpdates, 10000);
+    checkDashboardUpdates(); // Check once immediately
+});
+</script>
+@endpush

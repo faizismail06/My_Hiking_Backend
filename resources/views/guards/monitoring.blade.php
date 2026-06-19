@@ -370,6 +370,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderSOSMarkers(res.sos_requests);
                 renderHikerList(res.climbers, res.sos_requests);
 
+                // Auto reload active hiker's path if one is currently selected
+                if (selectedHikerOrderId) {
+                    loadHikerTraversedPath(selectedHikerOrderId);
+                }
+
                 const now = new Date();
                 const timeString = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 lastSyncLabel.textContent = `Update terakhir: ${timeString}`;
@@ -702,9 +707,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btn-fit-hiker-path').addEventListener('click', closeHikerDetail);
     document.getElementById('refresh-data-btn').addEventListener('click', loadMonitoringData);
 
-    // 6. Polling Real-time (Refresh setiap 15 detik agar responsif & bebas lag)
+    // 6. Polling Real-time (Refresh setiap 10 detik agar responsif & bebas lag)
     loadMonitoringData();
-    const pollingInterval = setInterval(loadMonitoringData, 15000);
+    const pollingInterval = setInterval(loadMonitoringData, 10000);
 
     // Hapus interval saat navigasi keluar
     window.addEventListener('beforeunload', function() {

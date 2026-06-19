@@ -334,6 +334,8 @@ class TrailGuardController extends Controller
             'status' => 'Selesai'
         ]);
 
+        \App\Models\OfflineTrackSync::where('order_id', $order->id)->delete();
+
         return redirect()->back()->with('success', 'Check-out successful!');
     }
 
@@ -493,6 +495,7 @@ class TrailGuardController extends Controller
                 'status' => 'Selesai',
                 'check_out' => now()
             ]);
+            \App\Models\OfflineTrackSync::where('order_id', $order->id)->delete();
             $message = 'Check-out successful! Hiking completed.';
         } else {
             return redirect()->back()->with('error', 'Invalid status transition.');
@@ -566,6 +569,7 @@ class TrailGuardController extends Controller
                 'status' => 'Selesai',
                 'check_out' => now()
             ]);
+            \App\Models\OfflineTrackSync::where('order_id', $order->id)->delete();
             return response()->json([
                 'success' => true,
                 'message' => 'Check-out successful! Hiking completed.',
