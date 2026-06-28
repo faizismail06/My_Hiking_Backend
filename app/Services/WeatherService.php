@@ -14,7 +14,7 @@ class WeatherService
 
         return Cache::remember($cacheKey, now()->addMinutes(15), function () use ($normalizedLat, $normalizedLng) {
             try {
-                $response = Http::timeout(10)->get('https://api.open-meteo.com/v1/forecast', [
+                $response = Http::timeout(3)->get('https://api.open-meteo.com/v1/forecast', [
                     'latitude' => $normalizedLat,
                     'longitude' => $normalizedLng,
                     'current_weather' => true,
@@ -122,6 +122,97 @@ class WeatherService
         });
     }
 
+    public function prefetchWeather(array $coordinatesList): void
+    {
+        $uncached = [];
+        $keys = [];
+
+        foreach ($coordinatesList as $coords) {
+            if (!isset($coords[0]) || !isset($coords[1])) {
+                continue;
+            }
+            [$normalizedLat, $normalizedLng] = $this->normalizeCoordinates((float) $coords[0], (float) $coords[1]);
+            $cacheKey = sprintf('weather:current:v2:%s:%s', $normalizedLat, $normalizedLng);
+
+            if (!Cache::has($cacheKey)) {
+                // Prevent duplicate coordinates in the batch request
+                $coordsKey = "$normalizedLat,$normalizedLng";
+                if (!isset($uncached[$coordsKey])) {
+                    $uncached[$coordsKey] = [$normalizedLat, $normalizedLng];
+                    $keys[$coordsKey] = $cacheKey;
+                }
+            }
+        }
+
+        if (empty($uncached)) {
+            return;
+        }
+
+        // Fetch concurrently
+        $responses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($uncached) {
+            $poolCalls = [];
+            foreach ($uncached as $coords) {
+                $poolCalls[] = $pool->timeout(3)->get('https://api.open-meteo.com/v1/forecast', [
+                    'latitude' => $coords[0],
+                    'longitude' => $coords[1],
+                    'current_weather' => true,
+                    'current' => 'weather_code,temperature_2m,wind_speed_10m',
+                    'hourly' => 'precipitation_probability',
+                    'forecast_days' => 1,
+                    'timezone' => 'auto',
+                ]);
+            }
+            return $poolCalls;
+        });
+
+        // Parse and cache responses
+        $responses = array_values($responses);
+        $keys = array_values($keys);
+        
+        foreach ($responses as $index => $response) {
+            if (!isset($keys[$index])) {
+                continue;
+            }
+            $cacheKey = $keys[$index];
+
+            try {
+                if (!$response->ok()) {
+                    Cache::put($cacheKey, $this->fallbackWeather(), now()->addMinutes(15));
+                    continue;
+                }
+
+                $payload = $response->json();
+                $current = (array) ($payload['current'] ?? []);
+                $legacyCurrent = (array) ($payload['current_weather'] ?? []);
+
+                $weatherCode = (int) ($current['weather_code'] ?? $legacyCurrent['weathercode'] ?? 0);
+                $temperature = $this->toNullableFloat($current['temperature_2m'] ?? $legacyCurrent['temperature'] ?? null);
+                $windSpeed = $this->toNullableFloat($current['wind_speed_10m'] ?? $legacyCurrent['windspeed'] ?? null) ?? 0.0;
+                $precipitationProbability = $this->resolveCurrentPrecipitationProbability($payload);
+
+                $weatherScore = $this->mapWeatherCodeToScore($weatherCode);
+                $windScore = $this->mapWindSpeedToScore($windSpeed);
+                $weatherScoreFinal = round(($weatherScore * 0.7) + ($windScore * 0.3), 4);
+
+                $data = [
+                    'code' => $weatherCode,
+                    'condition' => $this->mapWeatherCodeToCondition($weatherCode),
+                    'temperature' => $temperature,
+                    'wind_speed' => round($windSpeed, 2),
+                    'precipitation_probability' => $precipitationProbability,
+                    'weather_score' => $weatherScore,
+                    'wind_score' => $windScore,
+                    'weather_score_final' => $weatherScoreFinal,
+                ];
+
+                Cache::put($cacheKey, $data, now()->addMinutes(15));
+            } catch (\Throwable $e) {
+                report($e);
+                Cache::put($cacheKey, $this->fallbackWeather(), now()->addMinutes(15));
+            }
+        }
+    }
+
     public function mapWeatherCodeToScore(int $weatherCode): int
     {
         if ($weatherCode === 0) {
@@ -222,7 +313,7 @@ class WeatherService
 
     private function normalizeCoordinates(float $lat, float $lng): array
     {
-        return [round($lat, 4), round($lng, 4)];
+        return [round($lat, 2), round($lng, 2)];
     }
 
     private function resolveCurrentPrecipitationProbability(array $payload): ?float

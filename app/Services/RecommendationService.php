@@ -80,6 +80,22 @@ class RecommendationService
         // Map client-supplied weight keys → TOPSIS criterion keys
         $topsisWeights = $this->mapUserWeights($userWeights);
 
+        // NOTE: If no weights are supplied, default to equal weights (3.0 for all criteria)
+        if (empty($topsisWeights)) {
+            $topsisWeights = [
+                'distance'         => 3.0,
+                'elevation'        => 3.0,
+                'difficulty'       => 3.0,
+                'cost'             => 3.0,
+                'duration'         => 3.0,
+                'crowd_level'      => 3.0,
+                'panorama_score'   => 3.0,
+                'fasilitas_score'  => 3.0,
+                'popularity_score' => 3.0,
+                'safety_score'     => 3.0,
+            ];
+        }
+
         // NOTE: Tier is intentionally NOT used here.
         // TOPSIS ranking reflects user preferences only.
         // Tier info is used exclusively for risk_level assessment (DSSService).
@@ -91,11 +107,37 @@ class RecommendationService
             return [];
         }
 
+        // ── Tiebreaker & Early slicing ──────────────────────────────────────
+        // PHP's usort is not stable. Enforce deterministic tiebreaker
+        // before slicing to keep ordering consistent.
+        usort($ranked, function (array $a, array $b) {
+            $scoreDiff = $b['score'] <=> $a['score'];
+            if ($scoreDiff !== 0) {
+                return $scoreDiff;
+            }
+            return $a['route_id'] <=> $b['route_id'];
+        });
+
+        if ($limit !== null && $limit > 0) {
+            $ranked = array_slice($ranked, 0, $limit);
+        }
+
         // Index originals by route_id for O(1) lookup
         $routeById = [];
         foreach ($routes as $route) {
             $routeById[(int) $route->id] = $route;
         }
+
+        // ── Prefetch weather concurrently for the ranked slice ──────────────
+        $coordsList = [];
+        foreach ($ranked as $item) {
+            $route = $routeById[(int) $item['route_id']] ?? null;
+            if ($route) {
+                $coords = $this->resolveCoordinates($route);
+                $coordsList[] = [$coords['lat'], $coords['lng']];
+            }
+        }
+        $this->weatherService->prefetchWeather($coordsList);
 
         // ── Steps 5-7: Explain + Risk + Build API response ─────────────────
         $results = [];
@@ -123,29 +165,6 @@ class RecommendationService
                 'explanation'   => $explainResult['explanation'],
                 'key_factor'    => $explainResult['key_factor'],
             ];
-        }
-
-        // ── Edge case: identical scores → stable secondary sort by route_id ─
-        // PHP's usort (in TopsisService) is not stable. Routes with the same CC
-        // value could jitter between calls. We enforce a deterministic tiebreaker
-        // here so the frontend always sees a consistent ordering.
-        usort($results, function (array $a, array $b) {
-            $scoreDiff = $b['score'] <=> $a['score'];
-            if ($scoreDiff !== 0) {
-                return $scoreDiff;
-            }
-            // Tiebreaker: lower route_id wins (deterministic, arbitrary but consistent)
-            return $a['route_id'] <=> $b['route_id'];
-        });
-
-        // Re-assign rank after tiebreaker sort
-        foreach ($results as $i => &$result) {
-            $result['rank'] = $i + 1;
-        }
-        unset($result);
-
-        if ($limit !== null && $limit > 0) {
-            return array_values(array_slice($results, 0, $limit));
         }
 
         return $results;
