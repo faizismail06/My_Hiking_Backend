@@ -86,7 +86,7 @@ class DSSService
         ];
     }
 
-    private function resolveCoordinates(Trail $route): array
+    public function resolveCoordinates(Trail $route): array
     {
         $lat = (float) ($route->latitude ?? 0);
         $lng = (float) ($route->longitude ?? 0);

@@ -28,7 +28,8 @@ class RecommendationService
     public function __construct(
         private TopsisService         $topsisService,
         private TopsisExplainerService $explainerService,
-        private DSSService            $dssService
+        private DSSService            $dssService,
+        private ?WeatherService       $weatherService = null
     ) {}
 
     /**
@@ -133,11 +134,13 @@ class RecommendationService
         foreach ($ranked as $item) {
             $route = $routeById[(int) $item['route_id']] ?? null;
             if ($route) {
-                $coords = $this->resolveCoordinates($route);
+                $coords = $this->dssService->resolveCoordinates($route);
                 $coordsList[] = [$coords['lat'], $coords['lng']];
             }
         }
-        $this->weatherService->prefetchWeather($coordsList);
+        if ($this->weatherService) {
+            $this->weatherService->prefetchWeather($coordsList);
+        }
 
         // ── Steps 5-7: Explain + Risk + Build API response ─────────────────
         $results = [];
