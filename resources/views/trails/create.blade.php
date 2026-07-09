@@ -327,9 +327,9 @@
                         <label class="form-label">Skor Popularitas (Opsional)</label>
                         <input type="number" name="popularity_score"
                             class="form-control @error('popularity_score') is-invalid @enderror"
-                            min="0" step="1"
+                            min="1" max="100" step="1"
                             value="{{ old('popularity_score', '') }}"
-                            placeholder="Contoh: 1200 (jumlah pengunjung / penilaian numerik)">
+                            placeholder="Rentang 1-100 (Indeks Popularitas)">
                         @error('popularity_score')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror

@@ -112,24 +112,30 @@ class DSSService
 
     private function resolveDifficultyKey(Trail $route, float $routeScore): string
     {
-        $difficulty = strtolower(trim((string) ($route->tingkat_kesulitan ?? '')));
-        if (array_key_exists($difficulty, $this->difficultyMap)) {
-            return $difficulty;
-        }
+        // Hitung tingkat kesulitan murni dari metrik fisik (jarak, elevasi, durasi)
+        $distanceKm  = max(0.0, (float) ($route->jarak   ?? 0.0));
+        $elevationM  = max(0.0, (float) ($route->elevasi ?? 0.0));
+        $durationH   = max(0.0, (float) ($route->durasi  ?? 0.0));
 
-        // Fallback jika tingkat_kesulitan belum tersedia: estimasi dari route_score.
-        if ($routeScore <= 0.8) {
+        $normDistance  = min(1.0, $distanceKm / 20.0);
+        $normElevation = min(1.0, $elevationM / 3500.0);
+        $normDuration  = min(1.0, $durationH  / 14.0);
+
+        $demandScore = ($normElevation * 0.40)
+                     + ($normDistance  * 0.35)
+                     + ($normDuration  * 0.25);
+
+        $score = 1.0 + ($demandScore * 3.0);
+
+        if ($score < 1.75) {
             return 'mudah';
         }
-
-        if ($routeScore <= 1.6) {
+        if ($score < 2.50) {
             return 'sedang';
         }
-
-        if ($routeScore <= 2.4) {
+        if ($score < 3.25) {
             return 'sulit';
         }
-
         return 'sangat_sulit';
     }
 

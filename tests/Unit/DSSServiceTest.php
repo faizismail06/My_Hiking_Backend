@@ -81,9 +81,9 @@ class DSSServiceTest extends TestCase
         $service = new DSSService($weatherService);
 
         $trail = new Trail([
-            'jarak' => 8,
-            'elevasi' => 900,
-            'durasi' => 7,
+            'jarak' => 12,
+            'elevasi' => 2000,
+            'durasi' => 10,
             'tingkat_kesulitan' => 'sulit',
             'latitude' => -7.242,
             'longitude' => 109.208,

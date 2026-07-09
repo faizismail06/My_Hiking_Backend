@@ -69,7 +69,7 @@ class TrailController extends Controller
             'fasilitas_score' => 'required|integer|min:1|max:5',
             'safety_score' => 'required|integer|min:1|max:5',
             'crowd_level' => 'required|integer|min:1|max:5',
-            'popularity_score' => 'nullable|numeric|min:0',
+            'popularity_score' => 'nullable|numeric|min:0|max:100',
             // Validation for trail guard data
             'penjaga_name' => 'required|string|max:255',
             'penjaga_email' => 'required|email|unique:users,email',
@@ -191,7 +191,7 @@ class TrailController extends Controller
             'fasilitas_score' => 'required|integer|min:1|max:5',
             'safety_score' => 'required|integer|min:1|max:5',
             'crowd_level' => 'required|integer|min:1|max:5',
-            'popularity_score' => 'nullable|numeric|min:0',
+            'popularity_score' => 'nullable|numeric|min:0|max:100',
             // Validation for trail guard data (optional when editing)
             'penjaga_name' => 'nullable|string|max:255|required_with:penjaga_email,penjaga_phone',
             'penjaga_email' => [
