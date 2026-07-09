@@ -102,9 +102,30 @@ class TrailController extends Controller
         $durasiValue = $request->filled('durasi')
             ? (float) $request->input('durasi')
             : 0;
-        $tingkatKesulitanValue = $request->filled('tingkat_kesulitan')
-            ? $request->input('tingkat_kesulitan')
-            : 'sedang';
+        // Hitung tingkat kesulitan secara dinamis dari metrik fisik
+        $distanceKm  = max(0.0, (float) ($request->input('jarak') ?? 0.0));
+        $elevationM  = max(0.0, (float) ($request->input('elevasi') ?? 0.0));
+        $durationH   = max(0.0, (float) ($request->input('durasi') ?? 0.0));
+
+        $normDistance  = min(1.0, $distanceKm / 20.0);
+        $normElevation = min(1.0, $elevationM / 3500.0);
+        $normDuration  = min(1.0, $durationH  / 14.0);
+
+        $demandScore = ($normElevation * 0.40)
+                     + ($normDistance  * 0.35)
+                     + ($normDuration  * 0.25);
+
+        $score = 1.0 + ($demandScore * 3.0);
+
+        if ($score < 1.75) {
+            $tingkatKesulitanValue = 'mudah';
+        } elseif ($score < 2.50) {
+            $tingkatKesulitanValue = 'sedang';
+        } elseif ($score < 3.25) {
+            $tingkatKesulitanValue = 'sulit';
+        } else {
+            $tingkatKesulitanValue = 'sangat_sulit';
+        }
         if ($request->hasFile('gpx_file')) {
             try {
                 $parsedRoute = $gpxRouteService->parseFromUploadedFile($request->file('gpx_file'), 1500);
@@ -226,9 +247,30 @@ class TrailController extends Controller
         $durasiValue = $request->filled('durasi')
             ? (float) $request->input('durasi')
             : ($trail->durasi ?? 0);
-        $tingkatKesulitanValue = $request->filled('tingkat_kesulitan')
-            ? $request->input('tingkat_kesulitan')
-            : ($trail->tingkat_kesulitan ?: 'sedang');
+        // Hitung tingkat kesulitan secara dinamis dari metrik fisik
+        $distanceKm  = max(0.0, (float) ($request->input('jarak') ?? 0.0));
+        $elevationM  = max(0.0, (float) ($request->input('elevasi') ?? 0.0));
+        $durationH   = max(0.0, (float) ($request->input('durasi') ?? 0.0));
+
+        $normDistance  = min(1.0, $distanceKm / 20.0);
+        $normElevation = min(1.0, $elevationM / 3500.0);
+        $normDuration  = min(1.0, $durationH  / 14.0);
+
+        $demandScore = ($normElevation * 0.40)
+                     + ($normDistance  * 0.35)
+                     + ($normDuration  * 0.25);
+
+        $score = 1.0 + ($demandScore * 3.0);
+
+        if ($score < 1.75) {
+            $tingkatKesulitanValue = 'mudah';
+        } elseif ($score < 2.50) {
+            $tingkatKesulitanValue = 'sedang';
+        } elseif ($score < 3.25) {
+            $tingkatKesulitanValue = 'sulit';
+        } else {
+            $tingkatKesulitanValue = 'sangat_sulit';
+        }
 
         $updateData = [
             'nama' => $request->nama,

@@ -123,7 +123,7 @@
                     <div class="col-md-4">
                         <label class="form-label">Tingkat Kesulitan</label>
                         <select name="tingkat_kesulitan"
-                            class="form-select @error('tingkat_kesulitan') is-invalid @enderror">
+                            class="form-select @error('tingkat_kesulitan') is-invalid @enderror" disabled>
                             <option value="" disabled {{ old('tingkat_kesulitan') ? '' : 'selected' }}>Pilih tingkat
                             </option>
                             <option value="mudah" {{ old('tingkat_kesulitan') === 'mudah' ? 'selected' : '' }}>Mudah
@@ -526,6 +526,40 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         $(document).ready(function() {
+            // Auto-calculate difficulty level from Jarak, Elevasi, and Durasi
+            function calculateDifficulty() {
+                let jarak = parseFloat($('input[name="jarak"]').val()) || 0;
+                let elevasi = parseFloat($('input[name="elevasi"]').val()) || 0;
+                let durasi = parseFloat($('input[name="durasi"]').val()) || 0;
+
+                let normDistance = Math.min(1.0, jarak / 20.0);
+                let normElevation = Math.min(1.0, elevasi / 3500.0);
+                let normDuration = Math.min(1.0, durasi / 14.0);
+
+                let demandScore = (normElevation * 0.40) + (normDistance * 0.35) + (normDuration * 0.25);
+                let score = 1.0 + (demandScore * 3.0);
+
+                let difficulty = 'sedang';
+                if (score < 1.75) {
+                    difficulty = 'mudah';
+                } else if (score < 2.50) {
+                    difficulty = 'sedang';
+                } else if (score < 3.25) {
+                    difficulty = 'sulit';
+                } else {
+                    difficulty = 'sangat_sulit';
+                }
+
+                $('select[name="tingkat_kesulitan"]').val(difficulty);
+            }
+
+            $('input[name="jarak"], input[name="elevasi"], input[name="durasi"]').on('input change', function() {
+                calculateDifficulty();
+            });
+
+            // Initial calculation
+            calculateDifficulty();
+
             $('#province_id').change(function() {
                 let provinceId = $(this).val();
                 $('#regency_id').empty().append('<option value="" disabled selected>Loading...</option>');
