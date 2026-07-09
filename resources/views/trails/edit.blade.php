@@ -132,21 +132,9 @@
 
                     <div class="col-md-4">
                         <label class="form-label">Tingkat Kesulitan</label>
-                        <select name="tingkat_kesulitan"
-                            class="form-select @error('tingkat_kesulitan') is-invalid @enderror" disabled>
-                            <option value="mudah"
-                                {{ old('tingkat_kesulitan', $trail->tingkat_kesulitan) === 'mudah' ? 'selected' : '' }}>
-                                Mudah</option>
-                            <option value="sedang"
-                                {{ old('tingkat_kesulitan', $trail->tingkat_kesulitan) === 'sedang' ? 'selected' : '' }}>
-                                Sedang</option>
-                            <option value="sulit"
-                                {{ old('tingkat_kesulitan', $trail->tingkat_kesulitan) === 'sulit' ? 'selected' : '' }}>
-                                Sulit</option>
-                            <option value="sangat_sulit"
-                                {{ old('tingkat_kesulitan', $trail->tingkat_kesulitan) === 'sangat_sulit' ? 'selected' : '' }}>
-                                Sangat Sulit</option>
-                        </select>
+                        <input type="text" id="tingkat_kesulitan_preview" class="form-control" disabled 
+                            value="{{ ucwords(str_replace('_', ' ', $trail->tingkat_kesulitan ?? '')) }}"
+                            placeholder="Otomatis Terhitung">
                         @error('tingkat_kesulitan')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -746,7 +734,9 @@
                         difficulty = 'sangat_sulit';
                     }
 
-                    $('select[name="tingkat_kesulitan"]').val(difficulty);
+                    let difficultyText = difficulty.replace('_', ' ');
+                    difficultyText = difficultyText.charAt(0).toUpperCase() + difficultyText.slice(1);
+                    $('#tingkat_kesulitan_preview').val(difficultyText);
                 }
 
                 $('input[name="jarak"], input[name="elevasi"], input[name="durasi"]').on('input change', function() {
