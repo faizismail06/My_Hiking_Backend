@@ -34,11 +34,13 @@ class DSSService
         $coordinates = $this->resolveCoordinates($route);
         $weather = $this->weatherService->getCurrentWeather($coordinates['lat'], $coordinates['lng']);
 
-        $difficultyKey = $this->resolveDifficultyKey($route, $metrics['route_score']);
+        $difficultyData = $this->resolveDifficultyKey($route);
+        $difficultyKey = $difficultyData['key'];
+        $difficultyScore = $difficultyData['score'];
         $difficultyLevel = $this->difficultyMap[$difficultyKey];
 
         $riskGap = $difficultyLevel - $userTier;
-        $finalScore = round(($metrics['route_score'] * 0.75) + (($weather['weather_score_final'] ?? 0) * 0.25), 4);
+        $finalScore = round(($difficultyScore * 0.75) + (($weather['weather_score_final'] ?? 0) * 0.25), 4);
 
         $riskLevel = $this->resolveRiskLevel($riskGap, $finalScore, $userTier);
         $recommendation = $riskLevel === 'high_risk' ? 'not_recommended' : 'recommended';
@@ -110,7 +112,7 @@ class DSSService
         return array_key_exists($tier, $this->tierMap) ? $tier : 'pemula';
     }
 
-    private function resolveDifficultyKey(Trail $route, float $routeScore): string
+    private function resolveDifficultyKey(Trail $route): array
     {
         // Hitung tingkat kesulitan murni dari metrik fisik (jarak, elevasi, durasi)
         $distanceKm  = max(0.0, (float) ($route->jarak   ?? 0.0));
@@ -119,24 +121,25 @@ class DSSService
 
         $normDistance  = min(1.0, $distanceKm / 20.0);
         $normElevation = min(1.0, $elevationM / 3500.0);
-        $normDuration  = min(1.0, $durationH  / 14.0);
+        $normDuration = min(1.0, $durationH  / 14.0);
 
         $demandScore = ($normElevation * 0.40)
                      + ($normDistance  * 0.35)
                      + ($normDuration  * 0.25);
 
-        $score = 1.0 + ($demandScore * 3.0);
+        $score = round(1.0 + ($demandScore * 3.0), 4);
 
         if ($score < 1.75) {
-            return 'mudah';
+            $key = 'mudah';
+        } elseif ($score < 2.50) {
+            $key = 'sedang';
+        } elseif ($score < 3.25) {
+            $key = 'sulit';
+        } else {
+            $key = 'sangat_sulit';
         }
-        if ($score < 2.50) {
-            return 'sedang';
-        }
-        if ($score < 3.25) {
-            return 'sulit';
-        }
-        return 'sangat_sulit';
+
+        return ['key' => $key, 'score' => $score];
     }
 
     private function calculateRouteScore(Trail $route): array

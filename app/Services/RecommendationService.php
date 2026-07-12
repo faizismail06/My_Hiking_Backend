@@ -53,7 +53,8 @@ class RecommendationService
         ?float $maxBudget   = null
     ): array {
         // ── Step 1: Fetch all routes ────────────────────────────────────────
-        $routes = Trail::with('mountain')
+        $routes = Trail::has('mountain')
+            ->with('mountain')
             ->where('dss_status', 'approved')
             ->get();
 
