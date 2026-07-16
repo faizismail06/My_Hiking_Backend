@@ -30,9 +30,20 @@ use App\Http\Controllers\TrailGuardWithdrawalController;
 */
 
 Route::get('/', function () {
-    return redirect('/login');
+    try {
+        $mountains = \App\Models\Mountain::with('trails')->get();
+    } catch (\Exception $e) {
+        $mountains = collect();
+    }
+    return view('welcome', compact('mountains'));
 });
-Auth::routes();
+Auth::routes([
+    'login' => false,
+]);
+
+// Custom secure login routes to prevent guessing and automated attacks
+Route::get('/masuk-secure-admin-1706', [App\Http\Controllers\Auth\LoginController::class, 'showLoginForm'])->name('login');
+Route::post('/masuk-secure-admin-1706', [App\Http\Controllers\Auth\LoginController::class, 'login']);
 
 Route::middleware(['auth', 'level3'])->group(function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
