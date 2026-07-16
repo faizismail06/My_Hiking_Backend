@@ -396,7 +396,7 @@
                     Dapatkan pengalaman registrasi terlengkap langsung di smartphone Anda. Fitur checkout instan Midtrans Snap terintegrasi mempermudah pengisian tiket. Dilengkapi dengan navigasi offline, fitur chat pendaki berbasis kecerdasan buatan, dan jaminan keselamatan lewat Panic Button SAR.
                 </p>
                 
-                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-10">
+                <div class="flex flex-col items-center justify-center gap-3 relative z-10">
                     <a href="{{ asset('storage/app/myhiking.apk') }}" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold transition flex items-center justify-center gap-2 shadow-md">
                         <i class="fa-brands fa-android text-xl"></i> Download APK Langsung
                     </a>
