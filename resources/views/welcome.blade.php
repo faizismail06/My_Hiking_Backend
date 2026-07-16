@@ -90,7 +90,7 @@
             
             <!-- Link to Android download -->
             <div class="flex items-center gap-4">
-                <a href="{{ asset('storage/app/app-release.apk') }}" class="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm transition-all duration-300 shadow-md shadow-primary-500/10 flex items-center gap-2">
+                <a href="{{ asset('storage/app/myhiking.apk') }}" class="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm transition-all duration-300 shadow-md shadow-primary-500/10 flex items-center gap-2">
                     <i class="fa-brands fa-android text-base"></i> Download App
                 </a>
             </div>
@@ -120,7 +120,7 @@
                 <a href="#katalog" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold transition-all duration-300 shadow-lg shadow-primary-700/20 text-center flex items-center justify-center gap-2">
                     <i class="fa-solid fa-ticket"></i> Cari Tiket Gunung
                 </a>
-                <a href="{{ asset('storage/app/app-release.apk') }}" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-semibold transition-all duration-300 text-center flex items-center justify-center gap-2 shadow-sm">
+                <a href="{{ asset('storage/app/myhiking.apk') }}" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-semibold transition-all duration-300 text-center flex items-center justify-center gap-2 shadow-sm">
                     <i class="fa-brands fa-android text-lg text-primary-600"></i> Download Aplikasi Android
                 </a>
             </div>
@@ -227,7 +227,7 @@
                                 </div>
                             </div>
                             
-                            <a href="{{ asset('storage/app/app-release.apk') }}" class="w-full py-3 rounded-xl bg-primary-50 hover:bg-primary-600 hover:text-white border border-primary-500/20 text-primary-700 font-bold transition-all text-center block text-sm">
+                            <a href="{{ asset('storage/app/myhiking.apk') }}" class="w-full py-3 rounded-xl bg-primary-50 hover:bg-primary-600 hover:text-white border border-primary-500/20 text-primary-700 font-bold transition-all text-center block text-sm">
                                 <i class="fa-brands fa-android mr-2"></i> Pilih & Booking via App
                             </a>
                         </div>
@@ -276,7 +276,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <a href="{{ asset('storage/app/app-release.apk') }}" class="w-full py-3 rounded-xl bg-primary-50 hover:bg-primary-600 hover:text-white border border-primary-500/20 text-primary-700 font-bold transition-all text-center block text-sm">
+                            <a href="{{ asset('storage/app/myhiking.apk') }}" class="w-full py-3 rounded-xl bg-primary-50 hover:bg-primary-600 hover:text-white border border-primary-500/20 text-primary-700 font-bold transition-all text-center block text-sm">
                                 <i class="fa-brands fa-android mr-2"></i> Pilih & Booking via App
                             </a>
                         </div>
@@ -324,7 +324,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <a href="{{ asset('storage/app/app-release.apk') }}" class="w-full py-3 rounded-xl bg-primary-50 hover:bg-primary-600 hover:text-white border border-primary-500/20 text-primary-700 font-bold transition-all text-center block text-sm">
+                            <a href="{{ asset('storage/app/myhiking.apk') }}" class="w-full py-3 rounded-xl bg-primary-50 hover:bg-primary-600 hover:text-white border border-primary-500/20 text-primary-700 font-bold transition-all text-center block text-sm">
                                 <i class="fa-brands fa-android mr-2"></i> Pilih & Booking via App
                             </a>
                         </div>
@@ -372,7 +372,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <a href="{{ asset('storage/app/app-release.apk') }}" class="w-full py-3 rounded-xl bg-primary-50 hover:bg-primary-600 hover:text-white border border-primary-500/20 text-primary-700 font-bold transition-all text-center block text-sm">
+                            <a href="{{ asset('storage/app/myhiking.apk') }}" class="w-full py-3 rounded-xl bg-primary-50 hover:bg-primary-600 hover:text-white border border-primary-500/20 text-primary-700 font-bold transition-all text-center block text-sm">
                                 <i class="fa-brands fa-android mr-2"></i> Pilih & Booking via App
                             </a>
                         </div>
@@ -397,7 +397,7 @@
                 </p>
                 
                 <div class="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-10">
-                    <a href="{{ asset('storage/app/app-release.apk') }}" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold transition flex items-center justify-center gap-2 shadow-md">
+                    <a href="{{ asset('storage/app/myhiking.apk') }}" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold transition flex items-center justify-center gap-2 shadow-md">
                         <i class="fa-brands fa-android text-xl"></i> Download APK Langsung
                     </a>
                     <span class="text-xs text-gray-500 font-medium">Versi Android 8.0+ didukung</span>
