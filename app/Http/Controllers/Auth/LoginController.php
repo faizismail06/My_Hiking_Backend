@@ -37,6 +37,21 @@ class LoginController extends Controller
     public function __construct()
     {
         $this->middleware('guest')->except('logout');
+
+        // Protect /login route using a secret key parameter
+        $this->middleware(function ($request, $next) {
+            // Authorize session if correct key is provided in GET query parameter
+            if ($request->isMethod('get') && $request->query('key') === 'myhiking') {
+                session(['can_access_login' => true]);
+            }
+
+            // Abort with 404 if session is not authorized to access login
+            if (!session('can_access_login')) {
+                abort(404);
+            }
+
+            return $next($request);
+        })->only(['showLoginForm', 'login']);
     }
 
     protected function redirectTo()

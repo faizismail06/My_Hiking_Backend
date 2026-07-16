@@ -37,13 +37,7 @@ Route::get('/', function () {
     }
     return view('welcome', compact('mountains'));
 });
-Auth::routes([
-    'login' => false,
-]);
-
-// Custom secure login routes to prevent guessing and automated attacks
-Route::get('/masuk-secure-admin-1706', [App\Http\Controllers\Auth\LoginController::class, 'showLoginForm'])->name('login');
-Route::post('/masuk-secure-admin-1706', [App\Http\Controllers\Auth\LoginController::class, 'login']);
+Auth::routes();
 
 Route::middleware(['auth', 'level3'])->group(function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
