@@ -31,10 +31,10 @@ class MountainController extends Controller
 
     public function create()
     {
-        $province_id = ProvinceWeb::all();
-        $regency_id = RegencyWeb::all();
-        $district_id = DistrictWeb::all();
-        $village_id = VillageWeb::all();
+        $province_id = ProvinceWeb::query()->select(['id', 'name'])->orderBy('name')->get();
+        $regency_id = collect();
+        $district_id = collect();
+        $village_id = collect();
 
         return view('mountains.create', compact('province_id', 'regency_id', 'district_id', 'village_id'));
     }
@@ -81,10 +81,19 @@ class MountainController extends Controller
     {
         $mountain = MountainWeb::findOrFail($id);
 
-        $province_id = ProvinceWeb::all();
-        $regency_id = RegencyWeb::all();
-        $district_id = DistrictWeb::all();
-        $village_id = VillageWeb::all();
+        $province_id = ProvinceWeb::query()->select(['id', 'name'])->orderBy('name')->get();
+        
+        $regency_id = $mountain->province_id
+            ? RegencyWeb::query()->select(['id', 'name', 'province_id'])->where('province_id', $mountain->province_id)->orderBy('name')->get()
+            : collect();
+            
+        $district_id = $mountain->regency_id
+            ? DistrictWeb::query()->select(['id', 'name', 'regency_id'])->where('regency_id', $mountain->regency_id)->orderBy('name')->get()
+            : collect();
+            
+        $village_id = $mountain->district_id
+            ? VillageWeb::query()->select(['id', 'name', 'district_id'])->where('district_id', $mountain->district_id)->orderBy('name')->get()
+            : collect();
 
         return view('mountains.edit', compact('mountain', 'province_id', 'regency_id', 'district_id', 'village_id'));
     }
