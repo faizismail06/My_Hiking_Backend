@@ -54,6 +54,23 @@ class ChatbotTrailController extends Controller
 
         $this->resolveRegionIds($request, $validated);
 
+        // Wariskan lokasi dari gunung terkait jika tidak dikirim/tidak ter-resolve
+        $mountain = \App\Models\Mountain::find($validated['id_gunung']);
+        if ($mountain) {
+            if (empty($validated['province_id']) && !empty($mountain->province_id)) {
+                $validated['province_id'] = $mountain->province_id;
+            }
+            if (empty($validated['regency_id']) && !empty($mountain->regency_id)) {
+                $validated['regency_id'] = $mountain->regency_id;
+            }
+            if (empty($validated['district_id']) && !empty($mountain->district_id)) {
+                $validated['district_id'] = $mountain->district_id;
+            }
+            if (empty($validated['village_id']) && !empty($mountain->village_id)) {
+                $validated['village_id'] = $mountain->village_id;
+            }
+        }
+
         // Set default DSS status supaya jalur langsung aktif setelah dibuat chatbot
         $validated['dss_status'] = 'approved';
 
@@ -100,6 +117,24 @@ class ChatbotTrailController extends Controller
         ]);
 
         $this->resolveRegionIds($request, $validated);
+
+        // Wariskan lokasi dari gunung terkait jika lokasi tidak diisi
+        $targetGunungId = $validated['id_gunung'] ?? $trail->id_gunung;
+        $mountain = \App\Models\Mountain::find($targetGunungId);
+        if ($mountain) {
+            if (empty($validated['province_id']) && !empty($mountain->province_id)) {
+                $validated['province_id'] = $mountain->province_id;
+            }
+            if (empty($validated['regency_id']) && !empty($mountain->regency_id)) {
+                $validated['regency_id'] = $mountain->regency_id;
+            }
+            if (empty($validated['district_id']) && !empty($mountain->district_id)) {
+                $validated['district_id'] = $mountain->district_id;
+            }
+            if (empty($validated['village_id']) && !empty($mountain->village_id)) {
+                $validated['village_id'] = $mountain->village_id;
+            }
+        }
 
         $trail->update($validated);
 
