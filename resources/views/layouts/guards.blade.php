@@ -1417,7 +1417,7 @@
                 const downloadBtn = document.createElement('a');
                 downloadBtn.className = 'btn btn-primary btn-sm';
                 downloadBtn.textContent = 'Download';
-                downloadBtn.href = `http://127.0.0.1:5000${downloadPath}`;
+                downloadBtn.href = `http://103.93.132.167/chatbot${downloadPath}`;
                 downloadBtn.setAttribute('download', '');
                 downloadBtn.setAttribute('target', '_blank');
                 downloadBtn.setAttribute('rel', 'noopener noreferrer');
@@ -1448,7 +1448,7 @@
                 });
 
                 try {
-                    const resp = await fetch('http://127.0.0.1:5000/api/chat', {
+                    const resp = await fetch('http://103.93.132.167/chatbot/api/chat', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
