@@ -235,9 +235,6 @@ class OfflineTrackSyncTest extends TestCase
 
         $mountainId = DB::table('mountains')->insertGetId([
             'province_id' => '33',
-            'regency_id' => '3301',
-            'district_id' => '330101',
-            'village_id' => '3301010001',
             'nama' => 'Gunung Test',
             'deskripsi' => 'Gunung untuk testing endpoint sync offline.',
             'ketinggian' => 2000,

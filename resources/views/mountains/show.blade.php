@@ -34,7 +34,7 @@
                 <h3 class="mb-4">{{ $mountain->nama }}</h3>
                 
                 <div class="row g-3">
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <div class="d-flex align-items-center mb-3">
                             <div class="icon-box me-3" style="width: 40px; height: 40px; background: rgba(79, 70, 229, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
                                 <i class="fas fa-map text-primary"></i>
@@ -42,39 +42,6 @@
                             <div>
                                 <small class="text-muted d-block">Provinsi</small>
                                 <span class="fw-semibold">{{ $mountain->province->name ?? 'Tidak Diketahui' }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="icon-box me-3" style="width: 40px; height: 40px; background: rgba(79, 70, 229, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                                <i class="fas fa-city text-primary"></i>
-                            </div>
-                            <div>
-                                <small class="text-muted d-block">Kabupaten/Kota</small>
-                                <span class="fw-semibold">{{ $mountain->regency->name ?? 'Tidak Diketahui' }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="icon-box me-3" style="width: 40px; height: 40px; background: rgba(79, 70, 229, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                                <i class="fas fa-map-pin text-primary"></i>
-                            </div>
-                            <div>
-                                <small class="text-muted d-block">Kecamatan</small>
-                                <span class="fw-semibold">{{ $mountain->district->name ?? 'Tidak Diketahui' }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="icon-box me-3" style="width: 40px; height: 40px; background: rgba(79, 70, 229, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                                <i class="fas fa-home text-primary"></i>
-                            </div>
-                            <div>
-                                <small class="text-muted d-block">Desa</small>
-                                <span class="fw-semibold">{{ $mountain->village->name ?? 'Tidak Diketahui' }}</span>
                             </div>
                         </div>
                     </div>

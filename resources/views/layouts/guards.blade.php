@@ -1386,6 +1386,22 @@
             const userId = {{ Auth::id() }};
             const history = [];
 
+            function formatMarkdown(text) {
+                let temp = document.createElement('div');
+                temp.textContent = text;
+                let html = temp.innerHTML;
+
+                html = html.replace(/^### (.*?)$/gm, '<h6 class="fw-bold my-1">$1</h6>');
+                html = html.replace(/^## (.*?)$/gm, '<h5 class="fw-bold my-2">$1</h5>');
+                html = html.replace(/^# (.*?)$/gm, '<h4 class="fw-bold my-2">$1</h4>');
+                html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                html = html.replace(/^- (.*?)$/gm, '• $1');
+                html = html.replace(/\n/g, '<br>');
+
+                return html;
+            }
+
             function appendMessage(text, sender = 'bot') {
                 const wrap = document.createElement('div');
                 wrap.className = `d-flex ${sender === 'user' ? 'justify-content-end' : 'justify-content-start'} mb-2`;
@@ -1395,7 +1411,7 @@
                     `px-3 py-2 rounded ${sender === 'user' ? 'global-chat-bubble-user' : 'global-chat-bubble-bot'}`;
                 bubble.style.maxWidth = '82%';
                 bubble.style.whiteSpace = 'pre-wrap';
-                bubble.textContent = text;
+                bubble.innerHTML = formatMarkdown(text);
 
                 wrap.appendChild(bubble);
                 chatBox.appendChild(wrap);
@@ -1448,7 +1464,11 @@
                 });
 
                 try {
-                    const resp = await fetch('http://103.93.132.167/chatbot/api/chat', {
+                    const chatbotUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                        ? 'http://localhost:5000/api/chat'
+                        : 'http://103.93.132.167/chatbot/api/chat';
+
+                    const resp = await fetch(chatbotUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
