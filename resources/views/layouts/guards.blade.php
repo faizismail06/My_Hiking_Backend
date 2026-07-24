@@ -1179,6 +1179,11 @@
                         backdrop: 'static',
                         keyboard: false
                     });
+                    el.addEventListener('hidden.bs.modal', function () {
+                        stopAlarm();
+                        currentPanicId = null;
+                        currentDetailUrl = null;
+                    });
                 }
             }
             return modalInstance;
@@ -1301,6 +1306,16 @@
             })
             .then(function (data) {
                 updateSidebarBadge(data.total_pending);
+
+                // If modal is currently open for a panic, verify it is still active/pending
+                if (isModalOpen && currentPanicId) {
+                    const activeIds = data.active_pending_ids || [];
+                    if (!activeIds.includes(currentPanicId)) {
+                        // The panic request was accepted/handled elsewhere
+                        closeSOSModal();
+                        return;
+                    }
+                }
 
                 if (!isModalOpen && data.panics && data.panics.length > 0) {
                     // Show alert for the first/latest unread panic

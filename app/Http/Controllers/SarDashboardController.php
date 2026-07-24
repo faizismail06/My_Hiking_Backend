@@ -145,7 +145,7 @@ class SarDashboardController extends Controller
         $managedMountains = TrailWeb::where('user_id', $user->id)->pluck('id_gunung')->unique();
 
         if ($managedMountains->isEmpty()) {
-            return response()->json(['panics' => [], 'count' => 0, 'total_pending' => 0]);
+            return response()->json(['panics' => [], 'count' => 0, 'total_pending' => 0, 'active_pending_ids' => []]);
         }
 
         // The client sends the last panic id it has already seen/alerted.
@@ -174,14 +174,18 @@ class SarDashboardController extends Controller
                 ];
             });
 
-        $totalPending = PanicRequest::whereHas('order', function ($q) use ($managedMountains) {
+        $activePendingQuery = PanicRequest::whereHas('order', function ($q) use ($managedMountains) {
             $q->whereIn('id_gunung', $managedMountains);
-        })->where('status', 'pending')->count();
+        })->where('status', 'pending');
+
+        $totalPending = (clone $activePendingQuery)->count();
+        $activePendingIds = (clone $activePendingQuery)->pluck('id')->toArray();
 
         return response()->json([
             'panics' => $newPanics,
             'count'  => $newPanics->count(),
             'total_pending' => $totalPending,
+            'active_pending_ids' => $activePendingIds,
         ]);
     }
 }
