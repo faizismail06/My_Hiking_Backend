@@ -254,19 +254,25 @@ class TrailGuardController extends Controller
             return redirect()->back()->with('error', 'You have not been assigned to manage a trail.');
         }
 
-        $month = $request->input('bulan', now()->month);
-        $year = $request->input('tahun', now()->year);
+        $month = $request->input('bulan', 'all');
+        $year = $request->input('tahun', 'all');
 
-        // Successful transactions
-        $transactions = TransactionWeb::whereHas('order', function ($query) use ($trail) {
-            $query->where('id_jalur', $trail->id);
+        // Successful transactions query
+        $query = TransactionWeb::whereHas('order', function ($q) use ($trail) {
+            $q->where('id_jalur', $trail->id);
         })
             ->with(['order.user', 'order.orderMembers'])
-            ->whereMonth('created_at', $month)
-            ->whereYear('created_at', $year)
-            ->whereIn('status_pesanan', $this->paidTransactionStatuses())
-            ->orderBy('created_at', 'desc')
-            ->get();
+            ->whereIn('status_pesanan', $this->paidTransactionStatuses());
+
+        if ($month !== 'all' && is_numeric($month)) {
+            $query->whereMonth('created_at', (int) $month);
+        }
+
+        if ($year !== 'all' && is_numeric($year)) {
+            $query->whereYear('created_at', (int) $year);
+        }
+
+        $transactions = $query->orderBy('created_at', 'desc')->get();
 
         $totalRevenue = $transactions->sum('total_bayar');
         $totalPaidVisitors = $transactions->sum(function ($transaction) {
@@ -278,14 +284,21 @@ class TrailGuardController extends Controller
             return $memberCount + 1;
         });
 
-        // Daily revenue chart
-        $dailyRevenue = TransactionWeb::whereHas('order', function ($query) use ($trail) {
-            $query->where('id_jalur', $trail->id);
+        // Daily revenue chart query
+        $chartQuery = TransactionWeb::whereHas('order', function ($q) use ($trail) {
+            $q->where('id_jalur', $trail->id);
         })
-            ->whereMonth('created_at', $month)
-            ->whereYear('created_at', $year)
-            ->whereIn('status_pesanan', $this->paidTransactionStatuses())
-            ->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(total_bayar) as total'))
+            ->whereIn('status_pesanan', $this->paidTransactionStatuses());
+
+        if ($month !== 'all' && is_numeric($month)) {
+            $chartQuery->whereMonth('created_at', (int) $month);
+        }
+
+        if ($year !== 'all' && is_numeric($year)) {
+            $chartQuery->whereYear('created_at', (int) $year);
+        }
+
+        $dailyRevenue = $chartQuery->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(total_bayar) as total'))
             ->groupBy('date')
             ->orderBy('date')
             ->get();

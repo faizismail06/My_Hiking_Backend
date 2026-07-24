@@ -38,25 +38,31 @@ class EarningsCalculationService
      */
     public function updateEarningsForUser(User $user)
     {
-        // Get all paid orders for trails managed by this user
+        // Get all paid transactions total for trails managed by this user
         $totalEarnings = $this->calculateEarningsForUser($user);
 
-        // Get total withdrawn amount
-        $totalWithdrawn = DB::table('withdrawal_requests')
+        // Get total completed withdrawn amount
+        $totalWithdrawn = (float) DB::table('withdrawal_requests')
             ->where('user_id', $user->id)
             ->where('status', 'completed')
             ->sum('amount');
 
-        // Calculate available balance
-        $availableBalance = $totalEarnings - $totalWithdrawn;
+        // Get total pending or approved (reserved) withdrawn amount
+        $pendingWithdrawn = (float) DB::table('withdrawal_requests')
+            ->where('user_id', $user->id)
+            ->whereIn('status', ['pending', 'approved'])
+            ->sum('amount');
 
-        // Count transactions
-        $transactionCount = Order::whereHas('trail', function ($query) use ($user) {
-            $query->where('user_id', $user->id);
-        })
-            ->whereHas('transaction', function ($query) {
-                $this->applyPaidTransactionFilter($query);
-            })
+        // Available balance is total earnings minus completed withdrawals minus reserved pending requests
+        $availableBalance = max(0, $totalEarnings - $totalWithdrawn - $pendingWithdrawn);
+
+        // Count paid transactions
+        $trailIds = DB::table('routes')->where('user_id', $user->id)->pluck('id');
+        $paidStatuses = ['Complete', 'Verified', 'paid', 'settlement', 'success', 'completed', 'confirmed'];
+        $transactionCount = DB::table('transactions')
+            ->join('orders', 'transactions.id_pesanan', '=', 'orders.id')
+            ->whereIn('orders.id_jalur', $trailIds)
+            ->whereIn('transactions.status_pesanan', $paidStatuses)
             ->count();
 
         // Update user balance columns
@@ -69,34 +75,25 @@ class EarningsCalculationService
     }
 
     /**
-     * Calculate total earnings for a specific user from paid orders
+     * Calculate total earnings for a specific user from paid orders/transactions
      */
     public function calculateEarningsForUser(User $user): float
     {
-        $earnings = 0;
+        $trailIds = DB::table('routes')->where('user_id', $user->id)->pluck('id');
 
-        // Get all trails for this user
-        $trails = $user->trails()->get();
-
-        foreach ($trails as $trail) {
-            // Get all paid orders for this trail
-            $orders = Order::where('id_jalur', $trail->id)
-                ->whereHas('transaction', function ($query) {
-                    $this->applyPaidTransactionFilter($query);
-                })
-                ->get();
-
-            foreach ($orders as $order) {
-                // Count members in this order (including booker)
-                $memberCount = $order->members()->count() + 1; // +1 for the booker
-
-                // Calculate earnings: trail fee × number of members
-                $orderEarning = $trail->biaya * $memberCount;
-                $earnings += $orderEarning;
-            }
+        if ($trailIds->isEmpty()) {
+            return 0.0;
         }
 
-        return (float) $earnings;
+        $paidStatuses = ['Complete', 'Verified', 'paid', 'settlement', 'success', 'completed', 'confirmed'];
+
+        $totalEarnings = DB::table('transactions')
+            ->join('orders', 'transactions.id_pesanan', '=', 'orders.id')
+            ->whereIn('orders.id_jalur', $trailIds)
+            ->whereIn('transactions.status_pesanan', $paidStatuses)
+            ->sum('transactions.total_bayar');
+
+        return (float) $totalEarnings;
     }
 
     /**
