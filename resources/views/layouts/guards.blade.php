@@ -1092,6 +1092,7 @@
         let lastSeenId      = 0;      // tracks highest panic id already alerted
         let currentPanicId  = null;   // id shown in the modal right now
         let currentDetailUrl = null;  // redirect URL for "TERIMA PANGGILAN"
+        let currentRespondUrl = null; // POST action URL for "TERIMA PANGGILAN"
         let alarmCtx        = null;   // Web Audio API context
         let alarmNodes      = [];     // active oscillator/gain nodes
         let alarmTimer      = null;   // setInterval handle for looping
@@ -1183,6 +1184,7 @@
                         stopAlarm();
                         currentPanicId = null;
                         currentDetailUrl = null;
+                        currentRespondUrl = null;
                     });
                 }
             }
@@ -1216,8 +1218,9 @@
                 }
             }
 
-            currentDetailUrl = panic.detail_url;
-            currentPanicId   = panic.id;
+            currentDetailUrl  = panic.detail_url;
+            currentRespondUrl = panic.respond_url;
+            currentPanicId    = panic.id;
         }
 
         function showSOSModal(panic) {
@@ -1256,8 +1259,9 @@
             if (modal) {
                 modal.hide();
             }
-            currentPanicId  = null;
-            currentDetailUrl = null;
+            currentPanicId    = null;
+            currentDetailUrl  = null;
+            currentRespondUrl = null;
         }
 
         /* ------------------------------------------------------------------ */
@@ -1266,10 +1270,26 @@
         const acceptBtn = document.getElementById('btnTerimaCall');
         if (acceptBtn) {
             acceptBtn.addEventListener('click', function () {
-                const url = currentDetailUrl;
+                const respondUrl = currentRespondUrl;
+                const detailUrl  = currentDetailUrl;
+
                 closeSOSModal();
-                if (url) {
-                    window.location.href = url;
+
+                if (respondUrl) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = respondUrl;
+
+                    const csrf = document.createElement('input');
+                    csrf.type = 'hidden';
+                    csrf.name = '_token';
+                    csrf.value = '{{ csrf_token() }}';
+                    form.appendChild(csrf);
+
+                    document.body.appendChild(form);
+                    form.submit();
+                } else if (detailUrl) {
+                    window.location.href = detailUrl;
                 }
             });
         }
@@ -1346,8 +1366,14 @@
                 updateSidebarBadge(d.total_pending);
 
                 if (d.panics && d.panics.length > 0) {
-                    // On first load: just seed the cursor — don't alarm for existing panics
-                    lastSeenId = d.panics[d.panics.length - 1].id;
+                    const latest = d.panics[d.panics.length - 1];
+                    lastSeenId = latest.id;
+
+                    const modalEl = document.getElementById('sosModal');
+                    const isModalOpen = modalEl && modalEl.classList.contains('show');
+                    if (!isModalOpen) {
+                        showSOSModal(latest);
+                    }
                 }
                 // Start polling AFTER seeding
                 pollTimer = setInterval(checkNewPanics, POLL_INTERVAL_MS);

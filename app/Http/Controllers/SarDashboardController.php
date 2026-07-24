@@ -101,7 +101,7 @@ class SarDashboardController extends Controller
             'responded_at' => now(),
         ]);
 
-        return redirect()->back()->with('success', 'Anda telah merespons permintaan darurat ini');
+        return redirect()->route('guards.sar.show', $panicRequest->id)->with('success', 'Anda telah merespons permintaan darurat ini');
     }
 
     /**
