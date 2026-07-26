@@ -13,49 +13,121 @@ class WeatherService
         $cacheKey = sprintf('weather:current:v2:%s:%s', $normalizedLat, $normalizedLng);
 
         return Cache::remember($cacheKey, now()->addMinutes(15), function () use ($normalizedLat, $normalizedLng) {
-            try {
-                $response = Http::timeout(3)->get('https://api.open-meteo.com/v1/forecast', [
-                    'latitude' => $normalizedLat,
-                    'longitude' => $normalizedLng,
-                    'current_weather' => true,
-                    'current' => 'weather_code,temperature_2m,wind_speed_10m',
-                    'hourly' => 'precipitation_probability',
-                    'forecast_days' => 1,
-                    'timezone' => 'auto',
-                ]);
-
-                if (!$response->ok()) {
-                    return $this->fallbackWeather();
+            $openWeatherKey = config('services.openweather.key');
+            if (!empty($openWeatherKey)) {
+                $owResult = $this->fetchOpenWeatherCurrent($normalizedLat, $normalizedLng, $openWeatherKey);
+                if ($owResult !== null) {
+                    return $owResult;
                 }
+            }
 
-                $payload = $response->json();
-                $current = (array) ($payload['current'] ?? []);
-                $legacyCurrent = (array) ($payload['current_weather'] ?? []);
+            return $this->fetchOpenMeteoCurrent($normalizedLat, $normalizedLng);
+        });
+    }
 
-                $weatherCode = (int) ($current['weather_code'] ?? $legacyCurrent['weathercode'] ?? 0);
-                $temperature = $this->toNullableFloat($current['temperature_2m'] ?? $legacyCurrent['temperature'] ?? null);
-                $windSpeed = $this->toNullableFloat($current['wind_speed_10m'] ?? $legacyCurrent['windspeed'] ?? null) ?? 0.0;
-                $precipitationProbability = $this->resolveCurrentPrecipitationProbability($payload);
+    public function fetchOpenWeatherCurrent(float $lat, float $lng, ?string $apiKey = null): ?array
+    {
+        $key = $apiKey ?? config('services.openweather.key');
+        if (empty($key)) {
+            return null;
+        }
 
-                $weatherScore = $this->mapWeatherCodeToScore($weatherCode);
-                $windScore = $this->mapWindSpeedToScore($windSpeed);
-                $weatherScoreFinal = round(($weatherScore * 0.7) + ($windScore * 0.3), 4);
+        try {
+            $baseUrl = config('services.openweather.base_url', 'https://api.openweathermap.org/data/2.5');
+            $units = config('services.openweather.units', 'metric');
 
-                return [
-                    'code' => $weatherCode,
-                    'condition' => $this->mapWeatherCodeToCondition($weatherCode),
-                    'temperature' => $temperature,
-                    'wind_speed' => round($windSpeed, 2),
-                    'precipitation_probability' => $precipitationProbability,
-                    'weather_score' => $weatherScore,
-                    'wind_score' => $windScore,
-                    'weather_score_final' => $weatherScoreFinal,
-                ];
-            } catch (\Throwable $e) {
-                report($e);
+            $response = Http::timeout(4)->get("{$baseUrl}/weather", [
+                'lat' => $lat,
+                'lon' => $lng,
+                'appid' => $key,
+                'units' => $units,
+            ]);
+
+            if (!$response->ok()) {
+                return null;
+            }
+
+            $data = (array) $response->json();
+            $owId = (int) ($data['weather'][0]['id'] ?? 800);
+            $weatherCode = $this->mapOpenWeatherIdToWmoCode($owId);
+            $temperature = $this->toNullableFloat($data['main']['temp'] ?? null);
+
+            // OpenWeather wind speed in metric is m/s. Convert to km/h for consistency
+            $windSpeedMs = $this->toNullableFloat($data['wind']['speed'] ?? null) ?? 0.0;
+            $windSpeedKmH = $windSpeedMs * 3.6;
+
+            $precipProb = null;
+            if (isset($data['pop'])) {
+                $precipProb = (float) ($data['pop'] * 100);
+            } elseif (isset($data['rain']['1h'])) {
+                $precipProb = min(100.0, (float) ($data['rain']['1h'] * 20));
+            }
+
+            $weatherScore = $this->mapWeatherCodeToScore($weatherCode);
+            $windScore = $this->mapWindSpeedToScore($windSpeedKmH);
+            $weatherScoreFinal = round(($weatherScore * 0.7) + ($windScore * 0.3), 4);
+
+            return [
+                'code' => $weatherCode,
+                'condition' => $this->mapWeatherCodeToCondition($weatherCode),
+                'temperature' => $temperature,
+                'wind_speed' => round($windSpeedKmH, 2),
+                'precipitation_probability' => $precipProb,
+                'weather_score' => $weatherScore,
+                'wind_score' => $windScore,
+                'weather_score_final' => $weatherScoreFinal,
+                'source' => 'openweather',
+            ];
+        } catch (\Throwable $e) {
+            report($e);
+            return null;
+        }
+    }
+
+    public function fetchOpenMeteoCurrent(float $lat, float $lng): array
+    {
+        try {
+            $response = Http::timeout(3)->get('https://api.open-meteo.com/v1/forecast', [
+                'latitude' => $lat,
+                'longitude' => $lng,
+                'current_weather' => true,
+                'current' => 'weather_code,temperature_2m,wind_speed_10m',
+                'hourly' => 'precipitation_probability',
+                'forecast_days' => 1,
+                'timezone' => 'auto',
+            ]);
+
+            if (!$response->ok()) {
                 return $this->fallbackWeather();
             }
-        });
+
+            $payload = $response->json();
+            $current = (array) ($payload['current'] ?? []);
+            $legacyCurrent = (array) ($payload['current_weather'] ?? []);
+
+            $weatherCode = (int) ($current['weather_code'] ?? $legacyCurrent['weathercode'] ?? 0);
+            $temperature = $this->toNullableFloat($current['temperature_2m'] ?? $legacyCurrent['temperature'] ?? null);
+            $windSpeed = $this->toNullableFloat($current['wind_speed_10m'] ?? $legacyCurrent['windspeed'] ?? null) ?? 0.0;
+            $precipitationProbability = $this->resolveCurrentPrecipitationProbability($payload);
+
+            $weatherScore = $this->mapWeatherCodeToScore($weatherCode);
+            $windScore = $this->mapWindSpeedToScore($windSpeed);
+            $weatherScoreFinal = round(($weatherScore * 0.7) + ($windScore * 0.3), 4);
+
+            return [
+                'code' => $weatherCode,
+                'condition' => $this->mapWeatherCodeToCondition($weatherCode),
+                'temperature' => $temperature,
+                'wind_speed' => round($windSpeed, 2),
+                'precipitation_probability' => $precipitationProbability,
+                'weather_score' => $weatherScore,
+                'wind_score' => $windScore,
+                'weather_score_final' => $weatherScoreFinal,
+            ];
+        } catch (\Throwable $e) {
+            report($e);
+            return $this->fallbackWeather();
+        }
     }
 
     public function getForecast(float $lat, float $lng): array
@@ -331,5 +403,35 @@ class WeatherService
         }
 
         return $this->toNullableFloat($precipList[0] ?? null);
+    }
+
+    private function mapOpenWeatherIdToWmoCode(int $id): int
+    {
+        if ($id >= 200 && $id <= 232) {
+            return 95; // Thunderstorm
+        }
+        if ($id >= 300 && $id <= 321) {
+            return 51; // Drizzle
+        }
+        if ($id >= 500 && $id <= 531) {
+            return 61; // Rain
+        }
+        if ($id >= 600 && $id <= 622) {
+            return 71; // Snow
+        }
+        if ($id >= 701 && $id <= 781) {
+            return 45; // Atmosphere / Fog
+        }
+        if ($id === 800) {
+            return 0; // Clear
+        }
+        if ($id === 801 || $id === 802) {
+            return 1; // Few / Scattered Clouds
+        }
+        if ($id === 803 || $id === 804) {
+            return 3; // Broken / Overcast Clouds
+        }
+
+        return 0;
     }
 }
