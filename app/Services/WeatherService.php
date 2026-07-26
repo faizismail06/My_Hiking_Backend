@@ -136,41 +136,150 @@ class WeatherService
         $cacheKey = sprintf('weather:forecast:%s:%s', $normalizedLat, $normalizedLng);
 
         return Cache::remember($cacheKey, now()->addMinutes(15), function () use ($normalizedLat, $normalizedLng) {
-            try {
-                $response = Http::timeout(10)->get('https://api.open-meteo.com/v1/forecast', [
-                    'latitude' => $normalizedLat,
-                    'longitude' => $normalizedLng,
-                    'daily' => 'temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,sunrise,sunset',
-                    'hourly' => 'temperature_2m,weather_code,relative_humidity_2m,precipitation_probability,wind_speed_10m',
-                    'timezone' => 'auto',
-                    'forecast_days' => 7,
-                ]);
-
-                if (!$response->ok()) {
-                    return [
-                        'daily' => [
-                            'time' => [],
-                            'temperature_2m_max' => [],
-                            'temperature_2m_min' => [],
-                            'weather_code' => [],
-                            'precipitation_probability_max' => [],
-                            'sunrise' => [],
-                            'sunset' => [],
-                        ],
-                        'hourly' => [
-                            'time' => [],
-                            'temperature_2m' => [],
-                            'weather_code' => [],
-                            'relative_humidity_2m' => [],
-                            'precipitation_probability' => [],
-                            'wind_speed_10m' => [],
-                        ],
-                    ];
+            $openWeatherKey = config('services.openweather.key');
+            if (!empty($openWeatherKey)) {
+                $owForecast = $this->fetchOpenWeatherForecast($normalizedLat, $normalizedLng, $openWeatherKey);
+                if ($owForecast !== null) {
+                    return $owForecast;
                 }
+            }
 
-                return (array) $response->json();
-            } catch (\Throwable $e) {
-                report($e);
+            return $this->fetchOpenMeteoForecast($normalizedLat, $normalizedLng);
+        });
+    }
+
+    public function fetchOpenWeatherForecast(float $lat, float $lng, ?string $apiKey = null): ?array
+    {
+        $key = $apiKey ?? config('services.openweather.key');
+        if (empty($key)) {
+            return null;
+        }
+
+        try {
+            $baseUrl = config('services.openweather.base_url', 'https://api.openweathermap.org/data/2.5');
+            $units = config('services.openweather.units', 'metric');
+
+            $response = Http::timeout(5)->get("{$baseUrl}/forecast", [
+                'lat' => $lat,
+                'lon' => $lng,
+                'appid' => $key,
+                'units' => $units,
+            ]);
+
+            if (!$response->ok()) {
+                return null;
+            }
+
+            $data = (array) $response->json();
+            $list = (array) ($data['list'] ?? []);
+
+            $hourlyTime = [];
+            $hourlyTemp = [];
+            $hourlyCode = [];
+            $hourlyHumidity = [];
+            $hourlyPrecip = [];
+            $hourlyWind = [];
+
+            $dailyMap = [];
+
+            foreach ($list as $item) {
+                $dtTxt = $item['dt_txt'] ?? null;
+                if (!$dtTxt) continue;
+
+                $isoTime = str_replace(' ', 'T', substr($dtTxt, 0, 16));
+                $dateStr = substr($dtTxt, 0, 10);
+
+                $temp = (float) ($item['main']['temp'] ?? 0);
+                $tempMin = (float) ($item['main']['temp_min'] ?? $temp);
+                $tempMax = (float) ($item['main']['temp_max'] ?? $temp);
+                $owId = (int) ($item['weather'][0]['id'] ?? 800);
+                $wmoCode = $this->mapOpenWeatherIdToWmoCode($owId);
+                $humidity = (int) ($item['main']['humidity'] ?? 0);
+                $pop = (int) round(((float) ($item['pop'] ?? 0)) * 100);
+                $windSpeedKmH = round(((float) ($item['wind']['speed'] ?? 0)) * 3.6, 2);
+
+                $hourlyTime[] = $isoTime;
+                $hourlyTemp[] = $temp;
+                $hourlyCode[] = $wmoCode;
+                $hourlyHumidity[] = $humidity;
+                $hourlyPrecip[] = $pop;
+                $hourlyWind[] = $windSpeedKmH;
+
+                if (!isset($dailyMap[$dateStr])) {
+                    $dailyMap[$dateStr] = [
+                        'max_temp' => $tempMax,
+                        'min_temp' => $tempMin,
+                        'weather_codes' => [$wmoCode],
+                        'precip_max' => $pop,
+                    ];
+                } else {
+                    $dailyMap[$dateStr]['max_temp'] = max($dailyMap[$dateStr]['max_temp'], $tempMax);
+                    $dailyMap[$dateStr]['min_temp'] = min($dailyMap[$dateStr]['min_temp'], $tempMin);
+                    $dailyMap[$dateStr]['weather_codes'][] = $wmoCode;
+                    $dailyMap[$dateStr]['precip_max'] = max($dailyMap[$dateStr]['precip_max'], $pop);
+                }
+            }
+
+            $dailyTime = [];
+            $dailyMaxTemp = [];
+            $dailyMinTemp = [];
+            $dailyCode = [];
+            $dailyPrecipMax = [];
+            $sunriseList = [];
+            $sunsetList = [];
+
+            $citySunrise = isset($data['city']['sunrise']) ? date('Y-m-d\TH:i', $data['city']['sunrise']) : null;
+            $citySunset = isset($data['city']['sunset']) ? date('Y-m-d\TH:i', $data['city']['sunset']) : null;
+
+            foreach ($dailyMap as $dateStr => $dayInfo) {
+                $dailyTime[] = $dateStr;
+                $dailyMaxTemp[] = round($dayInfo['max_temp'], 1);
+                $dailyMinTemp[] = round($dayInfo['min_temp'], 1);
+                $dailyCode[] = $dayInfo['weather_codes'][0] ?? 0;
+                $dailyPrecipMax[] = $dayInfo['precip_max'];
+                $sunriseList[] = $citySunrise ? "{$dateStr}T" . substr($citySunrise, 11) : null;
+                $sunsetList[] = $citySunset ? "{$dateStr}T" . substr($citySunset, 11) : null;
+            }
+
+            return [
+                'daily' => [
+                    'time' => $dailyTime,
+                    'temperature_2m_max' => $dailyMaxTemp,
+                    'temperature_2m_min' => $dailyMinTemp,
+                    'weather_code' => $dailyCode,
+                    'precipitation_probability_max' => $dailyPrecipMax,
+                    'sunrise' => $sunriseList,
+                    'sunset' => $sunsetList,
+                ],
+                'hourly' => [
+                    'time' => $hourlyTime,
+                    'temperature_2m' => $hourlyTemp,
+                    'weather_code' => $hourlyCode,
+                    'relative_humidity_2m' => $hourlyHumidity,
+                    'precipitation_probability' => $hourlyPrecip,
+                    'wind_speed_10m' => $hourlyWind,
+                ],
+                'source' => 'openweather',
+            ];
+        } catch (\Throwable $e) {
+            report($e);
+            return null;
+        }
+    }
+
+    public function fetchOpenMeteoForecast(float $lat, float $lng): array
+    {
+        try {
+            $response = Http::timeout(10)->get('https://api.open-meteo.com/v1/forecast', [
+                'latitude' => $lat,
+                'longitude' => $lng,
+                'daily' => 'temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,sunrise,sunset',
+                'hourly' => 'temperature_2m,weather_code,relative_humidity_2m,precipitation_probability,wind_speed_10m',
+                'timezone' => 'auto',
+                'forecast_days' => 7,
+            ]);
+
+            if (!$response->ok()) {
                 return [
                     'daily' => [
                         'time' => [],
@@ -191,7 +300,30 @@ class WeatherService
                     ],
                 ];
             }
-        });
+
+            return (array) $response->json();
+        } catch (\Throwable $e) {
+            report($e);
+            return [
+                'daily' => [
+                    'time' => [],
+                    'temperature_2m_max' => [],
+                    'temperature_2m_min' => [],
+                    'weather_code' => [],
+                    'precipitation_probability_max' => [],
+                    'sunrise' => [],
+                    'sunset' => [],
+                ],
+                'hourly' => [
+                    'time' => [],
+                    'temperature_2m' => [],
+                    'weather_code' => [],
+                    'relative_humidity_2m' => [],
+                    'precipitation_probability' => [],
+                    'wind_speed_10m' => [],
+                ],
+            ];
+        }
     }
 
     public function prefetchWeather(array $coordinatesList): void
@@ -363,14 +495,14 @@ class WeatherService
     private function fallbackWeather(): array
     {
         return [
-            'code' => 0,
-            'condition' => 'Unknown',
-            'temperature' => null,
-            'wind_speed' => 0.0,
-            'precipitation_probability' => null,
-            'weather_score' => 3,
+            'code' => 1,
+            'condition' => 'Partly Cloudy',
+            'temperature' => 15.0,
+            'wind_speed' => 5.0,
+            'precipitation_probability' => 0.0,
+            'weather_score' => 2,
             'wind_score' => 1,
-            'weather_score_final' => 2.4,
+            'weather_score_final' => 1.7,
         ];
     }
 
