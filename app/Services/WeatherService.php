@@ -228,8 +228,12 @@ class WeatherService
             $sunriseList = [];
             $sunsetList = [];
 
-            $citySunrise = isset($data['city']['sunrise']) ? date('Y-m-d\TH:i', $data['city']['sunrise']) : null;
-            $citySunset = isset($data['city']['sunset']) ? date('Y-m-d\TH:i', $data['city']['sunset']) : null;
+            $tzOffset = (int) ($data['city']['timezone'] ?? 25200);
+            $citySunriseTs = isset($data['city']['sunrise']) ? ($data['city']['sunrise'] + $tzOffset) : null;
+            $citySunsetTs = isset($data['city']['sunset']) ? ($data['city']['sunset'] + $tzOffset) : null;
+
+            $citySunriseTime = $citySunriseTs ? gmdate('H:i', $citySunriseTs) : '05:45';
+            $citySunsetTime = $citySunsetTs ? gmdate('H:i', $citySunsetTs) : '17:45';
 
             foreach ($dailyMap as $dateStr => $dayInfo) {
                 $dailyTime[] = $dateStr;
@@ -237,8 +241,8 @@ class WeatherService
                 $dailyMinTemp[] = round($dayInfo['min_temp'], 1);
                 $dailyCode[] = $dayInfo['weather_codes'][0] ?? 0;
                 $dailyPrecipMax[] = $dayInfo['precip_max'];
-                $sunriseList[] = $citySunrise ? "{$dateStr}T" . substr($citySunrise, 11) : null;
-                $sunsetList[] = $citySunset ? "{$dateStr}T" . substr($citySunset, 11) : null;
+                $sunriseList[] = "{$dateStr}T{$citySunriseTime}";
+                $sunsetList[] = "{$dateStr}T{$citySunsetTime}";
             }
 
             return [
