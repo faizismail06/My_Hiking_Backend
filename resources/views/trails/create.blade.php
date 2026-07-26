@@ -862,8 +862,12 @@
                     return;
                 }
 
-                const selectedPoint = routePoints.splice(selectedRoutePointIndex, 1)[0];
-                routePoints.unshift(selectedPoint);
+                if ((routePoints.length - selectedRoutePointIndex) < 2) {
+                    window.alert('Penetapan Start dibatalkan. Jalur minimal harus menyisakan 2 titik.');
+                    return;
+                }
+
+                routePoints = routePoints.slice(selectedRoutePointIndex);
                 selectedRoutePointIndex = 0;
                 selectedPostIndex = null;
                 selectedRoutePointIndexes.clear();
@@ -884,8 +888,12 @@
                     return;
                 }
 
-                const selectedPoint = routePoints.splice(selectedRoutePointIndex, 1)[0];
-                routePoints.push(selectedPoint);
+                if ((selectedRoutePointIndex + 1) < 2) {
+                    window.alert('Penetapan Finish dibatalkan. Jalur minimal harus menyisakan 2 titik.');
+                    return;
+                }
+
+                routePoints = routePoints.slice(0, selectedRoutePointIndex + 1);
                 selectedRoutePointIndex = routePoints.length - 1;
                 selectedPostIndex = null;
                 selectedRoutePointIndexes.clear();

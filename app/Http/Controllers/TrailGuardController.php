@@ -161,24 +161,30 @@ class TrailGuardController extends Controller
             $data['gambar_jalur'] = $imageName;
         }
 
-        // ── GPX file ─────────────────────────────────────────────────────
-        if ($request->hasFile('gpx_file')) {
+        // ── Manual route points or GPX file ─────────────────────────────
+        $hasRouteFromJson = false;
+        if ($request->filled('route_points_json')) {
             try {
-                $parsedRoute       = $gpxRouteService->parseFromUploadedFile($request->file('gpx_file'), 1500);
+                $parsedJson = $this->parseRoutePointsJson($request->input('route_points_json'));
+                if (count($parsedJson) >= 2) {
+                    $data['route_points'] = $parsedJson;
+                    $data['route_source'] = 'manual';
+                    $hasRouteFromJson = true;
+                }
+            } catch (ValidationException $e) {
+                if (!$request->hasFile('gpx_file')) {
+                    return redirect()->back()->withErrors($e->errors())->withInput();
+                }
+            }
+        }
+
+        if (!$hasRouteFromJson && $request->hasFile('gpx_file')) {
+            try {
+                $parsedRoute          = $gpxRouteService->parseFromUploadedFile($request->file('gpx_file'), 1500);
                 $data['route_points'] = $parsedRoute['points'];
                 $data['route_source'] = $request->input('route_source', 'manual');
             } catch (\Throwable $e) {
                 return redirect()->back()->withErrors(['gpx_file' => $e->getMessage()])->withInput();
-            }
-        }
-
-        // ── Manual route points ───────────────────────────────────────────
-        if ($request->filled('route_points_json') && !$request->hasFile('gpx_file')) {
-            try {
-                $data['route_points'] = $this->parseRoutePointsJson($request->input('route_points_json'));
-                $data['route_source'] = 'manual';
-            } catch (ValidationException $e) {
-                return redirect()->back()->withErrors($e->errors())->withInput();
             }
         }
 

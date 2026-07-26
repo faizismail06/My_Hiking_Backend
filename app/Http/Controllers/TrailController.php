@@ -126,21 +126,28 @@ class TrailController extends Controller
         } else {
             $tingkatKesulitanValue = 'sangat_sulit';
         }
-        if ($request->hasFile('gpx_file')) {
+        $hasRouteFromJson = false;
+        if ($request->filled('route_points_json')) {
+            try {
+                $parsedJson = $this->parseRoutePointsJson($request->input('route_points_json'));
+                if (count($parsedJson) >= 2) {
+                    $routePoints = $parsedJson;
+                    $routeSource = 'manual';
+                    $hasRouteFromJson = true;
+                }
+            } catch (ValidationException $e) {
+                if (!$request->hasFile('gpx_file')) {
+                    return redirect()->back()->withErrors($e->errors())->withInput();
+                }
+            }
+        }
+
+        if (!$hasRouteFromJson && $request->hasFile('gpx_file')) {
             try {
                 $parsedRoute = $gpxRouteService->parseFromUploadedFile($request->file('gpx_file'), 1500);
                 $routePoints = $parsedRoute['points'];
             } catch (\Throwable $e) {
                 return redirect()->back()->withErrors(['gpx_file' => $e->getMessage()])->withInput();
-            }
-        }
-
-        if ($request->filled('route_points_json') && !$request->hasFile('gpx_file')) {
-            try {
-                $routePoints = $this->parseRoutePointsJson($request->input('route_points_json'));
-                $routeSource = 'manual';
-            } catch (ValidationException $e) {
-                return redirect()->back()->withErrors($e->errors())->withInput();
             }
         }
 
@@ -297,22 +304,29 @@ class TrailController extends Controller
             'dss_status' => 'approved',
         ];
 
-        if ($request->hasFile('gpx_file')) {
+        $hasRouteFromJson = false;
+        if ($request->filled('route_points_json')) {
+            try {
+                $parsedJson = $this->parseRoutePointsJson($request->input('route_points_json'));
+                if (count($parsedJson) >= 2) {
+                    $updateData['route_points'] = $parsedJson;
+                    $updateData['route_source'] = 'manual';
+                    $hasRouteFromJson = true;
+                }
+            } catch (ValidationException $e) {
+                if (!$request->hasFile('gpx_file')) {
+                    return redirect()->back()->withErrors($e->errors())->withInput();
+                }
+            }
+        }
+
+        if (!$hasRouteFromJson && $request->hasFile('gpx_file')) {
             try {
                 $parsedRoute = $gpxRouteService->parseFromUploadedFile($request->file('gpx_file'), 1500);
                 $updateData['route_points'] = $parsedRoute['points'];
                 $updateData['route_source'] = $request->input('route_source', 'manual');
             } catch (\Throwable $e) {
                 return redirect()->back()->withErrors(['gpx_file' => $e->getMessage()])->withInput();
-            }
-        }
-
-        if ($request->filled('route_points_json') && !$request->hasFile('gpx_file')) {
-            try {
-                $updateData['route_points'] = $this->parseRoutePointsJson($request->input('route_points_json'));
-                $updateData['route_source'] = 'manual';
-            } catch (ValidationException $e) {
-                return redirect()->back()->withErrors($e->errors())->withInput();
             }
         }
 
