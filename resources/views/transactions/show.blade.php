@@ -160,7 +160,7 @@
     <div class="modern-card animate-fade-in" style="animation-delay: 0.2s; margin-top: 2rem;">
         <div class="card-header">
             <h5><i class="fas fa-users"></i> Daftar Anggota Pesanan</h5>
-            <span class="badge-modern badge-done">{{ $transaction->order->orderMembers->count() + 1 }} Orang</span>
+            <span class="badge-modern badge-done">{{ max(1, $transaction->order->orderMembers->count()) }} Orang</span>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -174,37 +174,44 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Pembooking (Ketua) -->
-                        <tr>
-                            <td class="text-center"><span class="badge bg-primary">K</span></td>
-                            <td>
-                                <div class="fw-semibold">{{ $transaction->order->user->name }}</div>
-                            </td>
-                            <td>
-                                <div>{{ $transaction->order->user->phone ?? '-' }}</div>
-                            </td>
-                            <td>
-                                <span class="badge bg-success">Pembooking (Ketua)</span>
-                            </td>
-                        </tr>
-                        <!-- Anggota Pesanan -->
                         @forelse($transaction->order->orderMembers as $index => $anggota)
                             <tr>
-                                <td class="text-center">{{ $index + 2 }}</td>
-                                <td>
-                                    <div class="fw-semibold">{{ $anggota->nama }}</div>
+                                <td class="text-center">
+                                    @if($anggota->id_user && $anggota->id_user == $transaction->order->id_user)
+                                        <span class="badge bg-primary">K</span>
+                                    @else
+                                        {{ $index + 1 }}
+                                    @endif
                                 </td>
                                 <td>
-                                    <div>{{ $anggota->no_hp ?? '-' }}</div>
+                                    <div class="fw-semibold">
+                                        {{ $anggota->user->name ?? $anggota->nama ?? ($anggota->id_user && $anggota->id_user == $transaction->order->id_user ? ($transaction->order->user->name ?? '-') : '-') }}
+                                    </div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-secondary">Anggota</span>
+                                    <div>
+                                        {{ $anggota->user->phone ?? $anggota->no_hp ?? ($anggota->id_user && $anggota->id_user == $transaction->order->id_user ? ($transaction->order->user->phone ?? '-') : '-') }}
+                                    </div>
+                                </td>
+                                <td>
+                                    @if($anggota->id_user && $anggota->id_user == $transaction->order->id_user)
+                                        <span class="badge bg-success">Pembooking (Ketua)</span>
+                                    @else
+                                        <span class="badge bg-secondary">Anggota</span>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="text-center py-3 text-muted">
-                                    Hanya pembooking saja
+                                <td class="text-center"><span class="badge bg-primary">K</span></td>
+                                <td>
+                                    <div class="fw-semibold">{{ $transaction->order->user->name ?? '-' }}</div>
+                                </td>
+                                <td>
+                                    <div>{{ $transaction->order->user->phone ?? '-' }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">Pembooking (Ketua)</span>
                                 </td>
                             </tr>
                         @endforelse

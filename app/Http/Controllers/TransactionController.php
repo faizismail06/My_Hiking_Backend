@@ -12,11 +12,14 @@ class TransactionController extends Controller
     public function index(Request $request)
     {
         $search = $request->get('search');
-        $transactions = TransactionWeb::query()
+        $transactions = TransactionWeb::with(['order.user', 'order.trail'])
             ->when($search, function ($query, $search) {
                 return $query->where('id_pesanan', 'LIKE', "%{$search}%")
                     ->orWhere('payment_type', 'LIKE', "%{$search}%")
-                    ->orWhere('status_pesanan', 'LIKE', "%{$search}%");
+                    ->orWhere('status_pesanan', 'LIKE', "%{$search}%")
+                    ->orWhereHas('order.user', function ($q) use ($search) {
+                        $q->where('name', 'LIKE', "%{$search}%");
+                    });
             })
             ->get();
 
@@ -26,7 +29,7 @@ class TransactionController extends Controller
     // Display transaction details
     public function show($id)
     {
-        $transaction = TransactionWeb::findOrFail($id);
+        $transaction = TransactionWeb::with(['order.user', 'order.jalur.gunung', 'order.orderMembers.user'])->findOrFail($id);
         return view('transactions.show', compact('transaction'));
     }
 

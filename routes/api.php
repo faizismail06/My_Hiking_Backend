@@ -57,23 +57,15 @@ Route::get('/mountains/{id_gunung}/trails/{id_jalur}/booking', [MountainTrailDet
 // Chatbot admin CRUD endpoints (dipanggil My_Hiking_Python/tools.py)
 // Diproteksi header X-Chatbot-Secret. Set CHATBOT_SECRET di .env.
 Route::middleware('chatbot.secret')->group(function () {
-    // CRUD gunung: POST /api/mountains, PUT /api/mountains/{id}, DELETE /api/mountains/{id}
     Route::post('/mountains', [ChatbotMountainController::class, 'store']);
     Route::put('/mountains/{id}', [ChatbotMountainController::class, 'update']);
     Route::delete('/mountains/{id}', [ChatbotMountainController::class, 'destroy']);
 
-    // CRUD jalur: POST /api/routes, PUT /api/routes/{id}, DELETE /api/routes/{id}
     Route::post('/routes', [ChatbotTrailController::class, 'store']);
     Route::put('/routes/{id}', [ChatbotTrailController::class, 'update']);
     Route::delete('/routes/{id}', [ChatbotTrailController::class, 'destroy']);
 });
 
-Route::get('/weather/current', [WeatherController::class, 'current']);
-Route::get('/weather/forecast', [WeatherController::class, 'forecast']);
-Route::get('/recommendations', [RecommendationController::class, 'index'])->middleware('auth:sanctum');
-Route::post('/ai/predict-weather', [AiGatewayController::class, 'predictWeather']);
-
-// Order routes
 Route::get('/orders', [OrderController::class, 'index']);
 
 Route::prefix('orders')->group(function () {
@@ -85,6 +77,26 @@ Route::prefix('orders')->group(function () {
     Route::delete('{id}', [OrderController::class, 'destroy']);
 });
 
+Route::get('transactions', [TransactionController::class, 'index']);
+Route::post('/transactions/store', [TransactionController::class, 'store']);
+Route::post('/transactions/update-payment/{id}', [TransactionController::class, 'updatePayment']);
+Route::get('/transactions/{id}/detail', [TransactionController::class, 'getTransactionDetail']);
+
+Route::prefix('midtrans')->group(function () {
+    Route::post('/create-payment', [\App\Http\Controllers\Api\MidtransController::class, 'createPayment']);
+    Route::post('/notification', [\App\Http\Controllers\Api\MidtransController::class, 'handleNotification']);
+    Route::get('/status/{orderId}', [\App\Http\Controllers\Api\MidtransController::class, 'checkStatus']);
+    Route::get('/config', [\App\Http\Controllers\Api\MidtransController::class, 'getConfig']);
+    Route::get('/finish', [\App\Http\Controllers\Api\MidtransController::class, 'finish']);
+});
+
+Route::get('/weather/current', [WeatherController::class, 'current']);
+Route::get('/weather/forecast', [WeatherController::class, 'forecast']);
+Route::get('/recommendations', [RecommendationController::class, 'index'])->middleware('auth:sanctum');
+Route::post('/ai/predict-weather', [AiGatewayController::class, 'predictWeather']);
+
+
+
 Route::get('/orders/{orderId}/detail', [OrderController::class, 'getOrderDetail']);
 
 Route::prefix('order-members')->group(function () {
@@ -93,11 +105,6 @@ Route::prefix('order-members')->group(function () {
     Route::get('{orderId}', [OrderMemberController::class, 'listMembers']);
 });
 
-// Transaction routes
-Route::get('transactions', [TransactionController::class, 'index']);
-Route::post('/transactions/store', [TransactionController::class, 'store']);
-Route::post('/transactions/update-payment/{id}', [TransactionController::class, 'updatePayment']);
-Route::get('/transactions/{id}/detail', [TransactionController::class, 'getTransactionDetail']);
 Route::get('/payment-methods', [TransactionController::class, 'getPaymentMethods']);
 
 // Rule routes
@@ -144,15 +151,6 @@ Route::prefix('friends')->group(function () {
     Route::put('/{friendshipId}/accept', [FriendController::class, 'acceptFriend']); // Accept request
     Route::put('/{friendshipId}/reject', [FriendController::class, 'rejectFriend']); // Reject request
     Route::delete('/{friendshipId}', [FriendController::class, 'removeFriend']); // Remove friend
-});
-
-// Midtrans Payment Gateway routes
-Route::prefix('midtrans')->group(function () {
-    Route::post('/create-payment', [\App\Http\Controllers\Api\MidtransController::class, 'createPayment']);
-    Route::post('/notification', [\App\Http\Controllers\Api\MidtransController::class, 'handleNotification']);
-    Route::get('/status/{orderId}', [\App\Http\Controllers\Api\MidtransController::class, 'checkStatus']);
-    Route::get('/config', [\App\Http\Controllers\Api\MidtransController::class, 'getConfig']);
-    Route::get('/finish', [\App\Http\Controllers\Api\MidtransController::class, 'finish']);
 });
 
 Route::get('/payment/status/{orderId}', [\App\Http\Controllers\Api\MidtransController::class, 'paymentStatus']);

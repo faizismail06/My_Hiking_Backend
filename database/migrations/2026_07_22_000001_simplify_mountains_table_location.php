@@ -11,11 +11,24 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('mountains', function (Blueprint $table) {
-            $table->dropForeign(['regency_id']);
-            $table->dropForeign(['district_id']);
-            $table->dropForeign(['village_id']);
-
-            $table->dropColumn(['regency_id', 'district_id', 'village_id']);
+            if (Schema::hasColumn('mountains', 'regency_id')) {
+                try {
+                    $table->dropForeign(['regency_id']);
+                } catch (\Throwable $e) {}
+                $table->dropColumn('regency_id');
+            }
+            if (Schema::hasColumn('mountains', 'district_id')) {
+                try {
+                    $table->dropForeign(['district_id']);
+                } catch (\Throwable $e) {}
+                $table->dropColumn('district_id');
+            }
+            if (Schema::hasColumn('mountains', 'village_id')) {
+                try {
+                    $table->dropForeign(['village_id']);
+                } catch (\Throwable $e) {}
+                $table->dropColumn('village_id');
+            }
         });
     }
 
@@ -25,13 +38,15 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::table('mountains', function (Blueprint $table) {
-            $table->char('regency_id', 4)->nullable()->after('province_id');
-            $table->char('district_id', 7)->nullable()->after('regency_id');
-            $table->char('village_id', 10)->nullable()->after('district_id');
-
-            $table->foreign('regency_id')->references('id')->on('reg_regencies')->onDelete('cascade');
-            $table->foreign('district_id')->references('id')->on('reg_districts')->onDelete('cascade');
-            $table->foreign('village_id')->references('id')->on('reg_villages')->onDelete('cascade');
+            if (!Schema::hasColumn('mountains', 'regency_id')) {
+                $table->char('regency_id', 4)->nullable()->after('province_id');
+            }
+            if (!Schema::hasColumn('mountains', 'district_id')) {
+                $table->char('district_id', 7)->nullable()->after('regency_id');
+            }
+            if (!Schema::hasColumn('mountains', 'village_id')) {
+                $table->char('village_id', 10)->nullable()->after('district_id');
+            }
         });
     }
 };

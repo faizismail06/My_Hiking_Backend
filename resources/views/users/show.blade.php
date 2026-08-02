@@ -40,7 +40,13 @@
                         </div>
                         <div class="mb-3">
                             <small class="text-muted d-block">Tanggal Lahir</small>
-                            <span class="fw-semibold">{{ $user->date_of_birth ?? '-' }}</span>
+                            <span class="fw-semibold">
+                                @if ($user->date_of_birth)
+                                    {{ \Carbon\Carbon::parse($user->date_of_birth)->format('Y-m-d') }}
+                                @else
+                                    -
+                                @endif
+                            </span>
                         </div>
                         <div class="mb-3">
                             <small class="text-muted d-block">Alamat</small>

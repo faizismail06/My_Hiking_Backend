@@ -31,13 +31,12 @@ class HistoryController extends Controller
     }
 
 
-    // Display order details and members
     public function show($id)
     {
-        $order = OrderWeb::with(['mountain:id,nama', 'trail:id,nama', 'orderMembers.user', 'user:id,name'])
+        $pesanan = OrderWeb::with(['mountain:id,nama', 'trail:id,nama', 'orderMembers.user', 'user:id,name'])
             ->findOrFail($id);
 
-        return view('history.show', compact('order'));
+        return view('history.show', compact('pesanan'));
     }
 
 

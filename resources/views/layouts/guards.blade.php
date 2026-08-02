@@ -308,6 +308,32 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             border-bottom: 2px solid #e2e8f0;
+            white-space: nowrap;
+        }
+
+        .modern-table thead th.sortable {
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .modern-table thead th.sortable:hover {
+            background: #f1f5f9;
+            color: var(--primary-color);
+        }
+
+        .modern-table thead th .sort-icon {
+            display: inline-block;
+            margin-left: 6px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            transition: color 0.2s ease;
+            vertical-align: middle;
+        }
+
+        .modern-table thead th.sort-asc .sort-icon,
+        .modern-table thead th.sort-desc .sort-icon {
+            color: var(--primary-color);
         }
 
         .modern-table tbody td {
@@ -1409,6 +1435,98 @@
                 sidebar.classList.contains('show')) {
                 sidebar.classList.remove('show');
             }
+        });
+
+        // Universal Interactive Table Column Sorting (ASC/DESC)
+        document.addEventListener('DOMContentLoaded', function () {
+            const initSortableTables = () => {
+                document.querySelectorAll('.modern-table').forEach(table => {
+                    const headers = table.querySelectorAll('thead th');
+                    const tbody = table.querySelector('tbody');
+                    if (!tbody) return;
+
+                    headers.forEach((header, colIndex) => {
+                        // Skip Aksi, Action, Gambar columns
+                        const headerText = header.textContent.trim().toLowerCase();
+                        if (headerText === 'aksi' || headerText === 'action' || headerText === 'gambar' || header.classList.contains('no-sort')) {
+                            return;
+                        }
+
+                        header.classList.add('sortable');
+
+                        if (!header.querySelector('.sort-icon')) {
+                            const icon = document.createElement('i');
+                            icon.className = 'fas fa-sort sort-icon';
+                            header.appendChild(icon);
+                        }
+
+                        header.addEventListener('click', function () {
+                            const currentDir = header.getAttribute('data-sort-dir');
+                            const newDir = !currentDir || currentDir === 'asc' ? 'desc' : 'asc';
+
+                            // Reset all headers in this table
+                            headers.forEach(h => {
+                                h.removeAttribute('data-sort-dir');
+                                h.classList.remove('sort-asc', 'sort-desc');
+                                const icon = h.querySelector('.sort-icon');
+                                if (icon) icon.className = 'fas fa-sort sort-icon';
+                            });
+
+                            header.setAttribute('data-sort-dir', newDir);
+                            header.classList.add(newDir === 'asc' ? 'sort-asc' : 'sort-desc');
+                            const icon = header.querySelector('.sort-icon');
+                            if (icon) icon.className = newDir === 'desc' ? 'fas fa-sort-up sort-icon' : 'fas fa-sort-down sort-icon';
+
+                            const rows = Array.from(tbody.querySelectorAll('tr'));
+                            const dataRows = rows.filter(r => !r.querySelector('td[colspan]'));
+                            if (dataRows.length <= 1) return;
+
+                            dataRows.sort((rowA, rowB) => {
+                                const cellA = rowA.children[colIndex] ? rowA.children[colIndex].textContent.trim() : '';
+                                const cellB = rowB.children[colIndex] ? rowB.children[colIndex].textContent.trim() : '';
+
+                                const getNumericVal = (str) => {
+                                    if (!str) return NaN;
+                                    let s = str.trim();
+                                    if (/Rp/i.test(s)) {
+                                        let cleaned = s.replace(/Rp\s?/gi, '').replace(/\./g, '').replace(',', '.').trim();
+                                        const p = parseFloat(cleaned);
+                                        return isNaN(p) ? NaN : p;
+                                    }
+                                    const match = s.match(/-?\d+(?:[\.,]\d+)?/);
+                                    if (match) {
+                                        let rawNum = match[0];
+                                        if (rawNum.includes('.') && rawNum.includes(',')) {
+                                            rawNum = rawNum.replace(/\./g, '').replace(',', '.');
+                                        } else if (rawNum.includes(',')) {
+                                            rawNum = rawNum.replace(',', '.');
+                                        }
+                                        const p = parseFloat(rawNum);
+                                        return isNaN(p) ? NaN : p;
+                                    }
+                                    return NaN;
+                                };
+
+                                const numA = getNumericVal(cellA);
+                                const numB = getNumericVal(cellB);
+
+                                let comparison = 0;
+                                if (!isNaN(numA) && !isNaN(numB)) {
+                                    comparison = numA - numB;
+                                } else {
+                                    comparison = cellA.localeCompare(cellB, 'id', { numeric: true, sensitivity: 'base' });
+                                }
+
+                                return newDir === 'asc' ? comparison : -comparison;
+                            });
+
+                            dataRows.forEach(row => tbody.appendChild(row));
+                        });
+                    });
+                });
+            };
+
+            initSortableTables();
         });
 
         (() => {
