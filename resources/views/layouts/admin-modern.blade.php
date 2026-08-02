@@ -1034,6 +1034,11 @@
             const userId = {{ Auth::id() }};
             const history = [];
 
+            const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+            const chatbotBaseUrl = isLocal
+                ? 'http://localhost:5000'
+                : `${window.location.origin}/chatbot`;
+
             function formatMarkdown(text) {
                 let temp = document.createElement('div');
                 temp.textContent = text;
@@ -1081,7 +1086,7 @@
                 const downloadBtn = document.createElement('a');
                 downloadBtn.className = 'btn btn-primary btn-sm';
                 downloadBtn.textContent = 'Download';
-                downloadBtn.href = `http://103.93.132.167/chatbot${downloadPath}`;
+                downloadBtn.href = `${chatbotBaseUrl}${downloadPath}`;
                 downloadBtn.setAttribute('download', '');
                 downloadBtn.setAttribute('target', '_blank');
                 downloadBtn.setAttribute('rel', 'noopener noreferrer');
@@ -1112,11 +1117,7 @@
                 });
 
                 try {
-                    const chatbotUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                        ? 'http://localhost:5000/api/chat'
-                        : 'http://103.93.132.167/chatbot/api/chat';
-
-                    const resp = await fetch(chatbotUrl, {
+                    const resp = await fetch(`${chatbotBaseUrl}/api/chat`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
