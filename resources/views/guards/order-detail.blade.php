@@ -167,7 +167,20 @@
             <div class="modern-card animate-fade-in" style="animation-delay: 0.3s">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5><i class="fas fa-users me-2"></i> Daftar Anggota Pendaki & Verifikasi Wajah (eKYC)</h5>
-                    <span class="badge-modern badge-done">{{ $order->anggotaPesanan->count() }} Orang</span>
+                    @php
+                        $hikerList = $order->anggotaPesanan;
+                        if ($hikerList->isEmpty() && $order->user) {
+                            $hikerList = collect([
+                                (object)[
+                                    'nik' => $order->user->nik ?? '-',
+                                    'nama' => $order->user->name ?? '-',
+                                    'no_hp' => $order->user->phone ?? '-',
+                                    'alamat' => $order->user->address ?? '-',
+                                ]
+                            ]);
+                        }
+                    @endphp
+                    <span class="badge-modern badge-done">{{ $hikerList->count() }} Orang</span>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -184,11 +197,18 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($order->anggotaPesanan as $index => $anggota)
+                                @forelse($hikerList as $index => $anggota)
                                     @php
-                                        // Cari user terkait jika ada
-                                        $userAccount = \App\Models\User::where('nik', $anggota->nik)->orWhere('email', $order->user->email)->first();
-                                        $facePhoto = $userAccount && $userAccount->face_photo_path ? asset('storage/' . $userAccount->face_photo_path) : null;
+                                        $userAccount = null;
+                                        if (!empty($anggota->nik) && $anggota->nik !== '-') {
+                                            $userAccount = \App\Models\User::where('nik', $anggota->nik)->first();
+                                        }
+                                        if (!$userAccount && $order->user) {
+                                            $userAccount = $order->user;
+                                        }
+                                        $facePhoto = ($userAccount && $userAccount->face_photo_path) 
+                                            ? asset('storage/' . $userAccount->face_photo_path) 
+                                            : null;
                                         $isVerified = $userAccount && $userAccount->is_face_verified;
                                     @endphp
                                     <tr>
