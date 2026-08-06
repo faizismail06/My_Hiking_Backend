@@ -415,15 +415,15 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255',
             'password' => 'nullable|string|min:8',
-            'address' => 'nullable|string|max:255',
-            'nik' => 'nullable|numeric|unique:users,nik,' . $id,
-            'phone' => 'nullable|numeric|unique:users,phone,' . $id,
-            'emergency_phone' => 'nullable|numeric',
+            'address' => 'nullable|string|max:500',
+            'nik' => 'nullable|string|max:20|unique:users,nik,' . $id,
+            'phone' => 'nullable|string|max:250|unique:users,phone,' . $id,
+            'emergency_phone' => 'nullable|string|max:250',
             'date_of_birth' => 'nullable|date',
             'level' => 'nullable|in:1,2,3',
             'tier' => 'prohibited',
             'tier_source' => 'prohibited',
-            'profile_picture' => 'nullable|file|mimes:jpeg,png,jpg|max:2048',
+            'profile_picture' => 'nullable|file|mimes:jpeg,png,jpg|max:5120',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -555,6 +555,111 @@ class AuthController extends Controller
                 'face_photo_path' => $filePath,
                 'is_face_verified' => true,
                 'face_verified_at' => $user->face_verified_at,
+            ],
+        ], 200);
+    }
+
+    public function sendPhoneOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'phone' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nomor HP wajib diisi.',
+                'data' => $validator->errors(),
+            ], 422);
+        }
+
+        $phone = preg_replace('/[^0-9]/', '', $request->phone);
+        if (substr($phone, 0, 2) === '08') {
+            $targetPhone = '62' . substr($phone, 1);
+        } else {
+            $targetPhone = $phone;
+        }
+
+        $otpCode = (string) rand(1000, 9999);
+        \Illuminate\Support\Facades\Cache::put('phone_otp_' . $targetPhone, $otpCode, now()->addMinutes(5));
+
+        $fonnteToken = env('FONNTE_TOKEN');
+        $isSentViaWa = false;
+        $waMessage = "📱 *KODE OTP VERIFIKASI MYHIKING*\n\nKode OTP Anda adalah: *$otpCode*\n\nJangan berikan kode ini kepada siapa pun demi keamanan akun pendakian Anda. Kode berlaku 5 menit.";
+
+        if (!empty($fonnteToken)) {
+            try {
+                $response = Http::withHeaders([
+                    'Authorization' => $fonnteToken,
+                ])->post('https://api.fonnte.com/send', [
+                    'target' => $targetPhone,
+                    'message' => $waMessage,
+                ]);
+
+                if ($response->successful()) {
+                    $isSentViaWa = true;
+                }
+            } catch (\Throwable $e) {
+                Log::error('Fonnte WA API Error: ' . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $isSentViaWa 
+                ? 'Kode OTP WhatsApp berhasil dikirimkan ke nomor HP Anda! 💬' 
+                : 'Kode OTP berhasil dibuat (Mode Simulasi WA).',
+            'is_sent_via_wa' => $isSentViaWa,
+            'otp_debug' => $otpCode,
+        ], 200);
+    }
+
+    public function verifyPhoneOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'phone' => 'required|string',
+            'otp_code' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nomor HP dan Kode OTP wajib diisi.',
+            ], 422);
+        }
+
+        $phone = preg_replace('/[^0-9]/', '', $request->phone);
+        if (substr($phone, 0, 2) === '08') {
+            $targetPhone = '62' . substr($phone, 1);
+        } else {
+            $targetPhone = $phone;
+        }
+
+        $cachedOtp = \Illuminate\Support\Facades\Cache::get('phone_otp_' . $targetPhone);
+
+        if (!$cachedOtp || $cachedOtp !== trim($request->otp_code)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kode OTP salah atau telah kadaluarsa. Silakan minta kode baru.',
+            ], 400);
+        }
+
+        \Illuminate\Support\Facades\Cache::forget('phone_otp_' . $targetPhone);
+
+        $user = Auth::user();
+        if ($user) {
+            $user->phone = $request->phone;
+            $user->is_phone_verified = true;
+            $user->phone_verified_at = now();
+            $user->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Nomor telepon pendaki berhasil diverifikasi! ✅',
+            'data' => [
+                'is_phone_verified' => true,
+                'phone_verified_at' => now(),
             ],
         ], 200);
     }
