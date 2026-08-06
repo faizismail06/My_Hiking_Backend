@@ -28,7 +28,8 @@ class RecommendationService
     public function __construct(
         private TopsisService         $topsisService,
         private TopsisExplainerService $explainerService,
-        private DSSService            $dssService
+        private DSSService            $dssService,
+        private ?WeatherService       $weatherService = null
     ) {}
 
     /**
@@ -52,7 +53,8 @@ class RecommendationService
         ?float $maxBudget   = null
     ): array {
         // ── Step 1: Fetch all routes ────────────────────────────────────────
-        $routes = Trail::with('mountain')
+        $routes = Trail::has('mountain')
+            ->with('mountain')
             ->where('dss_status', 'approved')
             ->get();
 
@@ -80,6 +82,22 @@ class RecommendationService
         // Map client-supplied weight keys → TOPSIS criterion keys
         $topsisWeights = $this->mapUserWeights($userWeights);
 
+        // NOTE: If no weights are supplied, default to equal weights (3.0 for all criteria)
+        if (empty($topsisWeights)) {
+            $topsisWeights = [
+                'distance'         => 3.0,
+                'elevation'        => 3.0,
+                'difficulty'       => 3.0,
+                'cost'             => 3.0,
+                'duration'         => 3.0,
+                'crowd_level'      => 3.0,
+                'panorama_score'   => 3.0,
+                'fasilitas_score'  => 3.0,
+                'popularity_score' => 3.0,
+                'safety_score'     => 3.0,
+            ];
+        }
+
         // NOTE: Tier is intentionally NOT used here.
         // TOPSIS ranking reflects user preferences only.
         // Tier info is used exclusively for risk_level assessment (DSSService).
@@ -91,10 +109,38 @@ class RecommendationService
             return [];
         }
 
+        // ── Tiebreaker & Early slicing ──────────────────────────────────────
+        // PHP's usort is not stable. Enforce deterministic tiebreaker
+        // before slicing to keep ordering consistent.
+        usort($ranked, function (array $a, array $b) {
+            $scoreDiff = $b['score'] <=> $a['score'];
+            if ($scoreDiff !== 0) {
+                return $scoreDiff;
+            }
+            return $a['route_id'] <=> $b['route_id'];
+        });
+
+        if ($limit !== null && $limit > 0) {
+            $ranked = array_slice($ranked, 0, $limit);
+        }
+
         // Index originals by route_id for O(1) lookup
         $routeById = [];
         foreach ($routes as $route) {
             $routeById[(int) $route->id] = $route;
+        }
+
+        // ── Prefetch weather concurrently for the ranked slice ──────────────
+        $coordsList = [];
+        foreach ($ranked as $item) {
+            $route = $routeById[(int) $item['route_id']] ?? null;
+            if ($route) {
+                $coords = $this->dssService->resolveCoordinates($route);
+                $coordsList[] = [$coords['lat'], $coords['lng']];
+            }
+        }
+        if ($this->weatherService) {
+            $this->weatherService->prefetchWeather($coordsList);
         }
 
         // ── Steps 5-7: Explain + Risk + Build API response ─────────────────
@@ -125,29 +171,6 @@ class RecommendationService
             ];
         }
 
-        // ── Edge case: identical scores → stable secondary sort by route_id ─
-        // PHP's usort (in TopsisService) is not stable. Routes with the same CC
-        // value could jitter between calls. We enforce a deterministic tiebreaker
-        // here so the frontend always sees a consistent ordering.
-        usort($results, function (array $a, array $b) {
-            $scoreDiff = $b['score'] <=> $a['score'];
-            if ($scoreDiff !== 0) {
-                return $scoreDiff;
-            }
-            // Tiebreaker: lower route_id wins (deterministic, arbitrary but consistent)
-            return $a['route_id'] <=> $b['route_id'];
-        });
-
-        // Re-assign rank after tiebreaker sort
-        foreach ($results as $i => &$result) {
-            $result['rank'] = $i + 1;
-        }
-        unset($result);
-
-        if ($limit !== null && $limit > 0) {
-            return array_values(array_slice($results, 0, $limit));
-        }
-
         return $results;
     }
 
@@ -168,17 +191,18 @@ class RecommendationService
         $distance  = max(0.0, (float) ($route->jarak   ?? 0.0));
         $elevation = max(0.0, (float) ($route->elevasi ?? 0.0));
         $duration  = max(0.0, (float) ($route->durasi  ?? 0.0));
-
-        // FIX – computed difficulty: derives a continuous 1-4 score from
-        // physical metrics instead of mapping a label to a static integer.
-        // The label (if present) is used as a 35% soft prior so human
-        // expertise stored in the database is not discarded entirely.
+ 
+        // Computed difficulty: derives a continuous 1-4 score purely from physical metrics.
         $difficultyValue = $this->computeDifficulty(
             $distance,
             $elevation,
-            $duration,
-            (string) ($route->tingkat_kesulitan ?? '')
+            $duration
         );
+ 
+        // Adjust popularity score to 1-100 range.
+        // If the value in DB is > 100 (old seed data), divide by 10. Otherwise, use as-is.
+        $rawPopularity = max(0.0, (float) ($route->popularity_score ?? 0.0));
+        $popularityValue = $rawPopularity > 100.0 ? min(100.0, $rawPopularity / 10.0) : $rawPopularity;
 
         return [
             'route_id'      => (int)    $route->id,
@@ -195,14 +219,14 @@ class RecommendationService
                 // ── BENEFIT ────────────────────────────────────────────────────
                 'panorama_score'   => max(0.0, (float) ($route->panorama_score   ?? 0.0)),
                 'fasilitas_score'  => max(0.0, (float) ($route->fasilitas_score  ?? 0.0)),
-                'popularity_score' => max(0.0, (float) ($route->popularity_score ?? 0.0)),
+                'popularity_score' => $popularityValue,
                 'safety_score'     => max(0.0, (float) ($route->safety_score     ?? 0.0)),
             ],
         ];
     }
 
     /**
-     * Compute a continuous difficulty score on the 1–4 scale.
+     * Compute a continuous difficulty score on the 1–4 scale purely from physical metrics.
      *
      * Formula rationale
      * -----------------
@@ -210,8 +234,7 @@ class RecommendationService
      *
      *   distance (km)    – normalised against 20 km  (hard upper bound for
      *                       a single Indonesian day-hike).
-     *   elevation (m)    – normalised against 3 500 m (realistic ceiling;
-     *                       realistic ceiling for Indonesian peaks).
+     *   elevation (m)    – normalised against 3 500 m (realistic ceiling for Indonesian peaks).
      *   duration (hours) – normalised against 14 h   (a very long day-hike).
      *
      * Weights reflect rough domain consensus:
@@ -220,59 +243,30 @@ class RecommendationService
      *   duration    25% – partially redundant with the two above but captures
      *                       terrain roughness and pace.
      *
-     * The demand score (0–1) is rescaled to 1–4 (matching the old label scale)
-     * so existing weight configurations and ideal-point logic stay valid.
-     *
-     * Label prior (35% blend)
-     * -----------------------
-     * If the route's tingkat_kesulitan label is present and recognised, the
-     * admin-assigned integer (1–4) is blended in with 35% weight.  This lets
-     * domain knowledge (e.g. "this path is technically sulit due to loose rock,
-     * even though it's short") survive while preventing the label from
-     * completely overriding objective measurements.
+     * The demand score (0–1) is rescaled to 1–4 (matching the old label scale).
      *
      * @param  float  $distanceKm   Route length in km.
      * @param  float  $elevationM   Elevation gain in metres.
      * @param  float  $durationH    Estimated duration in hours.
-     * @param  string $label        Raw value from routes.tingkat_kesulitan.
      * @return float                Computed difficulty in [1.0, 4.0].
      */
     private function computeDifficulty(
         float  $distanceKm,
         float  $elevationM,
-        float  $durationH,
-        string $label = ''
+        float  $durationH
     ): float {
         // --- Physical demand score (0 to 1) ----------------------------------
         $normDistance  = min(1.0, $distanceKm / 20.0);
         $normElevation = min(1.0, $elevationM / 3500.0);
         $normDuration  = min(1.0, $durationH  / 14.0);
-
+ 
         $demandScore = ($normElevation * 0.40)
                      + ($normDistance  * 0.35)
                      + ($normDuration  * 0.25);
-
+ 
         // Rescale 0-1 demand to 1-4 range (matches old label integers).
         $metricDifficulty = 1.0 + ($demandScore * 3.0);
-
-        // --- Label prior (optional 35% blend) --------------------------------
-        $labelMap = [
-            'mudah'        => 1.0,
-            'sedang'       => 2.0,
-            'sulit'        => 3.0,
-            'sangat_sulit' => 4.0,
-        ];
-        $labelKey = strtolower(trim($label));
-
-        if (isset($labelMap[$labelKey])) {
-            // Blend: 65% physical, 35% expert label.
-            return round(
-                ($metricDifficulty * 0.65) + ($labelMap[$labelKey] * 0.35),
-                4
-            );
-        }
-
-        // No valid label present → use purely physical score.
+ 
         return round($metricDifficulty, 4);
     }
 

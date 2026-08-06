@@ -30,7 +30,12 @@ use App\Http\Controllers\TrailGuardWithdrawalController;
 */
 
 Route::get('/', function () {
-    return redirect('/login');
+    try {
+        $mountains = \App\Models\Mountain::with('trails')->get();
+    } catch (\Exception $e) {
+        $mountains = collect();
+    }
+    return view('welcome', compact('mountains'));
 });
 Auth::routes();
 

@@ -12,6 +12,9 @@ use Illuminate\Http\Request;
  * Menyediakan endpoint CRUD gunung berbasis JSON untuk chatbot admin (My_Hiking_Python/tools.py).
  * Endpoint ini tidak memerlukan file upload; semua field dikirim sebagai JSON.
  * Diproteksi middleware chatbot.secret agar hanya bisa diakses oleh service chatbot.
+ *
+ * Lokasi wilayah dikirim AI sebagai string nama (kabupaten, kecamatan, desa, provinsi).
+ * resolveRegionIds mengubahnya jadi ID numerik secara bertahap (cascade scoping).
  */
 class ChatbotMountainController extends Controller
 {
@@ -26,12 +29,11 @@ class ChatbotMountainController extends Controller
             'ketinggian'  => 'required|numeric|min:0',
             'deskripsi'   => 'nullable|string|max:1000',
             'province_id' => 'nullable|integer|exists:reg_provinces,id',
-            'regency_id'  => 'nullable|integer|exists:reg_regencies,id',
-            'district_id' => 'nullable|integer|exists:reg_districts,id',
-            'village_id'  => 'nullable|integer|exists:reg_villages,id',
             'latitude'    => 'nullable|numeric|between:-90,90',
             'longitude'   => 'nullable|numeric|between:-180,180',
         ]);
+
+        $this->resolveRegionIds($request, $validated);
 
         $mountain = Mountain::create($validated);
 
@@ -55,12 +57,11 @@ class ChatbotMountainController extends Controller
             'ketinggian'  => 'sometimes|required|numeric|min:0',
             'deskripsi'   => 'nullable|string|max:1000',
             'province_id' => 'nullable|integer|exists:reg_provinces,id',
-            'regency_id'  => 'nullable|integer|exists:reg_regencies,id',
-            'district_id' => 'nullable|integer|exists:reg_districts,id',
-            'village_id'  => 'nullable|integer|exists:reg_villages,id',
             'latitude'    => 'nullable|numeric|between:-90,90',
             'longitude'   => 'nullable|numeric|between:-180,180',
         ]);
+
+        $this->resolveRegionIds($request, $validated);
 
         $mountain->update($validated);
 
@@ -84,5 +85,27 @@ class ChatbotMountainController extends Controller
             'success' => true,
             'message' => "Gunung ID {$id} berhasil dihapus.",
         ]);
+    }
+
+    /**
+     * Mengkonversi nama string wilayah (provinsi)
+     * menjadi ID numerik.
+     *
+     * Field yang diterima dari request (string, optional):
+     *   provinsi, province
+     */
+    private function resolveRegionIds(Request $request, array &$validated): void
+    {
+        // Resolve Province
+        if (empty($validated['province_id'])) {
+            $name = $request->input('provinsi') ?? $request->input('province');
+            if ($name) {
+                $row = \App\Models\Province::whereRaw('LOWER(name) = ?', [strtolower(trim($name))])->first()
+                    ?? \App\Models\Province::where('name', 'LIKE', '%' . trim($name) . '%')->first();
+                if ($row) {
+                    $validated['province_id'] = $row->id;
+                }
+            }
+        }
     }
 }

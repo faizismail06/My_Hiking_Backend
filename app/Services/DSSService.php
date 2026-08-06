@@ -34,11 +34,13 @@ class DSSService
         $coordinates = $this->resolveCoordinates($route);
         $weather = $this->weatherService->getCurrentWeather($coordinates['lat'], $coordinates['lng']);
 
-        $difficultyKey = $this->resolveDifficultyKey($route, $metrics['route_score']);
+        $difficultyData = $this->resolveDifficultyKey($route);
+        $difficultyKey = $difficultyData['key'];
+        $difficultyScore = $difficultyData['score'];
         $difficultyLevel = $this->difficultyMap[$difficultyKey];
 
         $riskGap = $difficultyLevel - $userTier;
-        $finalScore = round(($metrics['route_score'] * 0.75) + (($weather['weather_score_final'] ?? 0) * 0.25), 4);
+        $finalScore = round(($difficultyScore * 0.75) + (($weather['weather_score_final'] ?? 0) * 0.25), 4);
 
         $riskLevel = $this->resolveRiskLevel($riskGap, $finalScore, $userTier);
         $recommendation = $riskLevel === 'high_risk' ? 'not_recommended' : 'recommended';
@@ -86,7 +88,7 @@ class DSSService
         ];
     }
 
-    private function resolveCoordinates(Trail $route): array
+    public function resolveCoordinates(Trail $route): array
     {
         $lat = (float) ($route->latitude ?? 0);
         $lng = (float) ($route->longitude ?? 0);
@@ -110,27 +112,34 @@ class DSSService
         return array_key_exists($tier, $this->tierMap) ? $tier : 'pemula';
     }
 
-    private function resolveDifficultyKey(Trail $route, float $routeScore): string
+    private function resolveDifficultyKey(Trail $route): array
     {
-        $difficulty = strtolower(trim((string) ($route->tingkat_kesulitan ?? '')));
-        if (array_key_exists($difficulty, $this->difficultyMap)) {
-            return $difficulty;
+        // Hitung tingkat kesulitan murni dari metrik fisik (jarak, elevasi, durasi)
+        $distanceKm  = max(0.0, (float) ($route->jarak   ?? 0.0));
+        $elevationM  = max(0.0, (float) ($route->elevasi ?? 0.0));
+        $durationH   = max(0.0, (float) ($route->durasi  ?? 0.0));
+
+        $normDistance  = min(1.0, $distanceKm / 20.0);
+        $normElevation = min(1.0, $elevationM / 3500.0);
+        $normDuration = min(1.0, $durationH  / 14.0);
+
+        $demandScore = ($normElevation * 0.40)
+                     + ($normDistance  * 0.35)
+                     + ($normDuration  * 0.25);
+
+        $score = round(1.0 + ($demandScore * 3.0), 4);
+
+        if ($score < 1.75) {
+            $key = 'mudah';
+        } elseif ($score < 2.50) {
+            $key = 'sedang';
+        } elseif ($score < 3.25) {
+            $key = 'sulit';
+        } else {
+            $key = 'sangat_sulit';
         }
 
-        // Fallback jika tingkat_kesulitan belum tersedia: estimasi dari route_score.
-        if ($routeScore <= 0.8) {
-            return 'mudah';
-        }
-
-        if ($routeScore <= 1.6) {
-            return 'sedang';
-        }
-
-        if ($routeScore <= 2.4) {
-            return 'sulit';
-        }
-
-        return 'sangat_sulit';
+        return ['key' => $key, 'score' => $score];
     }
 
     private function calculateRouteScore(Trail $route): array

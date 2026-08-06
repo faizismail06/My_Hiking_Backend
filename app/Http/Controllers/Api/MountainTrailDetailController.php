@@ -65,8 +65,9 @@ class MountainTrailDetailController extends Controller
         ];
 
         $dssEvaluation = null;
-        if ($request->user() && (int) $request->user()->level === 1 && !empty($request->user()->tier)) {
-            $dssEvaluation = $this->dssService->evaluateRoute($request->user(), $trail);
+        $user = $request->user() ?: auth('sanctum')->user();
+        if ($user && (int) $user->level === 1 && !empty($user->tier)) {
+            $dssEvaluation = $this->dssService->evaluateRoute($user, $trail);
         }
 
         // Return JSON response with trail data

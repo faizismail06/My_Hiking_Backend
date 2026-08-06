@@ -49,8 +49,14 @@ class DSSServiceTest extends TestCase
 
         $result = $service->evaluateRoute($user, $trail);
 
+        $normDistance  = min(1.0, 8 / 20.0);
+        $normElevation = min(1.0, 900 / 3500.0);
+        $normDuration  = min(1.0, 7 / 14.0);
+        $demandScore = ($normElevation * 0.40) + ($normDistance * 0.35) + ($normDuration * 0.25);
+        $expectedDifficultyScore = round(1.0 + ($demandScore * 3.0), 4);
+
         $expectedRouteScore = round((0.8 * 0.3) + (0.9 * 0.4) + (0.7 * 0.3), 4);
-        $expectedFinalScore = round(($expectedRouteScore * 0.75) + (2.7 * 0.25), 4);
+        $expectedFinalScore = round(($expectedDifficultyScore * 0.75) + (2.7 * 0.25), 4);
 
         $this->assertEquals($expectedRouteScore, $result['route_score']);
         $this->assertEquals($expectedFinalScore, $result['final_score']);
@@ -81,9 +87,9 @@ class DSSServiceTest extends TestCase
         $service = new DSSService($weatherService);
 
         $trail = new Trail([
-            'jarak' => 8,
-            'elevasi' => 900,
-            'durasi' => 7,
+            'jarak' => 12,
+            'elevasi' => 2000,
+            'durasi' => 10,
             'tingkat_kesulitan' => 'sulit',
             'latitude' => -7.242,
             'longitude' => 109.208,

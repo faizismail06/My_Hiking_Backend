@@ -80,7 +80,7 @@ class OrderWeb extends Model
     // Relasi Order ke User (Booker)
     public function user()
     {
-        return $this->belongsTo(UserWeb::class, 'id_user', 'id', 'name');
+        return $this->belongsTo(UserWeb::class, 'id_user');
     }
 
     /**

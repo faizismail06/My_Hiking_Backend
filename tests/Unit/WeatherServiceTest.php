@@ -38,4 +38,37 @@ class WeatherServiceTest extends TestCase
 
         Http::assertSentCount(1);
     }
+
+    public function test_get_current_weather_uses_openweather_when_key_is_set(): void
+    {
+        Cache::flush();
+        config(['services.openweather.key' => 'test_api_key']);
+
+        Http::fake([
+            'api.openweathermap.org/*' => Http::response([
+                'weather' => [
+                    ['id' => 500, 'main' => 'Rain'],
+                ],
+                'main' => [
+                    'temp' => 22.5,
+                ],
+                'wind' => [
+                    'speed' => 3.0, // 3 m/s = 10.8 km/h
+                ],
+                'pop' => 0.75,
+            ], 200),
+        ]);
+
+        $service = new WeatherService();
+        $res = $service->getCurrentWeather(-7.242, 109.208);
+
+        $this->assertSame('openweather', $res['source']);
+        $this->assertSame(61, $res['code']);
+        $this->assertSame('Rain', $res['condition']);
+        $this->assertSame(22.5, $res['temperature']);
+        $this->assertSame(10.8, $res['wind_speed']);
+        $this->assertSame(75.0, $res['precipitation_probability']);
+        $this->assertSame(3, $res['weather_score']);
+        $this->assertSame(2, $res['wind_score']);
+    }
 }

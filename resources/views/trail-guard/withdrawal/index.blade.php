@@ -177,7 +177,16 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <span class="badge bg-label-{{ $request->getStatusBadgeClass() }}">
+                                            @php
+                                                $statusBadge = match($request->status) {
+                                                    'pending' => 'bg-warning text-dark',
+                                                    'approved' => 'bg-info text-white',
+                                                    'completed' => 'bg-success text-white',
+                                                    'rejected' => 'bg-danger text-white',
+                                                    default => 'bg-secondary text-white',
+                                                };
+                                            @endphp
+                                            <span class="badge {{ $statusBadge }} fs-6 px-3 py-2">
                                                 {{ $request->getStatusLabel() }}
                                             </span>
                                         </td>

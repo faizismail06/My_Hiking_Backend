@@ -9,8 +9,17 @@
         style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%); color: white;">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <p class="mb-1 opacity-75">Total Pendapatan {{ \Carbon\Carbon::create()->month($month)->format('F') }}
-                    {{ $year }}</p>
+                <p class="mb-1 opacity-75">
+                    @if ($month === 'all' && $year === 'all')
+                        Total Pendapatan (Semua Waktu / Seluruh Laporan)
+                    @elseif ($month === 'all')
+                        Total Pendapatan Seluruh Bulan {{ $year }}
+                    @elseif ($year === 'all')
+                        Total Pendapatan {{ \Carbon\Carbon::create()->month((int)$month)->locale('id')->isoFormat('MMMM') }} (Semua Tahun)
+                    @else
+                        Total Pendapatan {{ \Carbon\Carbon::create()->month((int)$month)->locale('id')->isoFormat('MMMM') }} {{ $year }}
+                    @endif
+                </p>
                 <h2 class="mb-1 fw-bold">Rp {{ number_format($totalRevenue, 0, ',', '.') }}</h2>
                 <small class="opacity-75">
                     <i class="fas fa-receipt me-1"></i>
@@ -34,8 +43,9 @@
                     <div class="col-md-4">
                         <label class="form-label-modern">Bulan</label>
                         <select name="bulan" class="form-control form-modern">
+                            <option value="all" {{ $month === 'all' ? 'selected' : '' }}>Semua Bulan (Seluruh Laporan)</option>
                             @for ($i = 1; $i <= 12; $i++)
-                                <option value="{{ $i }}" {{ $month == $i ? 'selected' : '' }}>
+                                <option value="{{ $i }}" {{ (string)$month === (string)$i ? 'selected' : '' }}>
                                     {{ \Carbon\Carbon::create()->month($i)->locale('id')->isoFormat('MMMM') }}
                                 </option>
                             @endfor
@@ -44,8 +54,9 @@
                     <div class="col-md-4">
                         <label class="form-label-modern">Tahun</label>
                         <select name="tahun" class="form-control form-modern">
+                            <option value="all" {{ $year === 'all' ? 'selected' : '' }}>Semua Tahun</option>
                             @for ($i = date('Y'); $i >= date('Y') - 5; $i--)
-                                <option value="{{ $i }}" {{ $year == $i ? 'selected' : '' }}>{{ $i }}
+                                <option value="{{ $i }}" {{ (string)$year === (string)$i ? 'selected' : '' }}>{{ $i }}
                                 </option>
                             @endfor
                         </select>

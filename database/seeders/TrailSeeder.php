@@ -279,63 +279,63 @@ class TrailSeeder extends Seeder
         $routeMetrics = [
             1 => [
                 'jarak' => 5.60, 'elevasi' => 1300, 'durasi' => 8, 'tingkat_kesulitan' => 'sedang',
-                'panorama_score' => 5, 'fasilitas_score' => 4, 'popularity_score' => 850, 'safety_score' => 4, 'crowd_level' => 3
+                'panorama_score' => 5, 'fasilitas_score' => 4, 'popularity_score' => 85, 'safety_score' => 4, 'crowd_level' => 3
             ],
             2 => [
                 'jarak' => 6.43, 'elevasi' => 1400, 'durasi' => 10, 'tingkat_kesulitan' => 'sedang',
-                'panorama_score' => 4, 'fasilitas_score' => 3, 'popularity_score' => 420, 'safety_score' => 4, 'crowd_level' => 2
+                'panorama_score' => 4, 'fasilitas_score' => 3, 'popularity_score' => 42, 'safety_score' => 4, 'crowd_level' => 2
             ],
             3 => [
-                'jarak' => 6.56, 'elevasi' => 1500, 'durasi' => 10, 'tingkat_kesulitan' => 'sulit',
-                'panorama_score' => 5, 'fasilitas_score' => 2, 'popularity_score' => 310, 'safety_score' => 3, 'crowd_level' => 2
+                'jarak' => 6.56, 'elevasi' => 1500, 'durasi' => 10, 'tingkat_kesulitan' => 'sedang',
+                'panorama_score' => 5, 'fasilitas_score' => 2, 'popularity_score' => 31, 'safety_score' => 3, 'crowd_level' => 2
             ],
             4 => [
                 'jarak' => 6.90, 'elevasi' => 1400, 'durasi' => 9, 'tingkat_kesulitan' => 'sedang',
-                'panorama_score' => 4, 'fasilitas_score' => 3, 'popularity_score' => 250, 'safety_score' => 4, 'crowd_level' => 1
+                'panorama_score' => 4, 'fasilitas_score' => 3, 'popularity_score' => 25, 'safety_score' => 4, 'crowd_level' => 1
             ],
             5 => [
                 'jarak' => 5.60, 'elevasi' => 1200, 'durasi' => 8, 'tingkat_kesulitan' => 'sedang',
-                'panorama_score' => 3, 'fasilitas_score' => 3, 'popularity_score' => 180, 'safety_score' => 5, 'crowd_level' => 1
+                'panorama_score' => 3, 'fasilitas_score' => 3, 'popularity_score' => 18, 'safety_score' => 5, 'crowd_level' => 1
             ],
             6 => [
-                'jarak' => 6.20, 'elevasi' => 1500, 'durasi' => 9, 'tingkat_kesulitan' => 'sulit',
-                'panorama_score' => 5, 'fasilitas_score' => 5, 'popularity_score' => 950, 'safety_score' => 3, 'crowd_level' => 5
+                'jarak' => 6.20, 'elevasi' => 1500, 'durasi' => 9, 'tingkat_kesulitan' => 'sedang',
+                'panorama_score' => 5, 'fasilitas_score' => 5, 'popularity_score' => 95, 'safety_score' => 3, 'crowd_level' => 5
             ],
             7 => [
                 'jarak' => 11.00, 'elevasi' => 1600, 'durasi' => 10, 'tingkat_kesulitan' => 'sulit',
-                'panorama_score' => 4, 'fasilitas_score' => 3, 'popularity_score' => 380, 'safety_score' => 3, 'crowd_level' => 2
+                'panorama_score' => 4, 'fasilitas_score' => 3, 'popularity_score' => 38, 'safety_score' => 3, 'crowd_level' => 2
             ],
             8 => [
-                'jarak' => 9.95, 'elevasi' => 1400, 'durasi' => 8, 'tingkat_kesulitan' => 'sulit',
-                'panorama_score' => 4, 'fasilitas_score' => 4, 'popularity_score' => 560, 'safety_score' => 4, 'crowd_level' => 3
+                'jarak' => 9.95, 'elevasi' => 1400, 'durasi' => 8, 'tingkat_kesulitan' => 'sedang',
+                'panorama_score' => 4, 'fasilitas_score' => 4, 'popularity_score' => 56, 'safety_score' => 4, 'crowd_level' => 3
             ],
             9 => [
                 'jarak' => 6.28, 'elevasi' => 1300, 'durasi' => 7, 'tingkat_kesulitan' => 'sedang',
-                'panorama_score' => 3, 'fasilitas_score' => 3, 'popularity_score' => 290, 'safety_score' => 4, 'crowd_level' => 2
+                'panorama_score' => 3, 'fasilitas_score' => 3, 'popularity_score' => 29, 'safety_score' => 4, 'crowd_level' => 2
             ],
             10 => [
-                'jarak' => 7.61, 'elevasi' => 1700, 'durasi' => 11, 'tingkat_kesulitan' => 'sangat_sulit',
-                'panorama_score' => 5, 'fasilitas_score' => 4, 'popularity_score' => 410, 'safety_score' => 2, 'crowd_level' => 4
+                'jarak' => 7.61, 'elevasi' => 1700, 'durasi' => 11, 'tingkat_kesulitan' => 'sulit',
+                'panorama_score' => 5, 'fasilitas_score' => 4, 'popularity_score' => 41, 'safety_score' => 2, 'crowd_level' => 4
             ],
             11 => [
                 'jarak' => 7.00, 'elevasi' => 1300, 'durasi' => 7, 'tingkat_kesulitan' => 'sedang',
-                'panorama_score' => 4, 'fasilitas_score' => 4, 'popularity_score' => 620, 'safety_score' => 5, 'crowd_level' => 3
+                'panorama_score' => 4, 'fasilitas_score' => 4, 'popularity_score' => 62, 'safety_score' => 5, 'crowd_level' => 3
             ],
             12 => [
-                'jarak' => 8.28, 'elevasi' => 1500, 'durasi' => 9, 'tingkat_kesulitan' => 'sulit',
-                'panorama_score' => 5, 'fasilitas_score' => 2, 'popularity_score' => 150, 'safety_score' => 3, 'crowd_level' => 1
+                'jarak' => 8.28, 'elevasi' => 1500, 'durasi' => 9, 'tingkat_kesulitan' => 'sedang',
+                'panorama_score' => 5, 'fasilitas_score' => 2, 'popularity_score' => 15, 'safety_score' => 3, 'crowd_level' => 1
             ],
             13 => [
-                'jarak' => 8.50, 'elevasi' => 1400, 'durasi' => 8, 'tingkat_kesulitan' => 'sulit',
-                'panorama_score' => 4, 'fasilitas_score' => 2, 'popularity_score' => 120, 'safety_score' => 4, 'crowd_level' => 1
+                'jarak' => 8.50, 'elevasi' => 1400, 'durasi' => 8, 'tingkat_kesulitan' => 'sedang',
+                'panorama_score' => 4, 'fasilitas_score' => 2, 'popularity_score' => 12, 'safety_score' => 4, 'crowd_level' => 1
             ],
             14 => [
-                'jarak' => 7.77, 'elevasi' => 1400, 'durasi' => 8, 'tingkat_kesulitan' => 'sulit',
-                'panorama_score' => 4, 'fasilitas_score' => 3, 'popularity_score' => 200, 'safety_score' => 4, 'crowd_level' => 2
+                'jarak' => 7.77, 'elevasi' => 1400, 'durasi' => 8, 'tingkat_kesulitan' => 'sedang',
+                'panorama_score' => 4, 'fasilitas_score' => 3, 'popularity_score' => 20, 'safety_score' => 4, 'crowd_level' => 2
             ],
             15 => [
                 'jarak' => 4.23, 'elevasi' => 1200, 'durasi' => 7, 'tingkat_kesulitan' => 'sedang',
-                'panorama_score' => 3, 'fasilitas_score' => 5, 'popularity_score' => 780, 'safety_score' => 5, 'crowd_level' => 4
+                'panorama_score' => 3, 'fasilitas_score' => 5, 'popularity_score' => 78, 'safety_score' => 5, 'crowd_level' => 4
             ],
         ];
 

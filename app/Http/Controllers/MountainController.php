@@ -19,7 +19,7 @@ class MountainController extends Controller
         }
         $search = $request->input('search');
 
-        $mountains = MountainWeb::with(['province', 'regency', 'district', 'village'])
+        $mountains = MountainWeb::with(['province'])
             ->when($search, function ($query, $search) {
                 return $query->where('nama', 'like', '%' . $search . '%')
                     ->orWhere('ketinggian', 'like', '%' . $search . '%');
@@ -31,12 +31,9 @@ class MountainController extends Controller
 
     public function create()
     {
-        $province_id = ProvinceWeb::all();
-        $regency_id = RegencyWeb::all();
-        $district_id = DistrictWeb::all();
-        $village_id = VillageWeb::all();
+        $province_id = ProvinceWeb::query()->select(['id', 'name'])->orderBy('name')->get();
 
-        return view('mountains.create', compact('province_id', 'regency_id', 'district_id', 'village_id'));
+        return view('mountains.create', compact('province_id'));
     }
 
     public function store(Request $request)
@@ -44,9 +41,6 @@ class MountainController extends Controller
         $request->validate([
             'nama' => 'required|string|max:255',
             'province_id' => 'required|integer|exists:reg_provinces,id',
-            'regency_id' => 'required|integer|exists:reg_regencies,id',
-            'district_id' => 'required|integer|exists:reg_districts,id',
-            'village_id' => 'required|integer|exists:reg_villages,id',
             'ketinggian' => 'required|numeric|min:0',
             'deskripsi' => 'nullable|string|max:1000',
             'gambar_gunung' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -64,9 +58,6 @@ class MountainController extends Controller
         MountainWeb::create([
             'nama' => $request->nama,
             'province_id' => $request->province_id,
-            'regency_id' => $request->regency_id,
-            'district_id' => $request->district_id,
-            'village_id' => $request->village_id,
             'ketinggian' => $request->ketinggian,
             'deskripsi' => $request->deskripsi,
             'gambar_gunung' => $imageName,
@@ -81,12 +72,9 @@ class MountainController extends Controller
     {
         $mountain = MountainWeb::findOrFail($id);
 
-        $province_id = ProvinceWeb::all();
-        $regency_id = RegencyWeb::all();
-        $district_id = DistrictWeb::all();
-        $village_id = VillageWeb::all();
+        $province_id = ProvinceWeb::query()->select(['id', 'name'])->orderBy('name')->get();
 
-        return view('mountains.edit', compact('mountain', 'province_id', 'regency_id', 'district_id', 'village_id'));
+        return view('mountains.edit', compact('mountain', 'province_id'));
     }
 
     public function update(Request $request, $id)
@@ -94,9 +82,6 @@ class MountainController extends Controller
         $request->validate([
             'nama' => 'required|string|max:255',
             'province_id' => 'required|integer|exists:reg_provinces,id',
-            'regency_id' => 'required|integer|exists:reg_regencies,id',
-            'district_id' => 'required|integer|exists:reg_districts,id',
-            'village_id' => 'required|integer|exists:reg_villages,id',
             'ketinggian' => 'required|numeric|min:0',
             'deskripsi' => 'nullable|string|max:1000',
             'gambar_gunung' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -120,9 +105,6 @@ class MountainController extends Controller
         $mountain->update([
             'nama' => $request->nama,
             'province_id' => $request->province_id,
-            'regency_id' => $request->regency_id,
-            'district_id' => $request->district_id,
-            'village_id' => $request->village_id,
             'ketinggian' => $request->ketinggian,
             'deskripsi' => $request->deskripsi,
             'gambar_gunung' => $imageName,
@@ -148,7 +130,7 @@ class MountainController extends Controller
     
     public function show($id)
     {
-        $mountain = MountainWeb::with(['province', 'regency', 'district', 'village'])
+        $mountain = MountainWeb::with(['province'])
             ->findOrFail($id);
 
         return view('mountains.show', compact('mountain'));

@@ -22,6 +22,7 @@
                         <tr>
                             <th class="text-center" style="width: 50px;">No</th>
                             <th>ID Pesanan</th>
+                            <th>Nama Pemesan</th>
                             <th>Metode Pembayaran</th>
                             <th>Jalur</th>
                             <th class="text-center">Total Bayar</th>
@@ -35,6 +36,9 @@
                                 <td class="text-center">{{ $key + 1 }}</td>
                                 <td>
                                     <code class="bg-light px-2 py-1 rounded">{{ $transaction->id_pesanan }}</code>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold">{{ $transaction->order->user->name ?? '-' }}</div>
                                 </td>
                                 <td>
                                     <div class="fw-semibold">{{ $transaction->payment_method_name }}</div>
@@ -61,13 +65,12 @@
                                             class="btn btn-sm btn-modern btn-outline-modern" title="Detail">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        {{-- Verify button removed - payment verified automatically via Midtrans --}}
                                     </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">
+                                <td colspan="8" class="text-center py-4 text-muted">
                                     <i class="fas fa-receipt fa-2x mb-2 d-block"></i>
                                     Tidak ada data transaksi
                                 </td>

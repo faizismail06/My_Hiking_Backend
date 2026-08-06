@@ -42,10 +42,7 @@
                         <td>
                             <div class="small text-muted">
                                 <i class="fas fa-map-marker-alt me-1"></i>
-                                {{ $mountain->province->name ?? '-' }}, {{ $mountain->regency->name ?? '-' }}
-                            </div>
-                            <div class="small text-muted">
-                                {{ $mountain->district->name ?? '-' }}, {{ $mountain->village->name ?? '-' }}
+                                {{ $mountain->province->name ?? '-' }}
                             </div>
                         </td>
                         <td class="text-center">

@@ -122,19 +122,8 @@
 
                     <div class="col-md-4">
                         <label class="form-label">Tingkat Kesulitan</label>
-                        <select name="tingkat_kesulitan"
-                            class="form-select @error('tingkat_kesulitan') is-invalid @enderror">
-                            <option value="" disabled {{ old('tingkat_kesulitan') ? '' : 'selected' }}>Pilih tingkat
-                            </option>
-                            <option value="mudah" {{ old('tingkat_kesulitan') === 'mudah' ? 'selected' : '' }}>Mudah
-                            </option>
-                            <option value="sedang" {{ old('tingkat_kesulitan') === 'sedang' ? 'selected' : '' }}>Sedang
-                            </option>
-                            <option value="sulit" {{ old('tingkat_kesulitan') === 'sulit' ? 'selected' : '' }}>Sulit
-                            </option>
-                            <option value="sangat_sulit"
-                                {{ old('tingkat_kesulitan') === 'sangat_sulit' ? 'selected' : '' }}>Sangat Sulit</option>
-                        </select>
+                        <input type="text" id="tingkat_kesulitan_preview" class="form-control" disabled 
+                            placeholder="Otomatis Terhitung">
                         @error('tingkat_kesulitan')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -327,9 +316,9 @@
                         <label class="form-label">Skor Popularitas (Opsional)</label>
                         <input type="number" name="popularity_score"
                             class="form-control @error('popularity_score') is-invalid @enderror"
-                            min="0" step="1"
+                            min="1" max="100" step="1"
                             value="{{ old('popularity_score', '') }}"
-                            placeholder="Contoh: 1200 (jumlah pengunjung / penilaian numerik)">
+                            placeholder="Rentang 1-100 (Indeks Popularitas)">
                         @error('popularity_score')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -526,6 +515,42 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         $(document).ready(function() {
+            // Auto-calculate difficulty level from Jarak, Elevasi, and Durasi
+            function calculateDifficulty() {
+                let jarak = parseFloat($('input[name="jarak"]').val()) || 0;
+                let elevasi = parseFloat($('input[name="elevasi"]').val()) || 0;
+                let durasi = parseFloat($('input[name="durasi"]').val()) || 0;
+
+                let normDistance = Math.min(1.0, jarak / 20.0);
+                let normElevation = Math.min(1.0, elevasi / 3500.0);
+                let normDuration = Math.min(1.0, durasi / 14.0);
+
+                let demandScore = (normElevation * 0.40) + (normDistance * 0.35) + (normDuration * 0.25);
+                let score = 1.0 + (demandScore * 3.0);
+
+                let difficulty = 'sedang';
+                if (score < 1.75) {
+                    difficulty = 'mudah';
+                } else if (score < 2.50) {
+                    difficulty = 'sedang';
+                } else if (score < 3.25) {
+                    difficulty = 'sulit';
+                } else {
+                    difficulty = 'sangat_sulit';
+                }
+
+                let difficultyText = difficulty.replace('_', ' ');
+                difficultyText = difficultyText.charAt(0).toUpperCase() + difficultyText.slice(1);
+                $('#tingkat_kesulitan_preview').val(difficultyText);
+            }
+
+            $('input[name="jarak"], input[name="elevasi"], input[name="durasi"]').on('input change', function() {
+                calculateDifficulty();
+            });
+
+            // Initial calculation
+            calculateDifficulty();
+
             $('#province_id').change(function() {
                 let provinceId = $(this).val();
                 $('#regency_id').empty().append('<option value="" disabled selected>Loading...</option>');
@@ -837,8 +862,12 @@
                     return;
                 }
 
-                const selectedPoint = routePoints.splice(selectedRoutePointIndex, 1)[0];
-                routePoints.unshift(selectedPoint);
+                if ((routePoints.length - selectedRoutePointIndex) < 2) {
+                    window.alert('Penetapan Start dibatalkan. Jalur minimal harus menyisakan 2 titik.');
+                    return;
+                }
+
+                routePoints = routePoints.slice(selectedRoutePointIndex);
                 selectedRoutePointIndex = 0;
                 selectedPostIndex = null;
                 selectedRoutePointIndexes.clear();
@@ -859,8 +888,12 @@
                     return;
                 }
 
-                const selectedPoint = routePoints.splice(selectedRoutePointIndex, 1)[0];
-                routePoints.push(selectedPoint);
+                if ((selectedRoutePointIndex + 1) < 2) {
+                    window.alert('Penetapan Finish dibatalkan. Jalur minimal harus menyisakan 2 titik.');
+                    return;
+                }
+
+                routePoints = routePoints.slice(0, selectedRoutePointIndex + 1);
                 selectedRoutePointIndex = routePoints.length - 1;
                 selectedPostIndex = null;
                 selectedRoutePointIndexes.clear();

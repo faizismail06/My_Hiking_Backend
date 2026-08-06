@@ -69,7 +69,7 @@ class TrailController extends Controller
             'fasilitas_score' => 'required|integer|min:1|max:5',
             'safety_score' => 'required|integer|min:1|max:5',
             'crowd_level' => 'required|integer|min:1|max:5',
-            'popularity_score' => 'nullable|numeric|min:0',
+            'popularity_score' => 'nullable|numeric|min:0|max:100',
             // Validation for trail guard data
             'penjaga_name' => 'required|string|max:255',
             'penjaga_email' => 'required|email|unique:users,email',
@@ -102,24 +102,52 @@ class TrailController extends Controller
         $durasiValue = $request->filled('durasi')
             ? (float) $request->input('durasi')
             : 0;
-        $tingkatKesulitanValue = $request->filled('tingkat_kesulitan')
-            ? $request->input('tingkat_kesulitan')
-            : 'sedang';
-        if ($request->hasFile('gpx_file')) {
+        // Hitung tingkat kesulitan secara dinamis dari metrik fisik
+        $distanceKm  = max(0.0, (float) ($request->input('jarak') ?? 0.0));
+        $elevationM  = max(0.0, (float) ($request->input('elevasi') ?? 0.0));
+        $durationH   = max(0.0, (float) ($request->input('durasi') ?? 0.0));
+
+        $normDistance  = min(1.0, $distanceKm / 20.0);
+        $normElevation = min(1.0, $elevationM / 3500.0);
+        $normDuration  = min(1.0, $durationH  / 14.0);
+
+        $demandScore = ($normElevation * 0.40)
+                     + ($normDistance  * 0.35)
+                     + ($normDuration  * 0.25);
+
+        $score = 1.0 + ($demandScore * 3.0);
+
+        if ($score < 1.75) {
+            $tingkatKesulitanValue = 'mudah';
+        } elseif ($score < 2.50) {
+            $tingkatKesulitanValue = 'sedang';
+        } elseif ($score < 3.25) {
+            $tingkatKesulitanValue = 'sulit';
+        } else {
+            $tingkatKesulitanValue = 'sangat_sulit';
+        }
+        $hasRouteFromJson = false;
+        if ($request->filled('route_points_json')) {
+            try {
+                $parsedJson = $this->parseRoutePointsJson($request->input('route_points_json'));
+                if (count($parsedJson) >= 2) {
+                    $routePoints = $parsedJson;
+                    $routeSource = 'manual';
+                    $hasRouteFromJson = true;
+                }
+            } catch (ValidationException $e) {
+                if (!$request->hasFile('gpx_file')) {
+                    return redirect()->back()->withErrors($e->errors())->withInput();
+                }
+            }
+        }
+
+        if (!$hasRouteFromJson && $request->hasFile('gpx_file')) {
             try {
                 $parsedRoute = $gpxRouteService->parseFromUploadedFile($request->file('gpx_file'), 1500);
                 $routePoints = $parsedRoute['points'];
             } catch (\Throwable $e) {
                 return redirect()->back()->withErrors(['gpx_file' => $e->getMessage()])->withInput();
-            }
-        }
-
-        if ($request->filled('route_points_json') && !$request->hasFile('gpx_file')) {
-            try {
-                $routePoints = $this->parseRoutePointsJson($request->input('route_points_json'));
-                $routeSource = 'manual';
-            } catch (ValidationException $e) {
-                return redirect()->back()->withErrors($e->errors())->withInput();
             }
         }
 
@@ -191,7 +219,7 @@ class TrailController extends Controller
             'fasilitas_score' => 'required|integer|min:1|max:5',
             'safety_score' => 'required|integer|min:1|max:5',
             'crowd_level' => 'required|integer|min:1|max:5',
-            'popularity_score' => 'nullable|numeric|min:0',
+            'popularity_score' => 'nullable|numeric|min:0|max:100',
             // Validation for trail guard data (optional when editing)
             'penjaga_name' => 'nullable|string|max:255|required_with:penjaga_email,penjaga_phone',
             'penjaga_email' => [
@@ -226,9 +254,30 @@ class TrailController extends Controller
         $durasiValue = $request->filled('durasi')
             ? (float) $request->input('durasi')
             : ($trail->durasi ?? 0);
-        $tingkatKesulitanValue = $request->filled('tingkat_kesulitan')
-            ? $request->input('tingkat_kesulitan')
-            : ($trail->tingkat_kesulitan ?: 'sedang');
+        // Hitung tingkat kesulitan secara dinamis dari metrik fisik
+        $distanceKm  = max(0.0, (float) ($request->input('jarak') ?? 0.0));
+        $elevationM  = max(0.0, (float) ($request->input('elevasi') ?? 0.0));
+        $durationH   = max(0.0, (float) ($request->input('durasi') ?? 0.0));
+
+        $normDistance  = min(1.0, $distanceKm / 20.0);
+        $normElevation = min(1.0, $elevationM / 3500.0);
+        $normDuration  = min(1.0, $durationH  / 14.0);
+
+        $demandScore = ($normElevation * 0.40)
+                     + ($normDistance  * 0.35)
+                     + ($normDuration  * 0.25);
+
+        $score = 1.0 + ($demandScore * 3.0);
+
+        if ($score < 1.75) {
+            $tingkatKesulitanValue = 'mudah';
+        } elseif ($score < 2.50) {
+            $tingkatKesulitanValue = 'sedang';
+        } elseif ($score < 3.25) {
+            $tingkatKesulitanValue = 'sulit';
+        } else {
+            $tingkatKesulitanValue = 'sangat_sulit';
+        }
 
         $updateData = [
             'nama' => $request->nama,
@@ -255,22 +304,29 @@ class TrailController extends Controller
             'dss_status' => 'approved',
         ];
 
-        if ($request->hasFile('gpx_file')) {
+        $hasRouteFromJson = false;
+        if ($request->filled('route_points_json')) {
+            try {
+                $parsedJson = $this->parseRoutePointsJson($request->input('route_points_json'));
+                if (count($parsedJson) >= 2) {
+                    $updateData['route_points'] = $parsedJson;
+                    $updateData['route_source'] = 'manual';
+                    $hasRouteFromJson = true;
+                }
+            } catch (ValidationException $e) {
+                if (!$request->hasFile('gpx_file')) {
+                    return redirect()->back()->withErrors($e->errors())->withInput();
+                }
+            }
+        }
+
+        if (!$hasRouteFromJson && $request->hasFile('gpx_file')) {
             try {
                 $parsedRoute = $gpxRouteService->parseFromUploadedFile($request->file('gpx_file'), 1500);
                 $updateData['route_points'] = $parsedRoute['points'];
                 $updateData['route_source'] = $request->input('route_source', 'manual');
             } catch (\Throwable $e) {
                 return redirect()->back()->withErrors(['gpx_file' => $e->getMessage()])->withInput();
-            }
-        }
-
-        if ($request->filled('route_points_json') && !$request->hasFile('gpx_file')) {
-            try {
-                $updateData['route_points'] = $this->parseRoutePointsJson($request->input('route_points_json'));
-                $updateData['route_source'] = 'manual';
-            } catch (ValidationException $e) {
-                return redirect()->back()->withErrors($e->errors())->withInput();
             }
         }
 
