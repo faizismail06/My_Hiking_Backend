@@ -165,8 +165,8 @@
         <!-- Daftar Anggota -->
         <div class="col-12">
             <div class="modern-card animate-fade-in" style="animation-delay: 0.3s">
-                <div class="card-header">
-                    <h5><i class="fas fa-users"></i> Daftar Anggota Pendaki</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-users me-2"></i> Daftar Anggota Pendaki & Verifikasi Wajah (eKYC)</h5>
                     <span class="badge-modern badge-done">{{ $order->anggotaPesanan->count() }} Orang</span>
                 </div>
                 <div class="card-body p-0">
@@ -175,31 +175,55 @@
                             <thead>
                                 <tr>
                                     <th class="text-center">#</th>
+                                    <th class="text-center">Foto Wajah eKYC</th>
+                                    <th>Status eKYC</th>
                                     <th>NIK</th>
-                                    <th>Nama</th>
+                                    <th>Nama Pendaki</th>
                                     <th>No HP</th>
                                     <th>Alamat</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($order->anggotaPesanan as $index => $anggota)
+                                    @php
+                                        // Cari user terkait jika ada
+                                        $userAccount = \App\Models\User::where('nik', $anggota->nik)->orWhere('email', $order->user->email)->first();
+                                        $facePhoto = $userAccount && $userAccount->face_photo_path ? asset('storage/' . $userAccount->face_photo_path) : null;
+                                        $isVerified = $userAccount && $userAccount->is_face_verified;
+                                    @endphp
                                     <tr>
                                         <td class="text-center">
                                             @if ($index == 0)
                                                 <span class="badge bg-primary rounded-pill" title="Ketua Rombongan">
-                                                    <i class="fas fa-crown"></i>
+                                                    <i class="fas fa-crown me-1"></i> Ketua
                                                 </span>
                                             @else
                                                 {{ $index + 1 }}
                                             @endif
                                         </td>
+                                        <td class="text-center">
+                                            @if($facePhoto)
+                                                <img src="{{ $facePhoto }}" alt="Foto Wajah" class="rounded-circle border border-success border-2 shadow-sm" style="width: 48px; height: 48px; object-fit: cover; cursor: pointer;" onclick="showFaceModal('{{ $facePhoto }}', '{{ $anggota->nama }}')" title="Klik untuk memperbesar foto wajah">
+                                            @else
+                                                <div class="user-avatar mx-auto bg-light text-muted border" style="width: 48px; height: 48px; font-size: 1rem; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                                                    <i class="fas fa-user"></i>
+                                                </div>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($isVerified)
+                                                <span class="badge bg-success-subtle text-success border border-success px-2 py-1 rounded-pill">
+                                                    <i class="fas fa-shield-alt me-1"></i> Verifikasi Wajah Valid ✅
+                                                </span>
+                                            @else
+                                                <span class="badge bg-warning-subtle text-warning border border-warning px-2 py-1 rounded-pill">
+                                                    <i class="fas fa-exclamation-circle me-1"></i> Belum Verifikasi ⚠️
+                                                </span>
+                                            @endif
+                                        </td>
                                         <td><code>{{ $anggota->nik }}</code></td>
                                         <td>
                                             <div class="d-flex align-items-center gap-2">
-                                                <div class="user-avatar"
-                                                    style="width: 32px; height: 32px; font-size: 0.75rem;">
-                                                    {{ strtoupper(substr($anggota->nama, 0, 1)) }}
-                                                </div>
                                                 <span class="fw-medium">{{ $anggota->nama }}</span>
                                             </div>
                                         </td>
@@ -218,7 +242,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="text-center py-5">
+                                        <td colspan="7" class="text-center py-5">
                                             <div class="text-muted">
                                                 <i class="fas fa-user-slash fa-3x mb-3 d-block" style="opacity: 0.3;"></i>
                                                 <h6>Tidak Ada Data Anggota</h6>
@@ -233,6 +257,36 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal Zoom Foto Wajah eKYC untuk Penjaga Jalur -->
+    <div class="modal fade" id="faceModal" tabindex="-1" aria-labelledby="faceModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="faceModalLabel"><i class="fas fa-user-check me-2"></i> Inspeksi Foto Wajah eKYC</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <img id="modalFaceImg" src="" alt="Foto Wajah Pembeli" class="img-fluid rounded-4 shadow border border-3 border-success mb-3" style="max-height: 350px; object-fit: cover;">
+                    <h5 id="modalHikerName" class="fw-bold text-dark mb-1"></h5>
+                    <p class="text-success small fw-semibold"><i class="fas fa-check-circle me-1"></i> Wajah Terverifikasi via Active Liveness Check</p>
+                    <p class="text-muted small mb-0">Silakan cocokkan foto di atas dengan wajah pendaki asli yang berdiri di pos pemeriksaan.</p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showFaceModal(imgUrl, name) {
+            document.getElementById('modalFaceImg').src = imgUrl;
+            document.getElementById('modalHikerName').textContent = name;
+            var faceModal = new bootstrap.Modal(document.getElementById('faceModal'));
+            faceModal.show();
+        }
+    </script>
 
     <!-- Action Buttons -->
     <div class="d-flex justify-content-between mt-4">

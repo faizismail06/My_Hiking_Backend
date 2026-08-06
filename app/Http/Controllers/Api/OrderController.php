@@ -342,17 +342,17 @@ class OrderController extends Controller
         }
     }
 
-    // View order details
+    // View order details (Includes eKYC Face verification data for ticket check-in)
     public function viewOrder($orderId)
     {
         try {
-            $order = Order::with(
+            $order = Order::with([
                 'mountain:id,nama',
                 'trail:id,nama',
-                'booker:id,name',
-                'members:id,name',
+                'booker:id,name,email,nik,phone,emergency_phone,profile_picture,face_photo_path,is_face_verified,face_verified_at',
+                'members:id,name,email,nik,phone,emergency_phone,profile_picture,face_photo_path,is_face_verified,face_verified_at',
                 'transaction:id,id_pesanan,status_pesanan,waktu_pembayaran,midtrans_order_id'
-            )->findOrFail($orderId);
+            ])->findOrFail($orderId);
 
             if ($order->transaction) {
                 $this->syncTransactionStatusFromMidtrans($order->transaction);
@@ -361,6 +361,22 @@ class OrderController extends Controller
 
             $this->syncOrderLifecycleStatus($order, $order->transaction);
             $order->refresh();
+
+            // Append full URL for face photo
+            if ($order->booker) {
+                $order->booker->face_photo_url = $order->booker->face_photo_path
+                    ? asset('storage/' . $order->booker->face_photo_path)
+                    : null;
+            }
+
+            if ($order->members) {
+                $order->members->transform(function ($member) {
+                    $member->face_photo_url = $member->face_photo_path
+                        ? asset('storage/' . $member->face_photo_path)
+                        : null;
+                    return $member;
+                });
+            }
 
             $canPrintTicket = $order->transaction?->status_pesanan === 'Complete';
 
