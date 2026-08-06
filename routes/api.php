@@ -47,8 +47,6 @@ Route::post('verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('resend-otp', [AuthController::class, 'resendOtp']);
 Route::post('login', [AuthController::class, 'login']);
 Route::post('auth/google', [AuthController::class, 'loginWithGoogle']);
-Route::post('send-phone-otp', [AuthController::class, 'sendPhoneOtp']);
-Route::post('verify-phone-otp', [AuthController::class, 'verifyPhoneOtp']);
 
 // Mountain routes
 Route::get('mountains', [MountainController::class, 'index']);
@@ -122,6 +120,8 @@ Route::prefix('rules')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('send-phone-otp', [AuthController::class, 'sendPhoneOtp']);
+    Route::post('verify-phone-otp', [AuthController::class, 'verifyPhoneOtp']);
     Route::post('/user/verify-face', [AuthController::class, 'uploadFaceVerification']);
     Route::post('/update-password/{id}', [AuthController::class, 'updatePassword']);
     Route::get('/onboarding/experience/status', [ExperienceOnboardingController::class, 'status']);

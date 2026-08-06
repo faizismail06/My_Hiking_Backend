@@ -646,7 +646,7 @@ class AuthController extends Controller
 
         \Illuminate\Support\Facades\Cache::forget('phone_otp_' . $targetPhone);
 
-        $user = Auth::user();
+        $user = Auth::user() ?? User::where('phone', $request->phone)->first();
         if ($user) {
             $user->phone = $request->phone;
             $user->is_phone_verified = true;
