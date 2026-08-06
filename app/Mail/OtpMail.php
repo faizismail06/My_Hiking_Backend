@@ -8,6 +8,8 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
+use Illuminate\Mail\Mailables\Address;
+
 class OtpMail extends Mailable
 {
     use Queueable, SerializesModels;
@@ -30,6 +32,10 @@ class OtpMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: new Address(
+                config('mail.from.address', 'no-reply@myhiking.com'),
+                config('mail.from.name', 'MyHiking Official')
+            ),
             subject: 'Kode Verifikasi OTP Registrasi - MyHiking',
         );
     }
