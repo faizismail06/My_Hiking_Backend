@@ -4,25 +4,26 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\EmailOtp;
+use App\Mail\OtpMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-
 
 class AuthController extends Controller
 {
     public function register(Request $request)
     {
-        $register_data = new User();
         $rules = [
-            'name' => 'required',
+            'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required',
-            'level' => '1',
+            'password' => 'required|string|min:8',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -34,18 +35,145 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $register_data->name = $request->name;
-        $register_data->email = $request->email;
-        $register_data->password = bcrypt($request->password);
-        $register_data->level = 1;
+        $user = new User();
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->password = bcrypt($request->password);
+        $user->level = 1;
+        $user->email_verified_at = null; // Memastikan email belum terverifikasi di awal
+        $user->save();
 
-        $register_data->save();
+        // Generasi Kode OTP 6-Digit
+        $otpCode = str_pad((string) random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+
+        // Simpan Record OTP
+        EmailOtp::create([
+            'email' => $user->email,
+            'otp_code' => $otpCode,
+            'expires_at' => now()->addMinutes(10),
+            'is_used' => false,
+        ]);
+
+        // Kirim Email OTP ke Alamat Email Pendaftar
+        $emailSent = false;
+        try {
+            Mail::to($user->email)->send(new OtpMail($otpCode, $user->name));
+            $emailSent = true;
+        } catch (\Exception $e) {
+            Log::error('Failed to send OTP email: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'User registered successfully',
-            'data' => $register_data,
+            'message' => 'Registrasi berhasil! Kode OTP verifikasi telah dikirimkan ke email Anda.',
+            'email' => $user->email,
+            'email_sent' => $emailSent,
+            'data' => $user,
         ], 201);
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        $rules = [
+            'email' => 'required|email',
+            'otp_code' => 'required|string|size:6',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation errors',
+                'data' => $validator->errors(),
+            ], 422);
+        }
+
+        $otpRecord = EmailOtp::where('email', $request->email)
+            ->where('otp_code', $request->otp_code)
+            ->where('is_used', false)
+            ->where('expires_at', '>=', now())
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if (!$otpRecord) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kode OTP salah atau sudah kadaluwarsa (berlaku 10 menit).',
+            ], 422);
+        }
+
+        // Tandai OTP sebagai digunakan
+        $otpRecord->update(['is_used' => true]);
+
+        // Tandai User email terverifikasi
+        $user = User::where('email', $request->email)->first();
+        if ($user) {
+            $user->email_verified_at = now();
+            $user->save();
+
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Verifikasi email berhasil! Selamat datang di MyHiking.',
+                'token' => $token,
+                'user' => $user,
+            ], 200);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'User tidak ditemukan.',
+        ], 444);
+    }
+
+    public function resendOtp(Request $request)
+    {
+        $rules = [
+            'email' => 'required|email|exists:users,email',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email tidak terdaftar.',
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+        if ($user->email_verified_at) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email ini sudah terverifikasi sebelumnya.',
+            ], 400);
+        }
+
+        // Invalidate old OTPs
+        EmailOtp::where('email', $user->email)->update(['is_used' => true]);
+
+        // Generate new OTP
+        $otpCode = str_pad((string) random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+        EmailOtp::create([
+            'email' => $user->email,
+            'otp_code' => $otpCode,
+            'expires_at' => now()->addMinutes(10),
+            'is_used' => false,
+        ]);
+
+        $emailSent = false;
+        try {
+            Mail::to($user->email)->send(new OtpMail($otpCode, $user->name));
+            $emailSent = true;
+        } catch (\Exception $e) {
+            Log::error('Failed to resend OTP email: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kode OTP baru telah dikirimkan ke email Anda.',
+            'email_sent' => $emailSent,
+        ], 200);
     }
 
     public function login(Request $request)
