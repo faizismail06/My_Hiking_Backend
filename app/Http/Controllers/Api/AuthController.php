@@ -646,19 +646,27 @@ class AuthController extends Controller
 
         \Illuminate\Support\Facades\Cache::forget('phone_otp_' . $targetPhone);
 
-        $user = Auth::user() ?? User::where('phone', $request->phone)->first();
+        $user = Auth::user() ?? User::where('phone', $request->phone)->orWhere('emergency_phone', $request->phone)->first();
+        $isEmergency = false;
         if ($user) {
-            $user->phone = $request->phone;
-            $user->is_phone_verified = true;
-            $user->phone_verified_at = now();
+            if (trim($user->emergency_phone) === trim($request->phone)) {
+                $isEmergency = true;
+                $user->is_emergency_phone_verified = true;
+                $user->emergency_phone_verified_at = now();
+            } else {
+                $user->phone = $request->phone;
+                $user->is_phone_verified = true;
+                $user->phone_verified_at = now();
+            }
             $user->save();
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Nomor telepon pendaki berhasil diverifikasi! ✅',
+            'message' => 'Nomor ' . ($isEmergency ? 'kontak darurat' : 'telepon pendaki') . ' berhasil diverifikasi! ✅',
             'data' => [
-                'is_phone_verified' => true,
+                'is_phone_verified' => $user ? $user->is_phone_verified : true,
+                'is_emergency_phone_verified' => $user ? $user->is_emergency_phone_verified : true,
                 'phone_verified_at' => now(),
             ],
         ], 200);
