@@ -111,6 +111,7 @@ Route::prefix('rules')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/user/verify-face', [AuthController::class, 'uploadFaceVerification']);
     Route::post('/update-password/{id}', [AuthController::class, 'updatePassword']);
     Route::get('/onboarding/experience/status', [ExperienceOnboardingController::class, 'status']);
     Route::post('/onboarding/experience', [ExperienceOnboardingController::class, 'store']);

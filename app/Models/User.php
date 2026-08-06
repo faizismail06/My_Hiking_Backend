@@ -38,6 +38,9 @@ class User extends Authenticatable
         'transaction_count',
         'profile_picture',
         'date_of_birth',
+        'face_photo_path',
+        'is_face_verified',
+        'face_verified_at',
     ];
 
     /**
@@ -58,6 +61,8 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'is_face_verified' => 'boolean',
+        'face_verified_at' => 'datetime',
         'date_of_birth' => 'date',
     ];
 

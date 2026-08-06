@@ -385,6 +385,52 @@ class AuthController extends Controller
         ], 200);
     }
 
+    public function uploadFaceVerification(Request $request)
+    {
+        $rules = [
+            'face_photo' => 'required|file|mimes:jpeg,png,jpg|max:5120',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation errors',
+                'data' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated',
+            ], 401);
+        }
+
+        if ($user->face_photo_path) {
+            Storage::disk('public')->delete($user->face_photo_path);
+        }
+
+        $filePath = $request->file('face_photo')->store('face_verifications', 'public');
+
+        $user->face_photo_path = $filePath;
+        $user->is_face_verified = true;
+        $user->face_verified_at = now();
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Face verification uploaded and saved successfully to MySQL',
+            'data' => [
+                'user_id' => $user->id,
+                'face_photo_path' => $filePath,
+                'is_face_verified' => true,
+                'face_verified_at' => $user->face_verified_at,
+            ],
+        ], 200);
+    }
+
     /**
      * Remove the specified resource from storage.
      */
