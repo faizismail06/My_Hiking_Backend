@@ -462,8 +462,23 @@ class AuthController extends Controller
         $user->email = $request->email;
         $user->address = $request->address;
         $user->nik = $request->nik;
-        $user->phone = $request->phone;
-        $user->emergency_phone = $request->emergency_phone;
+
+        if ($request->has('phone')) {
+            if (trim((string)$user->phone) !== trim((string)$request->phone)) {
+                $user->phone = $request->phone;
+                $user->is_phone_verified = false;
+                $user->phone_verified_at = null;
+            }
+        }
+
+        if ($request->has('emergency_phone')) {
+            if (trim((string)$user->emergency_phone) !== trim((string)$request->emergency_phone)) {
+                $user->emergency_phone = $request->emergency_phone;
+                $user->is_emergency_phone_verified = false;
+                $user->emergency_phone_verified_at = null;
+            }
+        }
+
         $user->date_of_birth = $request->date_of_birth;
 
         $user->save();
@@ -619,6 +634,7 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'phone' => 'required|string',
             'otp_code' => 'required|string',
+            'is_emergency' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -647,10 +663,12 @@ class AuthController extends Controller
         \Illuminate\Support\Facades\Cache::forget('phone_otp_' . $targetPhone);
 
         $user = Auth::user() ?? User::where('phone', $request->phone)->orWhere('emergency_phone', $request->phone)->first();
-        $isEmergency = false;
+        $isEmergency = $request->boolean('is_emergency');
+
         if ($user) {
-            if (trim($user->emergency_phone) === trim($request->phone)) {
+            if ($isEmergency || trim((string)$user->emergency_phone) === trim((string)$request->phone)) {
                 $isEmergency = true;
+                $user->emergency_phone = $request->phone;
                 $user->is_emergency_phone_verified = true;
                 $user->emergency_phone_verified_at = now();
             } else {
@@ -665,9 +683,10 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Nomor ' . ($isEmergency ? 'kontak darurat' : 'telepon pendaki') . ' berhasil diverifikasi! ✅',
             'data' => [
-                'is_phone_verified' => $user ? $user->is_phone_verified : true,
-                'is_emergency_phone_verified' => $user ? $user->is_emergency_phone_verified : true,
-                'phone_verified_at' => now(),
+                'is_phone_verified' => $user ? (bool) $user->is_phone_verified : true,
+                'is_emergency_phone_verified' => $user ? (bool) $user->is_emergency_phone_verified : true,
+                'phone_verified_at' => $user ? $user->phone_verified_at : now(),
+                'emergency_phone_verified_at' => $user ? $user->emergency_phone_verified_at : now(),
             ],
         ], 200);
     }

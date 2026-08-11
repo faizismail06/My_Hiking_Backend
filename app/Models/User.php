@@ -41,6 +41,10 @@ class User extends Authenticatable
         'face_photo_path',
         'is_face_verified',
         'face_verified_at',
+        'is_phone_verified',
+        'phone_verified_at',
+        'is_emergency_phone_verified',
+        'emergency_phone_verified_at',
     ];
 
     /**
@@ -63,6 +67,10 @@ class User extends Authenticatable
         'password' => 'hashed',
         'is_face_verified' => 'boolean',
         'face_verified_at' => 'datetime',
+        'is_phone_verified' => 'boolean',
+        'phone_verified_at' => 'datetime',
+        'is_emergency_phone_verified' => 'boolean',
+        'emergency_phone_verified_at' => 'datetime',
         'date_of_birth' => 'date',
     ];
 
